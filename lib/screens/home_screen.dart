@@ -6,7 +6,11 @@ import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
 import '../data/education/daily_tips.dart';
 import '../widgets/offline_banner.dart';
-
+import '../widgets/scan_now_bottom_sheet.dart';
+import 'sim_lock_screen.dart';
+import 'breach_screen.dart';
+import 'safe_vault_screen.dart';
+import 'history_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -96,7 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Text('Threat Activity',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
                       child: const Text('VIEW ALL >',
                           style: TextStyle(color: AppColors.primary, fontSize: 12)),
                     ),
@@ -189,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () => ScanNowBottomSheet.show(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -310,29 +315,36 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildActionIcon(Icons.sd_card, 'SIM LOCK'),
-        _buildActionIcon(Icons.email_outlined, 'EMAIL CHECK'),
-        _buildActionIcon(Icons.public, 'BREACHES'),
-        _buildActionIcon(Icons.lock_clock_outlined, 'SAFE VAULT'),
+        _buildActionIcon(Icons.sd_card, 'SIM LOCK', () => _nav(const SimLockScreen())),
+        _buildActionIcon(Icons.email_outlined, 'EMAIL CHECK', () => _nav(const BreachScreen())),
+        _buildActionIcon(Icons.public, 'BREACHES', () => _nav(const BreachScreen())),
+        _buildActionIcon(Icons.lock_clock_outlined, 'SAFE VAULT', () => _nav(const SafeVaultScreen())),
       ],
     );
   }
 
-  Widget _buildActionIcon(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+  void _nav(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Widget _buildActionIcon(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primary),
           ),
-          child: Icon(icon, color: AppColors.primary),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
-      ],
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+        ],
+      ),
     );
   }
 
