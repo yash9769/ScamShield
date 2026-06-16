@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../services/scam_detector.dart';
+import '../data/repositories/scan_repository.dart';
+import '../data/models/scan_record.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -14,6 +16,7 @@ class _ScanScreenState extends State<ScanScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final ScanRepository _scanRepo = ScanRepository();
 
   AnalysisResult? _result;
   bool _isAnalyzing = false;
@@ -63,6 +66,15 @@ class _ScanScreenState extends State<ScanScreen>
     await Future.delayed(const Duration(milliseconds: 1800));
 
     final result = ScamDetector.analyze(text);
+
+    // Persist to local SQLite database
+    final record = ScanRecord.fromAnalysisResult(
+      inputText: text,
+      result: result,
+      source: _activeTab == 0 ? 'Manual' : 'Link',
+    );
+    await _scanRepo.saveScan(record);
+
     if (mounted) {
       setState(() {
         _result = result;
