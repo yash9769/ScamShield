@@ -1,0 +1,54 @@
+name: ScamShield Backend CI
+
+on:
+  push:
+    branches: [ main, feature/backend-ai ]
+  pull_request:
+    branches: [ main, feature/backend-ai ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg poppler-utils libgl1-mesa-glx
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Tests with Pytest
+        env:
+          REDIS_URL: redis://localhost:6379
+          LOG_LEVEL: WARNING
+        run: |
+          cd backend
+          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml
+
+      - name: Verify Docker Build
+        run: |
+          cd backend
+          docker build -f docker/Dockerfile -t scamshield-api:test .
