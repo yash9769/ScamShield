@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+
+  # ── ScamShield API ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: scamshield-api:2.0.0
+    container_name: scamshield_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Required
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Optional OSINT
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+      # Redis (points to the redis service below)
+      - REDIS_URL=redis://redis:6379
+      # App config
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-60/minute}
+    env_file:
+      - ../.env
+    volumes:
+      - /tmp/scamshield:/tmp/scamshield  # Temp audio/image files
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # ── Redis (rate limiting + OSINT cache) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: scamshield_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save ""
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+networks:
+  scamshield_net:
+    driver: bridge
