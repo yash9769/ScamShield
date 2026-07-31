@@ -1,14 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Internet for HIBP breach API -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- Storage for file scanner (Android 9 and below) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <!-- Storage for file scanner (Android 10-12) -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
-    <!-- Granular media permissions (Android 13+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <application
         android:label="scamshield"
         android:name="${applicationName}"
