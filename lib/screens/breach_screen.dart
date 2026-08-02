@@ -7,7 +7,9 @@ import '../theme.dart';
 import '../services/breach_service.dart';
 
 class BreachScreen extends StatefulWidget {
-  const BreachScreen({super.key});
+  final int initialIndex;
+
+  const BreachScreen({super.key, this.initialIndex = 0});
 
   @override
   State<BreachScreen> createState() => _BreachScreenState();
@@ -31,7 +33,11 @@ class _BreachScreenState extends State<BreachScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialIndex.clamp(0, 1),
+    );
     _loadBreaches();
   }
 
@@ -426,39 +432,6 @@ class _BreachScreenState extends State<BreachScreen>
                           color: AppColors.textSecondary, fontSize: 12)),
                 ],
               ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // No API key — show upgrade prompt
-    if (_emailBreaches == null) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.warning.withOpacity(0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('API Key Required',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
-            const Text(
-              'Email-specific checks require a HIBP API key. You can still browse recent global breaches in the "Recent Breaches" tab.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
-            ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () => launchUrl(
-                Uri.parse('https://haveibeenpwned.com/API/Key'),
-                mode: LaunchMode.externalApplication,
-              ),
-              child: const Text('Get API Key →',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

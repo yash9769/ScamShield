@@ -7,6 +7,7 @@ import '../services/file_scanner_service.dart';
 import '../services/scam_detector.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
+import '../services/report_generator_service.dart';
 
 class ScanNowBottomSheet extends StatefulWidget {
   const ScanNowBottomSheet({super.key});
@@ -280,6 +281,54 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
           Text(analysis.summary,
               style: const TextStyle(
                   color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+          
+          if (result.apkAnalysis != null) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text('Static Analysis Complete', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.verified_user, color: AppColors.primary, size: 16),
+                const SizedBox(width: 6),
+                Text('${result.apkAnalysis!.permissions.length} Permissions | ${result.apkAnalysis!.urls.length} Endpoints', 
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.picture_as_pdf, size: 18),
+              label: const Text('Export Full PDF Report'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () async {
+                try {
+                  final file = await ReportGeneratorService.generateApkReport(
+                    apk: result.apkAnalysis!,
+                    osintResults: result.osintResults ?? [],
+                    analysis: result.analysis,
+                    fileName: result.fileName,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Report saved to: ${file.path}')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to generate PDF: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+          ]
         ],
       ),
     );

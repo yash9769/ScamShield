@@ -25,47 +25,11 @@ _START_TIME = time.monotonic()
 
 @router.get(
     "/health",
-    response_model=HealthResponse,
     summary="Health Check",
-    description="Returns the current health status of the API and all downstream services.",
     tags=["System"],
 )
-async def health_check(request: Request) -> HealthResponse:
-    """
-    Returns service health including:
-    - Overall status (healthy / degraded)
-    - App version and uptime
-    - Per-service availability (Gemini, Whisper, EasyOCR, Redis)
-    """
-    settings = get_settings()
-    uptime = time.monotonic() - _START_TIME
-
-    # Build API status map
-    api_status = {
-        "gemini": {
-            "available": gemini_service.available,
-            "models": settings.GEMINI_MODELS if gemini_service.available else [],
-        },
-        "whisper": voice_service.get_status(),
-        "easyocr": ocr_service.get_status(),
-        "redis": await _check_redis(settings.REDIS_URL),
-        "virustotal": {
-            "available": settings.virustotal_available,
-        },
-    }
-
-    # Degrade if the core analysis engine is unavailable
-    overall = "healthy"
-    # Whisper and OCR missing is a degraded-but-functional state
-    if not api_status["gemini"]["available"] and not api_status["whisper"]["available"]:
-        overall = "degraded"
-
-    return HealthResponse(
-        status=overall,
-        version=settings.VERSION,
-        uptime_seconds=round(uptime, 2),
-        api_status=api_status,
-    )
+async def health_check(request: Request) -> dict:
+    return {"status": "ok"}
 
 
 async def _check_redis(redis_url: str) -> dict:

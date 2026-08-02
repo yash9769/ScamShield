@@ -10,6 +10,12 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+
+from app.core.db import engine
+from app.models.base import Base
+# Import all models to ensure they are registered with Base
+import app.models.schema
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
@@ -24,12 +30,23 @@ setup_logging(settings.LOG_LEVEL)
 logger = get_logger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create all tables on startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables initialized")
+    yield
+    # Dispose engine on shutdown
+    await engine.dispose()
+
 def create_app() -> FastAPI:
     """Application factory — creates and configures the FastAPI instance."""
 
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.VERSION,
+        lifespan=lifespan,
         description=(
             "ScamShield API — Production-grade scam detection engine powered by "
             "Gemini AI, Whisper speech recognition, EasyOCR, and OSINT enrichment.\n\n"

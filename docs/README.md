@@ -1,43 +1,30 @@
 # ScamShield 🛡️
 
-**ScamShield** is a Flutter-based mobile application that detects scam messages, phishing links, and social engineering attempts in real time — protecting users from digital fraud using on-device heuristics and optional Gemini AI analysis.
+**ScamShield** is a comprehensive, production-ready Mobile Application Security Platform. It combines a mobile-first Flutter UI with a powerful FastAPI backend that orchestrates industry-standard reverse engineering tools to provide deep, explainable analysis of Android APKs.
 
 ---
 
 ## Features
 
-### 🔍 Scam Detection
-- Paste any SMS, email excerpt, or URL for instant analysis
-- Local keyword + regex heuristic engine (offline-capable, ~18ms)
-- Optional Gemini AI-powered analysis for detailed insights
-- Risk score 0–100 with colour-coded classification (Safe / Suspicious / Scam)
-- Detailed breakdown of detected signals (urgency, financial keywords, shortened URLs, etc.)
+### 🔍 Deep APK Analysis
+- Decompilation & Resource Extraction (APKTool, JADX)
+- Static Analysis (Androguard, MobSF)
+- Threat Intelligence Correlation (VirusTotal, Google Safe Browsing, AbuseIPDB)
+- Signature & Secrets Detection (YARA)
 
-### 📋 History
-- All scan results auto-saved to local SQLite database
-- Filter by All / Threats / Suspicious / Safe
-- Full-text search across scanned messages
-- Swipe-to-delete individual records
-- Live statistics: total scans, threats, safe count, average risk
+### 🧠 Explainable AI & Risk Engine
+- Custom Weighted Risk Engine for overall severity scoring
+- AI-powered (Gemini) summaries explaining *why* an app is dangerous
+- Evidence-based findings rather than opaque scores
 
-### 📚 Education Module
-- Scam Encyclopedia: 10 in-depth articles (Phishing, Smishing, Vishing, Lottery, Job, Romance, Tech Support, Investment, URL Analysis, Banking Fraud)
-- Interactive Quiz: 15 questions with explanations
-- 13 unlockable badges
-- Daily Scam Tip (30 unique tips, one per day)
-- Progress tracker with vigilance score and streak counter
+### 📄 Professional Reporting
+- Detailed, downloadable PDF reports for each scan
+- Comprehensive JSON exports for automated workflows
+- Real-time SSE (Server-Sent Events) progress streaming during scans
 
-### 🔒 Privacy
-- All data stored locally on-device (SQLite + SharedPreferences)
-- No data transmitted without explicit user action
-- Consent management with on/off toggle
-- Auto-delete history: 7, 30, 90 days or never
-- One-tap "Delete All Data" option
-- Full in-app Privacy Policy
-
-### 📡 Offline Support
-- Local heuristic detection works 100% offline
-- Offline banner appears automatically when connectivity lost
+### 📋 Scan History & Caching
+- All scan results and OSINT intelligence cached via PostgreSQL and Redis
+- Lightning-fast retrieval of previously analyzed SHA256 hashes
 
 ---
 
@@ -45,60 +32,68 @@
 
 | Layer | Technology |
 |-------|-----------|
-| UI | Flutter 3.x / Dart |
-| Local Storage | SQLite (`sqflite`) |
-| Preferences | `shared_preferences` |
-| AI Analysis | Gemini API (FastAPI backend) |
-| Connectivity | `connectivity_plus` |
-| State | `StatefulWidget` + async repository pattern |
+| **UI** | Flutter 3.x / Dart |
+| **Backend API** | FastAPI / Python 3.12 |
+| **Analyzers** | MobSF, JADX, APKTool, Androguard, YARA |
+| **OSINT** | VirusTotal, Google Safe Browsing, AbuseIPDB |
+| **Database** | PostgreSQL (asyncpg), Alembic |
+| **Caching/PubSub** | Redis |
+| **Infrastructure** | Docker, Docker Compose |
 
 ---
 
 ## Architecture
 
 ```
-lib/
-├── main.dart                    # App entry + navigation
-├── theme.dart                   # Design tokens & theme
-├── screens/
-│   ├── home_screen.dart         # Dashboard with live DB stats
-│   ├── scan_screen.dart         # Message analysis + DB save
-│   ├── history_screen.dart      # SQLite history with search/filter
-│   ├── learn_screen.dart        # Education module hub
-│   └── profile_screen.dart      # Privacy controls & preferences
-├── services/
-│   ├── scam_detector.dart       # Local heuristic engine
-│   └── api_service.dart         # Gemini AI backend client
-├── data/
-│   ├── models/                  # ScanRecord, UserPreferences
-│   ├── database/                # SQLite DatabaseHelper
-│   ├── repositories/            # ScanRepository, PreferencesRepository
-│   ├── cache/                   # In-memory LRU cache
-│   └── education/               # Scam encyclopedia, quiz, tips, progress
-└── widgets/
-    └── offline_banner.dart      # Connectivity-aware banner
+Flutter App
+    │
+    ▼ (HTTP POST /scan, SSE /scan/{id}/progress)
+    │
+FastAPI Backend (scamshield_api) ◄────► Redis (Pub/Sub & OSINT Cache)
+    │                                ◄────► PostgreSQL (History & Logs)
+    ▼ (Asyncio Gather)
+    ├── MobSF (scamshield_mobsf container)
+    ├── APKTool & JADX (Decompilation)
+    ├── Androguard (Static Analysis)
+    ├── YARA (Malware Signatures)
+    └── OSINT Services (VirusTotal, etc.)
+    │
+    ▼
+ScamShield Risk Engine
+    │
+    ▼
+AI Explanation Service (Gemini)
+    │
+    ▼
+PDF & JSON Report Generation
 ```
-
----
-
-## Team
-
-| Member | Role | Branch |
-|--------|------|--------|
-| Kaivalya | Backend / AI | `feature/backend-ai` |
-| Swarali | Flutter UI | `feature/flutter-ui` |
-| Yash | Data Layer & Features | `feature/data-features` |
 
 ---
 
 ## Getting Started
 
-See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for setup instructions.
+1. **Clone the repository.**
+2. **Configure Environment Variables:**
+   - Copy `backend/docker/.env.example` to `backend/.env`
+   - Add your `GEMINI_API_KEY` and optional OSINT API keys (e.g., `VIRUSTOTAL_API_KEY`).
+3. **Start the Infrastructure:**
+   ```bash
+   cd backend/docker
+   docker compose up -d --build
+   ```
+4. **Access the API:**
+   - FastAPI Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+   - MobSF UI: [http://localhost:8001](http://localhost:8001)
 
-## User Manual
+## Testing
+To run the automated QA suite against the test APKs:
+```bash
+cd backend
+python3 test_apks.py
+```
 
-See [USER_MANUAL.md](USER_MANUAL.md) for usage instructions.
+## Documentation
 
-## Project Report
-
-See [PROJECT_REPORT.md](PROJECT_REPORT.md) for full technical documentation.
+- [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+- [PROJECT_REPORT.md](PROJECT_REPORT.md)
+- [USER_MANUAL.md](USER_MANUAL.md)
