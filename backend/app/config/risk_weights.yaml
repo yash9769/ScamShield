@@ -1,0 +1,33 @@
+permissions:
+  SYSTEM_ALERT_WINDOW: 30
+  BIND_ACCESSIBILITY_SERVICE: 35
+  READ_SMS: 25
+  RECEIVE_SMS: 20
+  READ_CONTACTS: 15
+  RECORD_AUDIO: 15
+  CAMERA: 15
+  ACCESS_FINE_LOCATION: 10
+  INSTALL_PACKAGES: 40
+  REQUEST_INSTALL_PACKAGES: 35
+
+secrets:
+  aws: 25
+  jwt: 10
+  firebase: 15
+  supabase: 15
+  openai: 20
+
+osint:
+  malicious: 40
+  suspicious: 20
+
+certificate:
+  debug: 10
+  v1_only: 5
+
+thresholds:
+  SAFE: 0
+  LOW: 1
+  MEDIUM: 30
+  HIGH: 60
+  CRITICAL: 80
