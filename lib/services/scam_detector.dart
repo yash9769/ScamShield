@@ -1,4 +1,6 @@
 // lib/services/scam_detector.dart
+import 'apk_analyzer_service.dart';
+import 'osint_service.dart';
 
 /// The result of a scam analysis.
 enum ScamClassification { safe, suspicious, scam }
@@ -339,6 +341,145 @@ class ScamDetector {
       riskScore: score,
       reasons: reasons,
       summary: summary,
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  /// Analyzes an APK based on its static extraction and OSINT results.
+  // ─────────────────────────────────────────────────────────────────────────
+  static AnalysisResult analyzeApk(ApkAnalysisResult apk, List<OsintResult> osintResults) {
+    int score = 0;
+    final reasons = <DetectionReason>[];
+    
+    // 1. Dangerous Permissions Analysis
+    final dangerousPermissions = <String, int>{
+      'READ_SMS': 25,
+      'RECEIVE_SMS': 25,
+      'SYSTEM_ALERT_WINDOW': 30, // Overlay attacks
+      'BIND_ACCESSIBILITY_SERVICE': 35, // Accessibility attacks
+      'READ_CONTACTS': 10,
+      'SEND_SMS': 20,
+      'CALL_PHONE': 15,
+      'REQUEST_INSTALL_PACKAGES': 20,
+    };
+
+    int permissionScore = 0;
+    final foundDangerous = <String>[];
+    for (final perm in apk.permissions) {
+      if (dangerousPermissions.containsKey(perm)) {
+        permissionScore += dangerousPermissions[perm]!;
+        foundDangerous.add(perm);
+      }
+    }
+    
+    if (foundDangerous.isNotEmpty) {
+      score += permissionScore;
+      reasons.add(DetectionReason(
+        label: 'Dangerous Permissions',
+        description: 'App requests: ${foundDangerous.join(', ')}. This combination is highly sensitive and often abused by malware.',
+        scoreContribution: permissionScore,
+        iconCategory: IconCategory.suspicious,
+      ));
+    }
+
+    // 2. OSINT Analysis
+    int osintScore = 0;
+    final maliciousOsint = osintResults.where((r) => r.isMalicious).toList();
+    if (maliciousOsint.isNotEmpty) {
+      for (final result in maliciousOsint) {
+        osintScore += 40; // Heavy penalty for flagged OSINT
+        reasons.add(DetectionReason(
+          label: 'OSINT Blacklist (${result.provider})',
+          description: result.details,
+          scoreContribution: 40,
+          iconCategory: IconCategory.suspicious, // mapped to manipulation/suspicious later
+        ));
+      }
+      score += osintScore;
+    }
+
+    // 3. Secrets / URLs 
+    // Basic heuristic: check if urls contains suspicious keywords
+    int urlScore = 0;
+    final suspiciousUrlKeywords = ['free', 'money', 'bit.ly', 'ngrok', 'tinyurl'];
+    for (final url in apk.urls) {
+      final lower = url.toLowerCase();
+      if (suspiciousUrlKeywords.any((k) => lower.contains(k))) {
+        urlScore += 5;
+      }
+    }
+    if (urlScore > 0) {
+      urlScore = urlScore.clamp(0, 20);
+      score += urlScore;
+      reasons.add(DetectionReason(
+        label: 'Suspicious Domains/Endpoints',
+        description: 'Extracted network endpoints match suspicious patterns or link shorteners.',
+        scoreContribution: urlScore,
+        iconCategory: IconCategory.link,
+      ));
+    }
+
+    // 3.5 Secrets Detection
+    if (apk.secrets.isNotEmpty) {
+      score += 25; // High penalty for hardcoded secrets
+      reasons.add(DetectionReason(
+        label: 'Exposed Secrets',
+        description: 'Found hardcoded sensitive keys/tokens: ${apk.secrets.take(3).join(', ')}...',
+        scoreContribution: 25,
+        iconCategory: IconCategory.manipulation,
+      ));
+    }
+
+    // 4. Certificates
+    if (apk.certificates.isEmpty) {
+      // Unsigned or v2/v3 signed
+      reasons.add(const DetectionReason(
+        label: 'No V1 Certificate Found',
+        description: 'No META-INF certificates found. App is either unsigned or uses v2/v3 signatures exclusively.',
+        scoreContribution: 0,
+        iconCategory: IconCategory.safe,
+      ));
+    } else if (apk.certificates.any((c) => c.contains('testkey') || c.contains('debug'))) {
+      score += 15;
+      reasons.add(const DetectionReason(
+        label: 'Debug/Test Certificate',
+        description: 'App is signed with a debug or test key. Legitimate production apps use proper release keys.',
+        scoreContribution: 15,
+        iconCategory: IconCategory.suspicious,
+      ));
+    }
+
+    score = score.clamp(0, 100);
+
+    final ScamClassification classification;
+    final String summary;
+
+    if (score < 20) {
+      classification = ScamClassification.safe;
+      summary = 'APK appears safe based on static analysis. No significant red flags detected.';
+    } else if (score < 60) {
+      classification = ScamClassification.suspicious;
+      summary = 'APK exhibits some suspicious behavior or requests sensitive permissions. Proceed with caution.';
+    } else {
+      classification = ScamClassification.scam;
+      summary = 'High risk! APK contains multiple indicators of compromise, dangerous permissions, or is flagged by threat intel.';
+    }
+
+    if (reasons.isEmpty) {
+       reasons.add(const DetectionReason(
+        label: 'No Threats Detected',
+        description: 'Static analysis found no known malicious patterns.',
+        scoreContribution: 0,
+        iconCategory: IconCategory.safe,
+      ));
+    }
+
+    return AnalysisResult(
+      classification: classification,
+      riskScore: score,
+      reasons: reasons,
+      summary: summary,
+      aiPowered: true,
     );
   }
 }

@@ -1,24 +1,201 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/user_profile_service.dart';
+import 'history_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final bool _threatAlerts = true;
+  final bool _deepfakeFilter = true;
+  final bool _cloudSync = false;
+
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: UserProfileService.nameNotifier.value);
+    final titleController = TextEditingController(
+      text: UserProfileService.titleNotifier.value.replaceAll('Intelligence Level: ', ''),
+    );
+    String selectedAvatar = UserProfileService.avatarNotifier.value;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Edit Profile & Avatar', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Choose Avatar:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: UserProfileService.presetAvatars.map((url) {
+                    final isSel = selectedAvatar == url;
+                    return GestureDetector(
+                      onTap: () {
+                        setDialogState(() => selectedAvatar = url);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: isSel ? AppColors.primary : Colors.transparent, width: 3),
+                        ),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundImage: NetworkImage(url),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(
+                    labelText: 'Security Title',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newName = nameController.text.trim();
+                final newTitle = titleController.text.trim();
+                await UserProfileService.updateProfile(
+                  name: newName.isNotEmpty ? newName : null,
+                  title: newTitle.isNotEmpty ? 'Intelligence Level: $newTitle' : null,
+                  avatarUrl: selectedAvatar,
+                );
+                if (mounted) Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Save & Sync', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSignOutDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Secure Sign Out?'),
+        content: const Text(
+          'Signing out will clear active session caches. Local vault notes remain encrypted on device.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Session cache cleared. Signed out securely.'),
+                  backgroundColor: AppColors.danger,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSubscriptionInfo() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.stars, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Active Subscription', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Plan: ScamShield Pro (Annual)', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
+            Text('Status: Active • Renews Oct 2026', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            SizedBox(height: 12),
+            Text('Includes 256-bit VPN, unlimited neural scanning, and dark web monitoring.', style: TextStyle(fontSize: 12, height: 1.4)),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Close', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.shield, color: AppColors.primary),
-            const SizedBox(width: 8),
-            const Text('ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
+            Icon(Icons.shield, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
-          const CircleAvatar(
-            radius: 15,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=alex'),
+          ValueListenableBuilder<String>(
+            valueListenable: UserProfileService.avatarNotifier,
+            builder: (ctx, avatar, _) => CircleAvatar(
+              radius: 15,
+              backgroundImage: NetworkImage(avatar),
+            ),
           ),
           const SizedBox(width: 16),
         ],
@@ -34,16 +211,49 @@ class ProfileScreen extends StatelessWidget {
             _buildSectionHeader('Intelligence Settings'),
             const SizedBox(height: 16),
             _buildSettingsList([
-              _buildSettingItem(Icons.notifications_active_outlined, 'Threat Alerts', 'Real-time scam notifications', true),
-              _buildSettingItem(Icons.videocam_outlined, 'Deepfake Filter', 'AI-driven video verification', true),
-              _buildSettingItem(Icons.history, 'Scan History', 'Cloud sync enabled', false),
+              _buildSettingItem(
+                Icons.notifications_active_outlined,
+                'Threat Alerts',
+                'Real-time scam notifications',
+                hasSwitch: true,
+                switchValue: _threatAlerts,
+                onChanged: (v) {},
+              ),
+              _buildSettingItem(
+                Icons.videocam_outlined,
+                'Deepfake Filter',
+                'AI-driven video verification',
+                hasSwitch: true,
+                switchValue: _deepfakeFilter,
+                onChanged: (v) {},
+              ),
+              _buildSettingItem(
+                Icons.history,
+                'Scan History',
+                _cloudSync ? 'Cloud sync enabled' : 'Local storage active',
+                hasSwitch: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
+              ),
             ]),
             const SizedBox(height: 32),
             _buildSectionHeader('Account Systems'),
             const SizedBox(height: 16),
             _buildSettingsList([
-              _buildSettingItem(Icons.credit_card, 'Subscription', 'Premium Plan - Active', false),
-              _buildSettingItem(Icons.logout, 'Secure Sign Out', 'Wipe local cache', false, isDestructive: true),
+              _buildSettingItem(
+                Icons.credit_card,
+                'Subscription',
+                'Premium Plan - Active',
+                hasSwitch: false,
+                onTap: _showSubscriptionInfo,
+              ),
+              _buildSettingItem(
+                Icons.logout,
+                'Secure Sign Out',
+                'Wipe local cache',
+                hasSwitch: false,
+                isDestructive: true,
+                onTap: _showSignOutDialog,
+              ),
             ]),
           ],
         ),
@@ -54,33 +264,45 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileHeader() {
     return Column(
       children: [
-        Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primary, width: 2),
+        GestureDetector(
+          onTap: _showEditProfileDialog,
+          child: Stack(
+            children: [
+              ValueListenableBuilder<String>(
+                valueListenable: UserProfileService.avatarNotifier,
+                builder: (ctx, avatar, _) => Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary, width: 2),
+                  ),
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundImage: NetworkImage(avatar),
+                  ),
+                ),
               ),
-              child: const CircleAvatar(
-                radius: 60,
-                backgroundImage: NetworkImage('https://i.pravatar.cc/300?u=alexchen'),
+              Positioned(
+                bottom: 0,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                  child: const Icon(Icons.edit, color: Colors.black, size: 16),
+                ),
               ),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 10,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                child: const Icon(Icons.verified, color: Colors.black, size: 20),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        const Text('Alex Chen', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-        const Text('Intelligence Level: Advanced Protector', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+        ValueListenableBuilder<String>(
+          valueListenable: UserProfileService.nameNotifier,
+          builder: (ctx, name, _) => Text(name, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        ),
+        ValueListenableBuilder<String>(
+          valueListenable: UserProfileService.titleNotifier,
+          builder: (ctx, title, _) => Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+        ),
         const SizedBox(height: 24),
         Container(
           width: double.infinity,
@@ -93,7 +315,7 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: _showEditProfileDialog,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
@@ -174,41 +396,54 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingItem(IconData icon, String title, String subtitle, bool hasSwitch, {bool isDestructive = false}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.background, width: 2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildSettingItem(
+    IconData icon,
+    String title,
+    String subtitle, {
+    required bool hasSwitch,
+    bool switchValue = false,
+    ValueChanged<bool>? onChanged,
+    VoidCallback? onTap,
+    bool isDestructive = false,
+  }) {
+    return InkWell(
+      onTap: hasSwitch ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColors.background, width: 2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : AppColors.primary, size: 20),
             ),
-            child: Icon(icon, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : Colors.white)),
-                Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : Colors.white)),
+                  Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
             ),
-          ),
-          if (hasSwitch)
-            Switch(
-              value: true,
-              onChanged: (v) {},
-              activeThumbColor: AppColors.primary,
-            )
-          else
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-        ],
+            if (hasSwitch)
+              Switch(
+                value: switchValue,
+                onChanged: onChanged,
+                activeThumbColor: AppColors.primary,
+              )
+            else
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          ],
+        ),
       ),
     );
   }
