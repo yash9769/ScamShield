@@ -47,8 +47,16 @@ class Settings(BaseSettings):
     GEMINI_MAX_RETRIES: int = Field(default=2, description="Max retry attempts per model")
     GEMINI_TEMPERATURE: float = Field(default=0.1, description="Gemini generation temperature")
 
+    # ── Database ──────────────────────────────────────────────────────────────
+    DATABASE_URL: str = Field(
+        default="postgresql+asyncpg://scamshield:scamshield_password@localhost:5432/scamshield",
+        description="PostgreSQL Database URL",
+    )
+
     # ── OSINT ─────────────────────────────────────────────────────────────────
     VIRUSTOTAL_API_KEY: str = Field(default="", description="VirusTotal API key")
+    GOOGLE_SAFE_BROWSING_API_KEY: str = Field(default="", description="Google Safe Browsing API key")
+    ABUSEIPDB_API_KEY: str = Field(default="", description="AbuseIPDB API key")
     OSINT_TIMEOUT: float = Field(default=8.0, description="OSINT service timeout in seconds")
     OSINT_CACHE_TTL: int = Field(default=3600, description="OSINT cache TTL in seconds")
 

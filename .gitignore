@@ -66,3 +66,11 @@ Thumbs.db
 *.log
 *.tmp
 *.temp
+
+# Ignore generated test files and APKs
+*.apk
+*.json
+ScamShield_Test_APKs/
+test_apks_source/
+com.sh
+commit.sh

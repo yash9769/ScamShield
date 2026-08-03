@@ -15,22 +15,32 @@ services:
     environment:
       # Required
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Database
+      - DATABASE_URL=postgresql+asyncpg://scamshield:scamshield_password@db:5432/scamshield
       # Optional OSINT
       - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
       # Redis (points to the redis service below)
       - REDIS_URL=redis://redis:6379
+      # MobSF
+      - MOBSF_URL=http://mobsf:8000
+      - MOBSF_API_KEY=${MOBSF_API_KEY:-mobsf_api_key_123}
       # App config
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-false}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
       - WHISPER_MODEL=${WHISPER_MODEL:-base}
       - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-60/minute}
     env_file:
       - ../.env
     volumes:
       - /tmp/scamshield:/tmp/scamshield  # Temp audio/image files
+      - ../yara_rules:/app/yara_rules    # Mount YARA rules
     depends_on:
+      db:
+        condition: service_healthy
       redis:
+        condition: service_healthy
+      mobsf:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -45,6 +55,28 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  # ── MobSF (Mobile Security Framework) ───────────────────────────────────────
+  mobsf:
+    image: opensecurity/mobile-security-framework-mobsf:latest
+    container_name: scamshield_mobsf
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - MOBSF_API_KEY=${MOBSF_API_KEY:-mobsf_api_key_123}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ── Redis (rate limiting + OSINT cache) ────────────────────────────────────
   redis:
@@ -67,6 +99,36 @@ services:
         max-size: "5m"
         max-file: "3"
 
+  # ── PostgreSQL Database ─────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: scamshield_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scamshield
+      POSTGRES_PASSWORD: scamshield_password
+      POSTGRES_DB: scamshield
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scamshield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   scamshield_net:
     driver: bridge
+
+volumes:
+  postgres_data:
+
