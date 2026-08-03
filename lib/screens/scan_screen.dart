@@ -248,7 +248,7 @@ class _ScanScreenState extends State<ScanScreen>
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: _focusNode.hasFocus
-              ? AppColors.primary.withOpacity(0.4)
+              ? AppColors.primary.withValues(alpha: 0.4)
               : Colors.transparent,
         ),
       ),
@@ -288,7 +288,7 @@ class _ScanScreenState extends State<ScanScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(18),
               ),
@@ -352,7 +352,7 @@ class _ScanScreenState extends State<ScanScreen>
           boxShadow: hasContent
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.35),
+                    color: AppColors.primary.withValues(alpha: 0.35),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -399,7 +399,7 @@ class _ScanScreenState extends State<ScanScreen>
                 border: Border.all(color: AppColors.primary, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 30,
                     spreadRadius: 10,
                   ),
@@ -444,19 +444,19 @@ class _ScanScreenState extends State<ScanScreen>
     switch (result.classification) {
       case ScamClassification.scam:
         primaryColor = AppColors.danger;
-        bgColor = AppColors.danger.withOpacity(0.08);
+        bgColor = AppColors.danger.withValues(alpha: 0.08);
         statusIcon = Icons.warning_rounded;
         statusLabel = 'SCAM DETECTED';
         statusSubtitle = 'High confidence threat identified';
       case ScamClassification.suspicious:
         primaryColor = AppColors.warning;
-        bgColor = AppColors.warning.withOpacity(0.08);
+        bgColor = AppColors.warning.withValues(alpha: 0.08);
         statusIcon = Icons.help_outline_rounded;
         statusLabel = 'SUSPICIOUS';
         statusSubtitle = 'Multiple warning signals found';
       case ScamClassification.safe:
         primaryColor = AppColors.success;
-        bgColor = AppColors.success.withOpacity(0.08);
+        bgColor = AppColors.success.withValues(alpha: 0.08);
         statusIcon = Icons.check_circle_outline_rounded;
         statusLabel = 'LOOKS SAFE';
         statusSubtitle = 'No critical threats detected';
@@ -471,7 +471,7 @@ class _ScanScreenState extends State<ScanScreen>
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
         ),
         child: Column(
           children: [
@@ -481,7 +481,7 @@ class _ScanScreenState extends State<ScanScreen>
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: primaryColor.withOpacity(0.4)),
+                border: Border.all(color: primaryColor.withValues(alpha: 0.4)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -537,7 +537,7 @@ class _ScanScreenState extends State<ScanScreen>
           child: CircularProgressIndicator(
             value: score / 100,
             strokeWidth: 10,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             strokeCap: StrokeCap.round,
           ),
@@ -598,7 +598,7 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,7 +608,7 @@ class _ScanScreenState extends State<ScanScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 18),
@@ -627,7 +627,7 @@ class _ScanScreenState extends State<ScanScreen>
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -686,7 +686,7 @@ class _ScanScreenState extends State<ScanScreen>
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: fraction,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 5,
           ),
@@ -753,7 +753,7 @@ class _ScanScreenState extends State<ScanScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),

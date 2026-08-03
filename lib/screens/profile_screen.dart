@@ -89,7 +89,7 @@ class ProfileScreen extends StatelessWidget {
             gradient: const LinearGradient(colors: [AppColors.primary, AppColors.accent]),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: ElevatedButton(
@@ -129,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.textSecondary.withOpacity(0.1)),
+        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +141,7 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.1),
+                  color: badgeColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold)),
@@ -188,14 +188,14 @@ class ProfileScreen extends StatelessWidget {
               color: AppColors.background,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: isDestructive ? AppColors.danger.withOpacity(0.7) : AppColors.primary, size: 20),
+            child: Icon(icon, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : AppColors.primary, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDestructive ? AppColors.danger.withOpacity(0.7) : Colors.white)),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : Colors.white)),
                 Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ],
             ),
@@ -204,7 +204,7 @@ class ProfileScreen extends StatelessWidget {
             Switch(
               value: true,
               onChanged: (v) {},
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
             )
           else
             const Icon(Icons.chevron_right, color: AppColors.textSecondary),
