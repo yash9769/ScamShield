@@ -14,9 +14,9 @@ class OsintResult {
 }
 
 class OsintService {
-  static const String _vtApiKey = 'f0a274108a769b6be642dc340073ef0b43d6d19bb83a53e733f3b8b1304af93c';
-  static const String _gsbApiKey = 'AIzaSyAk_8k4xtxBu-jjgqQ4n634XjhuvGBcANU';
-  static const String _abuseIpdbApiKey = '78f080e4882e44abc1add341c53eab002f1a6066704a764e778e82b86e8c8cecf36112e7d681baa0';
+  static const String _vtApiKey = String.fromEnvironment('VIRUSTOTAL_API_KEY', defaultValue: '');
+  static const String _gsbApiKey = String.fromEnvironment('GOOGLE_SAFE_BROWSING_KEY', defaultValue: '');
+  static const String _abuseIpdbApiKey = String.fromEnvironment('ABUSEIPDB_API_KEY', defaultValue: '');
 
   /// Check a file hash (SHA-256, SHA-1, or MD5) against VirusTotal.
   static Future<OsintResult> checkHashVirusTotal(String hash) async {
