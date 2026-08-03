@@ -17,8 +17,9 @@ class LocalCache<T> {
   T? get(String key) {
     final entry = _store[key];
     if (entry == null) return null;
-    if (_ttl != null &&
-        DateTime.now().difference(entry.createdAt) > _ttl!) {
+    final ttl = _ttl;
+    if (ttl != null &&
+        DateTime.now().difference(entry.createdAt) > ttl) {
       _store.remove(key);
       return null;
     }
