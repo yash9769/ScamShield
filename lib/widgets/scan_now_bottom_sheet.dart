@@ -44,23 +44,22 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
 
     try {
       final result = await scanner();
+      if (!mounted) return;
       if (result == null) {
         setState(() {
           _isScanning = false;
           _scanStatus = '';
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(label == 'Clipboard'
-                  ? 'Clipboard is empty.'
-                  : 'No file selected or permission denied.'),
-              backgroundColor: AppColors.surface,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(label == 'Clipboard'
+                ? 'Clipboard is empty.'
+                : 'No file selected or permission denied.'),
+            backgroundColor: AppColors.surface,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
         return;
       }
 
@@ -75,17 +74,27 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                 : 'Clipboard',
       );
       await _repo.saveScan(record);
+      if (!mounted) return;
 
       setState(() {
         _isScanning = false;
         _result = result;
         _scanStatus = '';
       });
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
         _isScanning = false;
         _scanStatus = '';
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Scan failed. Please try again.'),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
     }
   }
 

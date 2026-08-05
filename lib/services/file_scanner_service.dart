@@ -40,7 +40,11 @@ class FileScannerService {
         allowMultiple: false,
       );
 
-      if (result != null && result.files.isNotEmpty) {
+      if (result == null || result.files.isEmpty) {
+        return null; // User canceled the picker — real cancel path.
+      }
+
+      {
         final file = result.files.first;
         final path = file.path;
         
@@ -123,14 +127,7 @@ class FileScannerService {
       }
     } catch (_) {}
 
-    const defaultClip = 'Suspicious Clipboard Content: "Your package delivery failed. Pay \$2.50 customs fee at: postal-redelivery-service.info"';
-    final analysis = ScamDetector.analyze(defaultClip);
-    return FileScanResult(
-      analysis: analysis,
-      fileName: 'Clipboard Text',
-      source: ScanSource.clipboard,
-      rawContent: defaultClip,
-    );
+    return null; // Empty clipboard — let the caller show a real message.
   }
 
   // ── Permission helpers ───────────────────────────────────────────────────

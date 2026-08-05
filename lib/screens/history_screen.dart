@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/scan_now_bottom_sheet.dart';
@@ -22,6 +24,7 @@ class HistoryScreenState extends State<HistoryScreen> {
 
   // 0 = All Scans, 1 = Threats Only, 2 = Safe Scans
   int _selectedFilterIndex = 0;
+  Timer? _searchDebounce;
 
   /// Public hook so the shell can reload data when the tab is opened.
   void refresh() => _load();
@@ -34,6 +37,7 @@ class HistoryScreenState extends State<HistoryScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -70,6 +74,7 @@ class HistoryScreenState extends State<HistoryScreen> {
   Future<void> _deleteRecord(ScanRecord record) async {
     final id = record.id;
     if (id == null) return;
+    setState(() => _records.removeWhere((r) => r.id == record.id));
     await _repo.deleteScan(id);
     await _load();
   }
@@ -123,10 +128,11 @@ class HistoryScreenState extends State<HistoryScreen> {
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Center(
                 child: Container(
                   width: 40,
@@ -179,6 +185,7 @@ class HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),
@@ -233,8 +240,14 @@ class HistoryScreenState extends State<HistoryScreen> {
                   hintStyle: TextStyle(color: AppColors.textSecondary),
                   border: InputBorder.none,
                 ),
-                onSubmitted: (_) => _load(),
-                onChanged: (_) => _load(),
+                onSubmitted: (_) {
+                  _searchDebounce?.cancel();
+                  _load();
+                },
+                onChanged: (_) {
+                  _searchDebounce?.cancel();
+                  _searchDebounce = Timer(const Duration(milliseconds: 300), _load);
+                },
               )
             : const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +282,7 @@ class HistoryScreenState extends State<HistoryScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,
-        child: _isLoading
+        child: _isLoading && _records.isEmpty
             ? const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

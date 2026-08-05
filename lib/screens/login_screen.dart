@@ -32,7 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     // Short realism delay while the local auth store is queried
     await Future.delayed(const Duration(milliseconds: 600));
-    final error = await AuthService.signIn(email: email, password: password);
+    String? error;
+    try {
+      error = await AuthService.signIn(email: email, password: password);
+    } catch (_) {
+      error = 'Something went wrong. Please try again.';
+    }
     if (!mounted) return;
     setState(() => _isLoading = false);
 

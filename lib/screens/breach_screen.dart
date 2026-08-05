@@ -55,11 +55,13 @@ class _BreachScreenState extends State<BreachScreen>
     });
     try {
       final breaches = await BreachService.getRecentBreaches(limit: 30);
+      if (!mounted) return;
       setState(() {
         _breaches = breaches;
         _isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to load breaches. Check your internet connection.';
         _isLoading = false;
@@ -82,6 +84,7 @@ class _BreachScreenState extends State<BreachScreen>
     });
 
     final results = await BreachService.checkEmail(email);
+    if (!mounted) return;
     setState(() {
       _isCheckingEmail = false;
       _emailBreaches = results;
@@ -117,7 +120,7 @@ class _BreachScreenState extends State<BreachScreen>
   }
 
   Widget _buildBreachList() {
-    if (_isLoading) {
+    if (_isLoading && _breaches.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
     if (_error.isNotEmpty) {
@@ -289,7 +292,7 @@ class _BreachScreenState extends State<BreachScreen>
             GestureDetector(
               onTap: () async {
                 try {
-                  final url = Uri.parse('https://haveibeenpwned.com/PwnedWebsites#${breach.name}');
+                  final url = Uri.parse('https://haveibeenpwned.com/PwnedWebsites#${Uri.encodeComponent(breach.name)}');
                   final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
                   if (!launched && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

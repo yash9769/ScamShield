@@ -59,7 +59,10 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       await ProgressService().updateStreak();
     } catch (_) {}
-    final loggedIn = await AuthService.isLoggedIn();
+    var loggedIn = false;
+    try {
+      loggedIn = await AuthService.isLoggedIn();
+    } catch (_) {}
     if (!mounted) return;
     _pulseController?.stop();
     setState(() {

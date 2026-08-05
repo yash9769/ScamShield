@@ -51,6 +51,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
       info['Error'] = 'Could not read device info';
     }
 
+    if (!mounted) return;
     setState(() {
       _deviceInfo = info;
       _isLoading = false;

@@ -100,6 +100,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
         await _saveNotes();
       }
     } catch (_) {}
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
@@ -119,6 +120,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
       builder: (_) => const _AddNoteDialog(),
     );
     if (result != null) {
+      if (!mounted) return;
       setState(() => _notes.insert(0, result));
       await _saveNotes();
     }
@@ -127,24 +129,25 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
   Future<void> _deleteNote(VaultNote note) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: const Text('Delete Note?'),
         content: Text('Delete "${note.title}" permanently?',
             style: const TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogCtx, false),
               child: const Text('Cancel',
                   style: TextStyle(color: AppColors.textSecondary))),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dialogCtx, true),
               child: const Text('Delete',
                   style: TextStyle(color: AppColors.danger))),
         ],
       ),
     );
     if (confirmed == true) {
+      if (!mounted) return;
       setState(() => _notes.removeWhere((n) => n.id == note.id));
       await _saveNotes();
     }
@@ -387,6 +390,7 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   String _selectedCategory = 'General';
+  String _error = '';
 
   final _categories = ['General', 'Password', 'PIN', 'Banking', 'Identity'];
 
@@ -395,6 +399,25 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  void _save() {
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    if (title.isEmpty || content.isEmpty) {
+      setState(() => _error = 'Please enter both a title and content.');
+      return;
+    }
+    Navigator.pop(
+      context,
+      VaultNote(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title,
+        content: content,
+        category: _selectedCategory,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -455,6 +478,13 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
                   .toList(),
               onChanged: (v) => setState(() => _selectedCategory = v!),
             ),
+            if (_error.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error,
+                style: const TextStyle(color: AppColors.danger, fontSize: 12),
+              ),
+            ],
           ],
         ),
       ),
@@ -465,21 +495,7 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
               style: TextStyle(color: AppColors.textSecondary)),
         ),
         ElevatedButton(
-          onPressed: () {
-            final title = _titleController.text.trim();
-            final content = _contentController.text.trim();
-            if (title.isEmpty || content.isEmpty) return;
-            Navigator.pop(
-              context,
-              VaultNote(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                title: title,
-                content: content,
-                category: _selectedCategory,
-                createdAt: DateTime.now(),
-              ),
-            );
-          },
+          onPressed: _save,
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
           child: const Text('Save',
               style:

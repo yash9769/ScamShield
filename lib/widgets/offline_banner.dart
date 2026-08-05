@@ -1,5 +1,7 @@
 // lib/widgets/offline_banner.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../theme.dart';
@@ -20,6 +22,7 @@ class _OfflineBannerState extends State<OfflineBanner>
   bool _isOffline = false;
   late final AnimationController _controller;
   late final Animation<double> _heightAnim;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
   @override
   void initState() {
@@ -31,7 +34,8 @@ class _OfflineBannerState extends State<OfflineBanner>
     _heightAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
 
     // Listen to connectivity changes
-    Connectivity().onConnectivityChanged.listen((results) {
+    _subscription = Connectivity().onConnectivityChanged.listen((results) {
+      if (!mounted) return;
       final offline = results.every((r) => r == ConnectivityResult.none);
       if (offline != _isOffline) {
         setState(() => _isOffline = offline);
@@ -58,6 +62,7 @@ class _OfflineBannerState extends State<OfflineBanner>
 
   @override
   void dispose() {
+    _subscription?.cancel();
     _controller.dispose();
     super.dispose();
   }

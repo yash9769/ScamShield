@@ -28,21 +28,38 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   }
 
   Future<void> _checkReadStatus() async {
-    final progress = await _progressService.load();
-    if (mounted) {
+    try {
+      final progress = await _progressService.load();
+      if (!mounted) return;
       setState(() {
         _isRead = progress.articlesRead.contains(widget.article.id);
         _isLoading = false;
       });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _markAsRead() async {
     setState(() => _isLoading = true);
-    await _progressService.markArticleRead(
-      widget.article.id,
-      widget.article.badgeId,
-    );
+    try {
+      await _progressService.markArticleRead(
+        widget.article.id,
+        widget.article.badgeId,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save progress. Please try again.'),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
     setState(() {

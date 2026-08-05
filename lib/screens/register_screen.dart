@@ -27,7 +27,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _isLoading = true);
-    final error = await AuthService.register(name: name, email: email, password: password);
+    String? error;
+    try {
+      error = await AuthService.register(name: name, email: email, password: password);
+    } catch (_) {
+      error = 'Something went wrong. Please try again.';
+    }
     if (!mounted) return;
     setState(() => _isLoading = false);
 

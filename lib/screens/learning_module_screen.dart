@@ -215,7 +215,9 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
     final questions = widget.module.quizQuestions;
 
     if (_quizCompleted) {
-      final percentage = ((_score / questions.length) * 100).toInt();
+      final percentage = questions.isEmpty
+          ? 100
+          : ((_score / questions.length) * 100).toInt();
       final passed = percentage >= 70;
 
       return Center(

@@ -26,13 +26,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadPreferences() async {
-    final prefs = await _prefsRepo.load();
-    if (mounted) setState(() => _prefs = prefs);
+    try {
+      final prefs = await _prefsRepo.load();
+      if (mounted) setState(() => _prefs = prefs);
+    } catch (_) {
+      if (mounted) setState(() => _prefs = null);
+    }
   }
 
   Future<void> _updatePreferences(UserPreferences prefs) async {
     setState(() => _prefs = prefs);
-    await _prefsRepo.save(prefs);
+    try {
+      await _prefsRepo.save(prefs);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save preference.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   void _showEditProfileSheet() {
@@ -208,7 +222,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await AuthService.signOut();
+              try {
+                await AuthService.signOut();
+              } catch (_) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not sign out. Please try again.'),
+                    backgroundColor: AppColors.danger,
+                  ),
+                );
+                return;
+              }
               if (!mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),

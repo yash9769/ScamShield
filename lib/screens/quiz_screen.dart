@@ -49,14 +49,14 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  void _next() {
+  Future<void> _next() async {
     if (_questionIndex < _questions.length - 1) {
       setState(() {
         _questionIndex++;
         _selectedOptionIndex = null;
       });
     } else {
-      _finish();
+      await _finish();
     }
   }
 
@@ -70,13 +70,23 @@ class _QuizScreenState extends State<QuizScreen> {
       correctAnswers: _correctCount,
       timeTaken: Duration.zero,
     );
-    final progress = await _progressService.recordQuizResult(result);
-    if (mounted) {
-      setState(() {
-        _isRecording = false;
-        _pointsEarned = _correctCount * 5 + (result.passed ? 50 : 0);
-        _totalPoints = progress.totalPoints;
-      });
+    try {
+      final progress = await _progressService.recordQuizResult(result);
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _pointsEarned = _correctCount * 5 + (result.passed ? 50 : 0);
+          _totalPoints = progress.totalPoints;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _pointsEarned = _correctCount * 5;
+          _totalPoints = 0;
+        });
+      }
     }
   }
 
