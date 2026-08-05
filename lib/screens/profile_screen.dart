@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/user_profile_service.dart';
+import '../services/auth_service.dart';
+import '../data/repositories/preferences_repository.dart';
+import '../data/models/user_preferences.dart';
 import 'history_screen.dart';
+import 'privacy_data_screen.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,99 +16,174 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final bool _threatAlerts = true;
-  final bool _deepfakeFilter = true;
-  final bool _cloudSync = false;
+  final PreferencesRepository _prefsRepo = PreferencesRepository();
+  UserPreferences? _prefs;
 
-  void _showEditProfileDialog() {
-    final nameController = TextEditingController(text: UserProfileService.nameNotifier.value);
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await _prefsRepo.load();
+    if (mounted) setState(() => _prefs = prefs);
+  }
+
+  Future<void> _updatePreferences(UserPreferences prefs) async {
+    setState(() => _prefs = prefs);
+    await _prefsRepo.save(prefs);
+  }
+
+  void _showEditProfileSheet() {
+    final nameController =
+        TextEditingController(text: UserProfileService.nameNotifier.value);
     final titleController = TextEditingController(
-      text: UserProfileService.titleNotifier.value.replaceAll('Intelligence Level: ', ''),
+      text: UserProfileService.titleNotifier.value
+          .replaceAll('Intelligence Level: ', ''),
     );
     String selectedAvatar = UserProfileService.avatarNotifier.value;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Edit Profile & Avatar', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Choose Avatar:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: UserProfileService.presetAvatars.map((url) {
-                    final isSel = selectedAvatar == url;
-                    return GestureDetector(
-                      onTap: () {
-                        setDialogState(() => selectedAvatar = url);
-                      },
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
                       child: Container(
-                        padding: const EdgeInsets.all(2),
+                        width: 40,
+                        height: 4,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: isSel ? AppColors.primary : Colors.transparent, width: 3),
-                        ),
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundImage: NetworkImage(url),
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Edit Profile & Avatar',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Choose how you appear across ScamShield',
+                      style:
+                          TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('Choose Avatar:',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: UserProfileService.presetAvatars.map((url) {
+                        final isSel = selectedAvatar == url;
+                        return GestureDetector(
+                          onTap: () =>
+                              setSheetState(() => selectedAvatar = url),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSel
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 26,
+                              backgroundImage: NetworkImage(url),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Security Title',
+                        prefixIcon: Icon(Icons.shield_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final newName = nameController.text.trim();
+                          final newTitle = titleController.text.trim();
+                          await UserProfileService.updateProfile(
+                            name: newName.isNotEmpty ? newName : null,
+                            title: newTitle.isNotEmpty
+                                ? 'Intelligence Level: $newTitle'
+                                : null,
+                            avatarUrl: selectedAvatar,
+                          );
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                        icon: const Icon(Icons.check),
+                        label: const Text('Save & Sync'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: BorderSide(
+                            color:
+                                AppColors.textSecondary.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    labelText: 'Security Title',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final newName = nameController.text.trim();
-                final newTitle = titleController.text.trim();
-                await UserProfileService.updateProfile(
-                  name: newName.isNotEmpty ? newName : null,
-                  title: newTitle.isNotEmpty ? 'Intelligence Level: $newTitle' : null,
-                  avatarUrl: selectedAvatar,
-                );
-                if (mounted) Navigator.pop(ctx);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Save & Sync', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            ),
-          ],
         ),
       ),
     );
@@ -117,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Secure Sign Out?'),
         content: const Text(
-          'Signing out will clear active session caches. Local vault notes remain encrypted on device.',
+          'Signing out will clear your active session. Local vault notes and scan history remain encrypted on device.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -126,13 +206,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Session cache cleared. Signed out securely.'),
-                  backgroundColor: AppColors.danger,
-                ),
+              await AuthService.signOut();
+              if (!mounted) return;
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
@@ -190,11 +270,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         actions: [
-          ValueListenableBuilder<String>(
-            valueListenable: UserProfileService.avatarNotifier,
-            builder: (ctx, avatar, _) => CircleAvatar(
-              radius: 15,
-              backgroundImage: NetworkImage(avatar),
+          // FIX: Avatar is now tappable — opens the edit profile dialog
+          GestureDetector(
+            onTap: _showEditProfileSheet,
+            child: ValueListenableBuilder<String>(
+              valueListenable: UserProfileService.avatarNotifier,
+              builder: (ctx, avatar, _) => CircleAvatar(
+                radius: 15,
+                backgroundImage: NetworkImage(avatar),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -216,23 +300,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'Threat Alerts',
                 'Real-time scam notifications',
                 hasSwitch: true,
-                switchValue: _threatAlerts,
-                onChanged: (v) {},
+                switchValue: _prefs?.notificationsEnabled ?? true,
+                onChanged: (v) => _updatePreferences(
+                  (_prefs ?? const UserPreferences()).copyWith(notificationsEnabled: v),
+                ),
               ),
               _buildSettingItem(
-                Icons.videocam_outlined,
-                'Deepfake Filter',
-                'AI-driven video verification',
+                Icons.lightbulb_outline,
+                'Daily Safety Tips',
+                'Show a scam tip on the Learn tab',
                 hasSwitch: true,
-                switchValue: _deepfakeFilter,
-                onChanged: (v) {},
+                switchValue: _prefs?.dailyTipEnabled ?? true,
+                onChanged: (v) => _updatePreferences(
+                  (_prefs ?? const UserPreferences()).copyWith(dailyTipEnabled: v),
+                ),
               ),
               _buildSettingItem(
                 Icons.history,
                 'Scan History',
-                _cloudSync ? 'Cloud sync enabled' : 'Local storage active',
+                'Stored securely on this device',
                 hasSwitch: false,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
+              ),
+              _buildSettingItem(
+                Icons.privacy_tip_outlined,
+                'Privacy & Data',
+                'Retention, storage and consent',
+                hasSwitch: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyDataScreen())),
               ),
             ]),
             const SizedBox(height: 32),
@@ -265,7 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         GestureDetector(
-          onTap: _showEditProfileDialog,
+          onTap: _showEditProfileSheet,
           child: Stack(
             children: [
               ValueListenableBuilder<String>(
@@ -277,18 +372,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     border: Border.all(color: AppColors.primary, width: 2),
                   ),
                   child: CircleAvatar(
-                    radius: 60,
+                    radius: 42,
                     backgroundImage: NetworkImage(avatar),
                   ),
                 ),
               ),
               Positioned(
                 bottom: 0,
-                right: 10,
+                right: 4,
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(5),
                   decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                  child: const Icon(Icons.edit, color: Colors.black, size: 16),
+                  child: const Icon(Icons.edit, color: Colors.black, size: 14),
                 ),
               ),
             ],
@@ -297,7 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.nameNotifier,
-          builder: (ctx, name, _) => Text(name, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          builder: (ctx, name, _) => Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.titleNotifier,
@@ -315,7 +410,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           child: ElevatedButton(
-            onPressed: _showEditProfileDialog,
+            onPressed: _showEditProfileSheet,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,

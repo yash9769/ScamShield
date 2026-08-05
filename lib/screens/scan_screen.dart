@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../services/scam_detector.dart';
+import '../data/repositories/scan_repository.dart';
+import '../data/models/scan_record.dart';
+import '../widgets/scan_now_bottom_sheet.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -69,6 +72,18 @@ class _ScanScreenState extends State<ScanScreen>
         _isAnalyzing = false;
       });
     }
+
+    try {
+      await ScanRepository().saveScan(
+        ScanRecord.fromAnalysisResult(
+          inputText: text,
+          result: result,
+          source: _activeTab == 1 ? 'Link' : 'Manual',
+        ),
+      );
+    } catch (_) {
+      // Persistence failure should not block showing the result.
+    }
   }
 
   void _clearAll() {
@@ -113,6 +128,11 @@ class _ScanScreenState extends State<ScanScreen>
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.file_present_outlined),
+            tooltip: 'More scan options',
+            onPressed: () => ScanNowBottomSheet.show(context),
+          ),
           if (_result != null || _controller.text.isNotEmpty)
             TextButton(
               onPressed: _clearAll,

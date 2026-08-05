@@ -7,7 +7,11 @@ import '../services/file_scanner_service.dart';
 import '../services/scam_detector.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
+import 'package:open_filex/open_filex.dart';
 import '../services/report_generator_service.dart';
+import '../screens/image_scan_screen.dart';
+import '../screens/voice_scan_screen.dart';
+import '../screens/batch_scan_screen.dart';
 
 class ScanNowBottomSheet extends StatefulWidget {
   const ScanNowBottomSheet({super.key});
@@ -85,6 +89,12 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
     }
   }
 
+  void _openScreen(Widget screen) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.push(MaterialPageRoute(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -94,7 +104,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -107,10 +117,10 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               const Text(
                 'Scan Content',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -142,24 +152,40 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                   icon: Icons.folder_open_rounded,
                   color: AppColors.primary,
                   title: 'Scan File',
-                  subtitle: 'Pick a .txt, .pdf, .doc, .csv, or other file from your device',
+                  subtitle: 'PDF, TXT, DOC, CSV, APK or other files on your device',
                   onTap: () => _runScan(FileScannerService.pickAndScanFile, 'File'),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 _buildOption(
                   icon: Icons.image_outlined,
                   color: AppColors.accent,
                   title: 'Scan Image',
-                  subtitle: 'Pick a screenshot or photo from your gallery',
-                  onTap: () => _runScan(FileScannerService.pickAndScanImage, 'Image'),
+                  subtitle: 'OCR text extraction from screenshots & photos',
+                  onTap: () => _openScreen(const ImageScanScreen()),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
+                _buildOption(
+                  icon: Icons.mic_none_rounded,
+                  color: AppColors.warning,
+                  title: 'Scan Voice',
+                  subtitle: 'Whisper transcription of suspicious call recordings',
+                  onTap: () => _openScreen(const VoiceScanScreen()),
+                ),
+                const SizedBox(height: 14),
                 _buildOption(
                   icon: Icons.content_paste_rounded,
                   color: AppColors.success,
                   title: 'Scan Clipboard',
-                  subtitle: 'Instantly scan whatever text is copied on your clipboard',
+                  subtitle: 'Instantly scan whatever text is copied',
                   onTap: () => _runScan(FileScannerService.scanClipboard, 'Clipboard'),
+                ),
+                const SizedBox(height: 14),
+                _buildOption(
+                  icon: Icons.library_books_rounded,
+                  color: AppColors.primary,
+                  title: 'Batch Scan',
+                  subtitle: 'Analyse up to 20 messages in parallel',
+                  onTap: () => _openScreen(const BatchScanScreen()),
                 ),
               ],
               const SizedBox(height: 8),
@@ -180,31 +206,36 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.background,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 30),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 2),
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
                   Text(subtitle,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 13)),
                 ],
               ),
             ),
@@ -240,9 +271,9 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -266,7 +297,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -314,6 +345,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                     analysis: result.analysis,
                     fileName: result.fileName,
                   );
+                  await OpenFilex.open(file.path);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Report saved to: ${file.path}')),

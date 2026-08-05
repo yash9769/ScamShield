@@ -1,19 +1,57 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/user_profile_service.dart';
+import '../data/education/progress_service.dart';
+import '../data/education/models/user_progress.dart';
+import '../data/education/daily_tips.dart';
+import '../data/education/scam_encyclopedia.dart';
+import '../data/education/quiz_data.dart';
+import '../data/repositories/preferences_repository.dart';
+import '../data/models/user_preferences.dart';
 import 'learning_module_screen.dart';
+import 'scam_encyclopedia_screen.dart';
+import 'quiz_screen.dart';
+import 'badges_screen.dart';
+import 'profile_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
 
   @override
-  State<LearnScreen> createState() => _LearnScreenState();
+  State<LearnScreen> createState() => LearnScreenState();
 }
 
-class _LearnScreenState extends State<LearnScreen> {
+class LearnScreenState extends State<LearnScreen> {
+  final ProgressService _progressService = ProgressService();
+  final PreferencesRepository _prefsRepo = PreferencesRepository();
+  UserProgress? _progress;
+  UserPreferences? _prefs;
+
+  void refresh() {
+    _loadProgress();
+    _loadPreferences();
+  }
+
   // Multi-question Spot the Scam Challenge
   int _challengeIndex = 0;
   int _score = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+    _loadPreferences();
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await _progressService.load();
+    if (mounted) setState(() => _progress = progress);
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await _prefsRepo.load();
+    if (mounted) setState(() => _prefs = prefs);
+  }
 
   final List<Map<String, dynamic>> _challenges = [
     {
@@ -291,11 +329,19 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
           ],
         ),
         actions: [
-          ValueListenableBuilder<String>(
-            valueListenable: UserProfileService.avatarNotifier,
-            builder: (ctx, avatar, _) => CircleAvatar(
-              radius: 15,
-              backgroundImage: NetworkImage(avatar),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+            child: ValueListenableBuilder<String>(
+              valueListenable: UserProfileService.avatarNotifier,
+              builder: (ctx, avatar, _) => CircleAvatar(
+                radius: 15,
+                backgroundImage: NetworkImage(avatar),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -307,6 +353,12 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildVigilanceScore(),
+            if (_prefs?.dailyTipEnabled ?? true) ...[
+              const SizedBox(height: 16),
+              _buildDailyTip(),
+            ],
+            const SizedBox(height: 16),
+            _buildLearnHub(),
             const SizedBox(height: 32),
             const Row(
               children: [
@@ -367,6 +419,10 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
   }
 
   Widget _buildVigilanceScore() {
+    final progress = _progress;
+    final score = progress?.vigilanceScore ?? 0;
+    final rank = progress?.rank ?? 'Newcomer';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -383,7 +439,7 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
                 width: 120,
                 height: 120,
                 child: CircularProgressIndicator(
-                  value: 0.78 + (_score * 0.04).clamp(0.0, 0.2),
+                  value: score / 100,
                   strokeWidth: 8,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -391,17 +447,144 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
               ),
               Column(
                 children: [
-                  Text('${78 + (_score * 4)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  Text('$score', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
                   const Text('VIGILANCE SCORE', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text('Elite Defender', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(rank, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          const Text('You’re in the top 5% of secure users this week.', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+          Text(
+            'Read articles, take quizzes and keep your streak to climb the ranks.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDailyTip() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lightbulb_outline, color: AppColors.primary, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('DAILY TIP', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(
+                  DailyTips.getTodaysTip(),
+                  style: const TextStyle(fontSize: 13, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLearnHub() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('LEARNING HUB', style: TextStyle(color: AppColors.accent, fontSize: 11, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildHubCard(
+                icon: Icons.menu_book_rounded,
+                label: 'Encyclopedia',
+                subtitle: '${ScamEncyclopedia.articles.length} guides',
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ScamEncyclopediaScreen()),
+                  );
+                  _loadProgress();
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildHubCard(
+                icon: Icons.quiz_rounded,
+                label: 'Awareness Quiz',
+                subtitle: '${QuizData.questions.length} questions',
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const QuizScreen()),
+                  );
+                  _loadProgress();
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildHubCard(
+                icon: Icons.military_tech_rounded,
+                label: 'Badges',
+                subtitle: '${_progress?.badgesEarned.length ?? 0} earned',
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BadgesScreen()),
+                  );
+                  _loadProgress();
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHubCard({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: AppColors.primary, size: 26),
+            const SizedBox(height: 12),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+          ],
+        ),
       ),
     );
   }

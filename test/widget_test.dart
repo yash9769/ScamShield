@@ -1,30 +1,47 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke test: the app boots through the branded splash to the login screen
+// and validates empty input.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:scamshield/main.dart';
 
+Future<void> pumpThroughSplash(WidgetTester tester) async {
+  await tester.pumpWidget(const ScamShieldApp());
+  // Let the mock SharedPreferences-backed bootstrap resolve, then swap to the
+  // login screen. Explicit pumps (not pumpAndSettle) because the splash uses
+  // an indeterminate loading bar while it is visible.
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('App shows a branded splash before the login screen',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const ScamShieldApp());
+    expect(find.text('ScamShield'), findsOneWidget);
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('App boots to the login screen', (WidgetTester tester) async {
+    await pumpThroughSplash(tester);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    expect(find.text('Welcome to ScamShield'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
+    expect(find.text('Create Account'), findsOneWidget);
+  });
+
+  testWidgets('Sign In shows validation when fields are empty',
+      (WidgetTester tester) async {
+    await pumpThroughSplash(tester);
+
+    await tester.tap(find.text('Sign In'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Please enter both email and password.'), findsOneWidget);
   });
 }

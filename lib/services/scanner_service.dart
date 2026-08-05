@@ -10,10 +10,15 @@ class ScannerService {
   ScannerService({String? baseUrl}) 
       : baseUrl = baseUrl ?? (Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
 
-  Future<Map<String, dynamic>> scanApk(PlatformFile apkFile) async {
+  /// Scans an APK against the backend. The backend runs the full pipeline and
+  /// returns the finished report synchronously. Falls back to the on-device
+  /// static engine whenever the backend is unreachable or times out.
+  Future<Map<String, dynamic>> scanApk(
+    PlatformFile apkFile, {
+    void Function(String message, int percentage)? onProgress,
+  }) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/scan'));
-      
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/scan'));
       request.files.add(
         await http.MultipartFile.fromPath(
           'file',
@@ -22,12 +27,12 @@ class ScannerService {
         ),
       );
 
-      // Timeout backend connection after 5 seconds
-      var streamedResponse = await request.send().timeout(const Duration(seconds: 5));
-      var response = await http.Response.fromStream(streamedResponse);
+      // Timeout backend connection; the app animates progress while waiting.
+      final streamed = await request.send().timeout(const Duration(seconds: 5));
+      final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
         data['scan_mode'] = 'server';
         return data;
       }

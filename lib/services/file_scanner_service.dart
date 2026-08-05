@@ -4,7 +4,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'scam_detector.dart';
 import 'apk_analyzer_service.dart';
@@ -31,8 +30,6 @@ class FileScanResult {
 }
 
 class FileScannerService {
-  static final ImagePicker _imagePicker = ImagePicker();
-
   /// Requests storage permission and picks a text/document file to scan.
   static Future<FileScanResult?> pickAndScanFile() async {
     try {
@@ -110,41 +107,6 @@ class FileScannerService {
     );
   }
 
-  /// Picks an image from gallery and analyses its filename/metadata for scam indicators.
-  static Future<FileScanResult?> pickAndScanImage() async {
-    try {
-      await _requestPhotoPermission();
-
-      final XFile? picked = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-
-      if (picked != null) {
-        final name = picked.name;
-        final content = 'Image OCR Content\nFilename: $name\nPath: ${picked.path}\nExtracted text: Urgent Security Verification Required. Transfer \$500 to unlock account.';
-        final analysis = ScamDetector.analyze(content);
-
-        return FileScanResult(
-          analysis: analysis,
-          fileName: name,
-          source: ScanSource.image,
-          rawContent: content,
-        );
-      }
-    } catch (_) {}
-
-    // Fallback demo screenshot scan so image pick ALWAYS produces results
-    const sampleImageContent = 'OCR Scan Result:\nSMS Screenshot\nSender: +1 (800) 555-0199\n"ALERT: Unusual login attempt from Russia. Verify credentials immediately at: security-login-portal.net"';
-    final analysis = ScamDetector.analyze(sampleImageContent);
-    return FileScanResult(
-      analysis: analysis,
-      fileName: 'Bank_Alert_Screenshot.png',
-      source: ScanSource.image,
-      rawContent: sampleImageContent,
-    );
-  }
-
   /// Reads clipboard text and runs the scam detector.
   static Future<FileScanResult?> scanClipboard() async {
     try {
@@ -186,23 +148,6 @@ class FileScannerService {
       }
     }
     // iOS: file_picker handles permissions internally via NSOpenPanel
-    return true;
-  }
-
-  static Future<bool> _requestPhotoPermission() async {
-    if (Platform.isAndroid) {
-      final sdkInt = await _getAndroidSdkInt();
-      if (sdkInt >= 33) {
-        final status = await Permission.photos.request();
-        return status.isGranted || status.isLimited;
-      } else {
-        final status = await Permission.storage.request();
-        return status.isGranted;
-      }
-    } else if (Platform.isIOS) {
-      final status = await Permission.photos.request();
-      return status.isGranted || status.isLimited;
-    }
     return true;
   }
 

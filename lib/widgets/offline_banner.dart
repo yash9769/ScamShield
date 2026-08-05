@@ -68,11 +68,11 @@ class _OfflineBannerState extends State<OfflineBanner>
       children: [
         SizeTransition(
           sizeFactor: _heightAnim,
-          axisAlignment: -1,
+          alignment: Alignment.topCenter,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: AppColors.warning.withOpacity(0.9),
+            color: AppColors.warning.withValues(alpha: 0.9),
             child: const Row(
               children: [
                 Icon(Icons.wifi_off, color: Colors.black, size: 18),

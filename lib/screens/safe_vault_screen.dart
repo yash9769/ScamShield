@@ -225,9 +225,9 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.08),
+              color: AppColors.success.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: const Row(
               children: [
@@ -262,7 +262,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: categoryColor.withOpacity(0.2)),
+        border: Border.all(color: categoryColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +272,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: categoryColor.withOpacity(0.1),
+                  color: categoryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(note.category,
@@ -440,7 +440,7 @@ class _AddNoteDialogState extends State<_AddNoteDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               dropdownColor: AppColors.surface,
               decoration: InputDecoration(
                 filled: true,

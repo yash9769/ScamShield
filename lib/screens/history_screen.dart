@@ -1,66 +1,36 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/scan_now_bottom_sheet.dart';
-import '../services/user_profile_service.dart';
+import '../data/repositories/scan_repository.dart';
+import '../data/models/scan_record.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  State<HistoryScreen> createState() => HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
-  int _selectedFilterIndex = 0; // 0 = All Scans, 1 = Threats Only, 2 = Phone Calls
-  bool _isSearching = false;
+class HistoryScreenState extends State<HistoryScreen> {
+  final ScanRepository _repo = ScanRepository();
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Map<String, dynamic>> _allHistoryItems = [
-    {
-      'tag': 'SCAM DETECTED',
-      'title': 'Phishing SMS',
-      'description': '"Your account has been locked. Click here to verify: bit.ly/secure-auth-4921"',
-      'time': 'Today, 2:45 PM',
-      'source': 'Source: +1 (555) 012-9923',
-      'color': AppColors.danger,
-      'icon': Icons.error_outline,
-      'isThreat': true,
-      'isPhone': false,
-    },
-    {
-      'tag': 'SAFE SCAN',
-      'title': 'Website Verification',
-      'description': 'Official Portal: bank-of-america.com/login',
-      'time': 'Today, 11:20 AM',
-      'source': 'Source: Safari Browser',
-      'color': AppColors.success,
-      'icon': Icons.check_circle_outline,
-      'isThreat': false,
-      'isPhone': false,
-    },
-    {
-      'tag': 'DANGER',
-      'title': 'Spoofed Identity',
-      'description': 'Suspected IRS Impersonator. High risk of social engineering.',
-      'time': 'Yesterday, 9:15 PM',
-      'source': 'Source: +1 (202) 555-0144',
-      'color': AppColors.danger,
-      'icon': Icons.phone_missed,
-      'isThreat': true,
-      'isPhone': true,
-    },
-    {
-      'tag': 'SAFE SCAN',
-      'title': 'Known Contact',
-      'description': 'Inbound call from "Sarah Wilson" (Verified Contact).',
-      'time': 'Yesterday, 6:30 PM',
-      'source': 'Source: Contact List',
-      'color': AppColors.success,
-      'icon': Icons.verified_user_outlined,
-      'isThreat': false,
-      'isPhone': true,
-    },
-  ];
+  List<ScanRecord> _records = [];
+  ScanStatistics? _stats;
+  bool _isLoading = true;
+  bool _isSearching = false;
+
+  // 0 = All Scans, 1 = Threats Only, 2 = Safe Scans
+  int _selectedFilterIndex = 0;
+
+  /// Public hook so the shell can reload data when the tab is opened.
+  void refresh() => _load();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   void dispose() {
@@ -68,24 +38,84 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _filteredItems {
-    final query = _searchController.text.trim().toLowerCase();
-    return _allHistoryItems.where((item) {
-      if (_selectedFilterIndex == 1 && item['isThreat'] != true) return false;
-      if (_selectedFilterIndex == 2 && item['isPhone'] != true) return false;
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
+    final query = _searchController.text.trim();
+    final records = query.isEmpty
+        ? await _repo.loadHistory()
+        : await _repo.searchScans(query);
+    final stats = await _repo.getStatistics();
+    if (mounted) {
+      setState(() {
+        _records = records;
+        _stats = stats;
+        _isLoading = false;
+      });
+    }
+  }
 
-      if (query.isNotEmpty) {
-        final title = (item['title'] as String).toLowerCase();
-        final desc = (item['description'] as String).toLowerCase();
-        final source = (item['source'] as String).toLowerCase();
-        return title.contains(query) || desc.contains(query) || source.contains(query);
+  List<ScanRecord> get _filteredRecords {
+    return _records.where((r) {
+      if (_selectedFilterIndex == 1 && !r.isFlagged &&
+          r.classification != 'suspicious') {
+        return false;
+      }
+      if (_selectedFilterIndex == 2 && r.classification != 'safe') {
+        return false;
       }
       return true;
     }).toList();
   }
 
-  void _showItemDetails(Map<String, dynamic> item) {
-    showModalBottomSheet(
+  Future<void> _deleteRecord(ScanRecord record) async {
+    final id = record.id;
+    if (id == null) return;
+    await _repo.deleteScan(id);
+    await _load();
+  }
+
+  Future<void> _clearHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Clear Scan History?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'This will permanently delete all saved scan records from this device. This cannot be undone.',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Delete All', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _repo.clearHistory();
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scan history cleared.'),
+            backgroundColor: AppColors.surface,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showItemDetails(ScanRecord record) {
+    final (tag, color, icon) = _recordStyle(record);    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
@@ -107,28 +137,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Icon(item['icon'] as IconData, color: item['color'] as Color, size: 28),
+                  Icon(icon, color: color, size: 28),
                   const SizedBox(width: 12),
-                  Text(item['title'] as String, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(_recordTitle(record), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (item['color'] as Color).withValues(alpha: 0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(item['tag'] as String, style: TextStyle(color: item['color'] as Color, fontWeight: FontWeight.bold, fontSize: 12)),
+                child: Text(tag, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
               ),
               const SizedBox(height: 16),
               const Text('Scanned Content / Context:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               const SizedBox(height: 6),
-              Text(item['description'] as String, style: const TextStyle(fontSize: 14, height: 1.5)),
+              Text(record.inputText, style: const TextStyle(fontSize: 14, height: 1.5)),
               const SizedBox(height: 16),
-              Text(item['source'] as String, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const Text('Analysis Summary:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 6),
+              Text(record.summary, style: const TextStyle(fontSize: 14, height: 1.5)),
+              const SizedBox(height: 16),
+              Text('Source: ${record.source ?? 'Manual'}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               const SizedBox(height: 4),
-              Text('Timestamp: ${item['time']}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              Text('Risk Score: ${record.riskScore}/100', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 4),
+              Text('Timestamp: ${_formatTime(record.timestamp)}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -149,6 +185,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  (String, Color, IconData) _recordStyle(ScanRecord record) {
+    switch (record.classification) {
+      case 'scam':
+        return ('SCAM DETECTED', AppColors.danger, Icons.error_outline);
+      case 'suspicious':
+        return ('SUSPICIOUS', AppColors.warning, Icons.help_outline_rounded);
+      default:
+        return ('SAFE SCAN', AppColors.success, Icons.check_circle_outline);
+    }
+  }
+
+  String _recordTitle(ScanRecord record) {
+    switch (record.classification) {
+      case 'scam':
+        return 'Scam Detected';
+      case 'suspicious':
+        return 'Suspicious Content';
+      default:
+        return 'Safe Content';
+    }
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(time.year, time.month, time.day);
+    final diff = today.difference(day).inDays;
+    final hh = time.hour.toString().padLeft(2, '0');
+    final mm = time.minute.toString().padLeft(2, '0');
+    if (diff == 0) return 'Today, $hh:$mm';
+    if (diff == 1) return 'Yesterday, $hh:$mm';
+    return '${time.month}/${time.day}/${time.year}, $hh:$mm';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,7 +233,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   hintStyle: TextStyle(color: AppColors.textSecondary),
                   border: InputBorder.none,
                 ),
-                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => _load(),
+                onChanged: (_) => _load(),
               )
             : const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,63 +249,121 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onPressed: () {
               setState(() {
                 _isSearching = !_isSearching;
-                if (!_isSearching) _searchController.clear();
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _load();
+                }
               });
             },
           ),
-          ValueListenableBuilder<String>(
-            valueListenable: UserProfileService.avatarNotifier,
-            builder: (ctx, avatar, _) => CircleAvatar(
-              radius: 15,
-              backgroundImage: NetworkImage(avatar),
+          if (_records.isNotEmpty && !_isSearching)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.danger),
+              tooltip: 'Clear history',
+              onPressed: _clearHistory,
             ),
-          ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
         ],
         toolbarHeight: 90,
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _buildFilterChips(),
-                const SizedBox(height: 24),
-                if (_filteredItems.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(
-                      child: Text('No matching scan logs found.', style: TextStyle(color: AppColors.textSecondary)),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.primary,
+        child: _isLoading
+            ? const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                        strokeWidth: 4,
+                      ),
                     ),
-                  )
-                else
-                  ..._filteredItems.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildHistoryItem(
-                          item['tag'] as String,
-                          item['title'] as String,
-                          item['description'] as String,
-                          item['time'] as String,
-                          item['source'] as String,
-                          item['color'] as Color,
-                          item['icon'] as IconData,
-                          onTap: () => _showItemDetails(item),
-                        ),
-                      )),
-                const SizedBox(height: 24),
-                _buildWeeklyProtectionCard(),
-                const SizedBox(height: 80), // Space for FAB
-              ],
+                    SizedBox(height: 16),
+                    Text('Loading your scans...',
+                        style: TextStyle(color: AppColors.textSecondary)),
+                  ],
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  _buildFilterChips(),
+                  const SizedBox(height: 24),
+                  if (_filteredRecords.isEmpty)
+                    _buildEmptyState()
+                  else
+                    ..._filteredRecords.map((record) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildHistoryItem(record),
+                        )),
+                  const SizedBox(height: 24),
+                  if (_stats != null) _buildWeeklyProtectionCard(_stats!),
+                  const SizedBox(height: 80),
+                ],
+              ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => ScanNowBottomSheet.show(context),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.qr_code_scanner, color: Colors.black),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Column(
+        children: [
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25),
+              ),
+            ),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              color: AppColors.primary,
+              size: 40,
             ),
           ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton(
+          const SizedBox(height: 20),
+          const Text(
+            'No scans yet',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your scanned links and QR codes\nwill appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
               onPressed: () => ScanNowBottomSheet.show(context),
-              backgroundColor: AppColors.primary,
-              child: const Icon(Icons.qr_code_scanner, color: Colors.black),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Start Scanning'),
             ),
           ),
         ],
@@ -249,7 +378,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         const SizedBox(width: 8),
         _buildChip('Threats Only', 1),
         const SizedBox(width: 8),
-        _buildChip('Phone Calls', 2),
+        _buildChip('Safe Scans', 2),
       ],
     );
   }
@@ -276,77 +405,94 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildHistoryItem(
-    String tag,
-    String title,
-    String description,
-    String time,
-    String source,
-    Color color,
-    IconData icon, {
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
+  Widget _buildHistoryItem(ScanRecord record) {
+    final (tag, color, icon) = _recordStyle(record);
+    return Dismissible(
+      key: ValueKey('scan-${record.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.danger.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: color.withValues(alpha: 0.3)),
+        child: const Icon(Icons.delete_outline, color: AppColors.danger),
+      ),
+      onDismissed: (_) => _deleteRecord(record),
+      child: InkWell(
+        onTap: () => _showItemDetails(record),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: color.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                        const SizedBox(width: 4),
+                        Text(tag, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                      const SizedBox(width: 4),
-                      Text(tag, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ],
+                  Text(_formatTime(record.timestamp), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(icon, color: color, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _recordTitle(record),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-                Text(time, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(width: 12),
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-            const SizedBox(height: 16),
-            const Divider(color: AppColors.textSecondary, height: 1),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(source, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              ],
-            ),
-          ],
+                  Text('${record.riskScore}', style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                record.inputText,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.textSecondary, height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(record.source ?? 'Manual', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildWeeklyProtectionCard() {
+  Widget _buildWeeklyProtectionCard(ScanStatistics stats) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -361,16 +507,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Weekly Protection', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text('Scan Statistics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('You’ve successfully avoided 14 potential threats this week.', style: TextStyle(color: AppColors.textSecondary)),
+          const Text('Real-time stats across all your saved scans.', style: TextStyle(color: AppColors.textSecondary)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStat('14', 'BLOCKED', AppColors.primary),
-              _buildStat('89', 'VERIFIED', AppColors.success),
-              _buildStat('103', 'TOTAL SCANS', Colors.white),
+              _buildStat('${stats.threatsDetected}', 'THREATS', AppColors.primary),
+              _buildStat('${stats.safeCount}', 'VERIFIED', AppColors.success),
+              _buildStat('${stats.totalScans}', 'TOTAL SCANS', Colors.white),
             ],
           ),
         ],

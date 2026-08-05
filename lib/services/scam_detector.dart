@@ -29,6 +29,44 @@ enum IconCategory {
   safe,
 }
 
+/// OSINT enrichment details returned by the backend analysis pipeline.
+class OsintDetail {
+  final List<String> urlsFound;
+  final List<String> maliciousUrls;
+  final int? whoisDomainAgeDays;
+  final String? whoisRegistrar;
+  final bool virustotalChecked;
+  final int osintScore;
+
+  const OsintDetail({
+    this.urlsFound = const [],
+    this.maliciousUrls = const [],
+    this.whoisDomainAgeDays,
+    this.whoisRegistrar,
+    this.virustotalChecked = false,
+    this.osintScore = 0,
+  });
+
+  bool get hasData =>
+      urlsFound.isNotEmpty ||
+      maliciousUrls.isNotEmpty ||
+      whoisDomainAgeDays != null ||
+      whoisRegistrar != null ||
+      osintScore > 0;
+
+  factory OsintDetail.fromJson(Map<String, dynamic> json) {
+    return OsintDetail(
+      urlsFound: (json['urls_found'] as List?)?.cast<String>() ?? const [],
+      maliciousUrls:
+          (json['malicious_urls'] as List?)?.cast<String>() ?? const [],
+      whoisDomainAgeDays: json['whois_domain_age_days'] as int?,
+      whoisRegistrar: json['whois_registrar'] as String?,
+      virustotalChecked: json['virustotal_checked'] as bool? ?? false,
+      osintScore: json['osint_score'] as int? ?? 0,
+    );
+  }
+}
+
 /// The full analysis result returned by [ScamDetector.analyze].
 class AnalysisResult {
   final ScamClassification classification;
@@ -36,6 +74,11 @@ class AnalysisResult {
   final List<DetectionReason> reasons;
   final String summary;
   final bool aiPowered;
+  final String category;
+  final int confidence;
+  final String recommendedAction;
+  final String source;
+  final OsintDetail? osint;
 
   const AnalysisResult({
     required this.classification,
@@ -43,6 +86,11 @@ class AnalysisResult {
     required this.reasons,
     required this.summary,
     this.aiPowered = false, // false = local heuristic, true = Gemini AI
+    this.category = 'unknown',
+    this.confidence = 50,
+    this.recommendedAction = 'be_cautious',
+    this.source = 'heuristic',
+    this.osint,
   });
 }
 

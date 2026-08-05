@@ -165,10 +165,10 @@ class _BreachScreenState extends State<BreachScreen>
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.danger.withOpacity(0.15), AppColors.surface],
+            colors: [AppColors.danger.withValues(alpha: 0.15), AppColors.surface],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.danger.withOpacity(0.25)),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.25)),
         ),
         child: Row(
           children: [
@@ -216,11 +216,11 @@ class _BreachScreenState extends State<BreachScreen>
                   'https://www.google.com/s2/favicons?domain=${breach.domain}&sz=32',
                   width: 32,
                   height: 32,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.1),
+                      color: AppColors.danger.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.lock_open, color: AppColors.danger, size: 18),
@@ -246,7 +246,7 @@ class _BreachScreenState extends State<BreachScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.danger.withOpacity(0.1),
+                    color: AppColors.danger.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text('VERIFIED',
@@ -287,10 +287,23 @@ class _BreachScreenState extends State<BreachScreen>
           if (breach.domain.isNotEmpty) ...[
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => launchUrl(
-                Uri.parse('https://haveibeenpwned.com/PwnedWebsites#${breach.name}'),
-                mode: LaunchMode.externalApplication,
-              ),
+              onTap: () async {
+                try {
+                  final url = Uri.parse('https://haveibeenpwned.com/PwnedWebsites#${breach.name}');
+                  final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+                  if (!launched && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open web link.')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to launch URL: $e')),
+                    );
+                  }
+                }
+              },
               child: const Row(
                 children: [
                   Icon(Icons.open_in_new, size: 12, color: AppColors.primary),
@@ -319,7 +332,7 @@ class _BreachScreenState extends State<BreachScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,9 +422,9 @@ class _BreachScreenState extends State<BreachScreen>
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.08),
+          color: AppColors.success.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.success.withOpacity(0.4)),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
@@ -444,9 +457,9 @@ class _BreachScreenState extends State<BreachScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.danger.withOpacity(0.08),
+            color: AppColors.danger.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+            border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -484,7 +497,7 @@ class _BreachScreenState extends State<BreachScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
