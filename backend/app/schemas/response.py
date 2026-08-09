@@ -134,3 +134,20 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str
     request_id: Optional[str] = None
+
+
+class Breach(BaseModel):
+    name: str = Field(..., description="Name of the breach")
+    domain: str = Field(..., description="Domain of the breached site")
+    date: str = Field(..., description="Date of the breach (YYYY-MM-DD or year)")
+    dataClasses: List[str] = Field(..., description="List of exposed data types")
+
+
+class BreachResponse(BaseModel):
+    email: str = Field(..., description="The queried email address")
+    exposed: bool = Field(..., description="True if any exposures were found")
+    breachCount: int = Field(..., description="Total number of breaches found")
+    breaches: List[Breach] = Field(..., description="List of breaches")
+    source: str = Field(default="XposedOrNot", description="Data source")
+    checkedAt: str = Field(..., description="Timestamp when checked")
+

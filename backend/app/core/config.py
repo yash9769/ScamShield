@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     VIRUSTOTAL_API_KEY: str = Field(default="", description="VirusTotal API key")
     GOOGLE_SAFE_BROWSING_API_KEY: str = Field(default="", description="Google Safe Browsing API key")
     ABUSEIPDB_API_KEY: str = Field(default="", description="AbuseIPDB API key")
+    XPOSEDORNOT_API_KEY: str = Field(default="", description="XposedOrNot API key")
     OSINT_TIMEOUT: float = Field(default=8.0, description="OSINT service timeout in seconds")
     OSINT_CACHE_TTL: int = Field(default=3600, description="OSINT cache TTL in seconds")
 
@@ -71,6 +72,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_VOICE: str = Field(default="10/minute", description="Rate limit for /analyze-voice")
     RATE_LIMIT_IMAGE: str = Field(default="10/minute", description="Rate limit for /analyze-image")
     RATE_LIMIT_BATCH: str = Field(default="20/minute", description="Rate limit for /analyze-batch")
+    RATE_LIMIT_BREACH: str = Field(default="30/minute", description="Rate limit for /breach")
 
     # ── Voice / Whisper ───────────────────────────────────────────────────────
     WHISPER_MODEL: str = Field(
