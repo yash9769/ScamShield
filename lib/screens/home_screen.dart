@@ -7,83 +7,32 @@ import 'breach_screen.dart';
 import 'safe_vault_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
+import '../data/repositories/scan_repository.dart';
+import '../data/models/scan_record.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  void _showUpgradeModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(Icons.workspace_premium, color: AppColors.primary, size: 28),
-            SizedBox(width: 10),
-            Text('ScamShield Pro', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Unlock ultimate digital protection for your ecosystem:'),
-            const SizedBox(height: 16),
-            _buildProFeature(Icons.shield_moon, 'Real-time SMS & Call Silencer'),
-            _buildProFeature(Icons.vpn_key, '256-bit Encrypted Private VPN'),
-            _buildProFeature(Icons.remove_red_eye_outlined, 'Dark Web Breach Alerts'),
-            _buildProFeature(Icons.psychology, 'Unlimited Neural AI Image Scans'),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Text(
-                  '\$4.99 / month • 7-day free trial',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Pro Trial Activated! Welcome to ScamShield Pro.'),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Start Free Trial', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+class _HomeScreenState extends State<HomeScreen> {
+  final ScanRepository _repo = ScanRepository();
+  ScanStatistics? _stats;
+  List<ScanRecord> _recent = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
   }
 
-  static Widget _buildProFeature(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.success, size: 18),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
-        ],
-      ),
-    );
+  Future<void> _loadStats() async {
+    try {
+      final stats  = await _repo.getStatistics();
+      final recent = await _repo.loadHistory(limit: 3);
+      if (mounted) setState(() { _stats = stats; _recent = recent; });
+    } catch (_) {}
   }
 
   @override
@@ -92,97 +41,130 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset('assets/icon.png', height: 28, width: 28, errorBuilder: (c,e,s) => const Icon(Icons.shield, color: AppColors.primary)),
-            const SizedBox(width: 8),
-            const Text('ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/icon.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('ScamShield', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none),
+            icon: const Icon(Icons.notifications_none_outlined, color: AppColors.textPrimary),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('No new security notifications.'),
+                  content: Text('No active security notifications.'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
+                  .then((_) => _loadStats());
             },
             child: ValueListenableBuilder<String>(
               valueListenable: UserProfileService.avatarNotifier,
-              builder: (ctx, avatar, _) => CircleAvatar(
-                radius: 15,
-                backgroundImage: NetworkImage(avatar),
+              builder: (ctx, avatar, _) => Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary, width: 1.5),
+                ),
+                child: CircleAvatar(
+                  radius: 14,
+                  backgroundImage: NetworkImage(avatar),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatusSection(context),
-            const SizedBox(height: 24),
-            _buildStatsGrid(),
-            const SizedBox(height: 32),
-            const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildQuickActions(context),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Threat Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
-                  },
-                  child: const Text('VIEW ALL >', style: TextStyle(color: AppColors.primary, fontSize: 12)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildThreatActivity(),
-            const SizedBox(height: 24),
-            _buildUpgradeBanner(context),
-          ],
+      body: RefreshIndicator(
+        onRefresh: _loadStats,
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatusSection(context),
+              const SizedBox(height: 24),
+              _buildStatsGrid(),
+              const SizedBox(height: 28),
+              const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              const SizedBox(height: 14),
+              _buildQuickActions(context),
+              const SizedBox(height: 28),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Threat Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
+                          .then((_) => _loadStats());
+                    },
+                    child: const Text('VIEW ALL >', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildThreatActivity(),
+              const SizedBox(height: 24),
+              _buildUpgradeBanner(context),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildStatusSection(BuildContext context) {
+    final hasScans = (_stats?.totalScans ?? 0) > 0;
+    final statusColor = hasScans && (_stats?.scamCount ?? 0) > 0 ? AppColors.warning : AppColors.success;
+    final statusText = hasScans && (_stats?.scamCount ?? 0) > 0 ? 'THREATS DETECTED' : 'SHIELD ACTIVE';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
+              color: statusColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+              border: Border.all(color: statusColor.withOpacity(0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle)),
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
                 const SizedBox(width: 8),
-                const Text('SHIELD ACTIVE', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(statusText, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ],
             ),
           ),
@@ -191,29 +173,33 @@ class HomeScreen extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Container(
-                width: 150,
-                height: 150,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary, width: 2),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.6), width: 2),
                   boxShadow: [
-                    BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 5),
+                    BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 24, spreadRadius: 4),
                   ],
                 ),
               ),
-              Column(
+              const Column(
                 children: [
-                  const Text('Secure', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                  Text('STATUS', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 40),
+                  SizedBox(height: 6),
+                  Text('Protected', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text('ECOSYSTEM', style: TextStyle(color: AppColors.textSecondary, fontSize: 10, letterSpacing: 1.5)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Your digital ecosystem is currently under continuous monitoring. No active threats detected in the last 24 hours.',
+          Text(
+            hasScans
+                ? 'Your device is protected. Total ${_stats!.totalScans} scan(s) performed.'
+                : 'Your digital ecosystem is under continuous monitoring. Tap below to run your first scan.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 24),
           const AnimatedScanNowButton(),
@@ -223,38 +209,50 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildStatsGrid() {
+    final s = _stats;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
       childAspectRatio: 1.5,
       children: [
-        _buildStatCard('APPS MONITORED', '142', Icons.verified_user_outlined),
-        _buildStatCard('BLOCKED CALLS', '24', Icons.warning_amber_rounded),
-        _buildStatCard('VPN UPTIME', '99.9%', Icons.language),
-        _buildStatCard('THREATS KILLED', '1,028', Icons.check_circle_outline),
+        _buildStatCard('TOTAL SCANS', s == null ? '0' : '${s.totalScans}', Icons.radar_rounded, AppColors.primary),
+        _buildStatCard('SCAMS CAUGHT', s == null ? '0' : '${s.scamCount}', Icons.warning_amber_rounded, AppColors.danger),
+        _buildStatCard('SUSPICIOUS', s == null ? '0' : '${s.suspiciousCount}', Icons.help_outline_rounded, AppColors.warning),
+        _buildStatCard('AVG RISK SCORE', s == null ? '0' : '${s.averageRiskScore.toStringAsFixed(0)}', Icons.analytics_outlined, AppColors.success),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: accentColor, size: 20),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: accentColor.withOpacity(0.5), shape: BoxShape.circle),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -264,7 +262,7 @@ class HomeScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildActionIcon(context, Icons.sd_card, 'SIM LOCK', () {
+        _buildActionIcon(context, Icons.sd_card_outlined, 'SIM LOCK', () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SimLockScreen()));
         }),
         _buildActionIcon(context, Icons.email_outlined, 'EMAIL CHECK', () {
@@ -283,32 +281,79 @@ class HomeScreen extends StatelessWidget {
   Widget _buildActionIcon(BuildContext context, IconData icon, String label, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 65,
+            height: 65,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 3)),
+              ],
             ),
-            child: Icon(icon, color: AppColors.primary),
+            child: Icon(icon, color: AppColors.primary, size: 26),
           ),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
   Widget _buildThreatActivity() {
+    if (_recent.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.shield_outlined, color: AppColors.textSecondary, size: 36),
+            SizedBox(height: 10),
+            Text('No Threat Scans Yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            SizedBox(height: 4),
+            Text(
+              'Your scan history is completely clean. Tap SCAN NOW to run your first check.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
     return Column(
-      children: [
-        _buildThreatItem('Suspicious URL Blocked', 'secure-bank-login.net', '2M AGO', Icons.cancel, AppColors.danger),
-        const SizedBox(height: 12),
-        _buildThreatItem('Spam Call Silenced', '+1 (555) 0123', '1H AGO', Icons.phone_disabled, AppColors.warning),
-      ],
+      children: _recent.asMap().entries.map((e) {
+        final r = e.value;
+        final Color color;
+        final IconData icon;
+        switch (r.classification.toLowerCase()) {
+          case 'scam': color = AppColors.danger; icon = Icons.error_outline; break;
+          case 'suspicious': color = AppColors.warning; icon = Icons.warning_amber_outlined; break;
+          default: color = AppColors.success; icon = Icons.check_circle_outline;
+        }
+        final diff = DateTime.now().difference(r.timestamp);
+        final timeStr = diff.inMinutes < 1 ? 'Just now'
+            : diff.inHours < 1 ? '${diff.inMinutes}m ago'
+            : diff.inDays < 1 ? '${diff.inHours}h ago'
+            : '${diff.inDays}d ago';
+        return Padding(
+          padding: EdgeInsets.only(bottom: e.key < _recent.length - 1 ? 12 : 0),
+          child: _buildThreatItem(
+            r.classification.toUpperCase(),
+            r.inputText.length > 45 ? '${r.inputText.substring(0, 45)}...' : r.inputText,
+            timeStr, icon, color,
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -317,21 +362,23 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
+                const SizedBox(height: 2),
                 Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ],
             ),
@@ -344,27 +391,34 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildUpgradeBanner(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.accent.withValues(alpha: 0.8), AppColors.background]),
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [AppColors.primary.withOpacity(0.12), AppColors.surface],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Upgrade to Pro', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Get real-time identity theft protection and a private 256-bit VPN.', style: TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => _showUpgradeModal(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('EXPLORE PLANS', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
+          const Row(children: [
+            Icon(Icons.verified, color: AppColors.primary, size: 20),
+            SizedBox(width: 8),
+            Text('ScamShield Active Intelligence', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 12),
+          ...[
+            '✓ Explainable Gemini AI threat detection',
+            '✓ Static APK analysis (Androguard + YARA)',
+            '✓ VirusTotal & Google Safe Browsing APIs',
+            '✓ Zero dummy data — real local encrypted storage',
+          ].map((f) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(f, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          )),
         ],
       ),
     );
@@ -389,7 +443,7 @@ class _AnimatedScanNowButtonState extends State<AnimatedScanNowButton> with Sing
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+    _pulseAnimation = Tween<double>(begin: 0.97, end: 1.03).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
@@ -406,15 +460,15 @@ class _AnimatedScanNowButtonState extends State<AnimatedScanNowButton> with Sing
       scale: _pulseAnimation,
       child: Container(
         width: double.infinity,
-        height: 58,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(colors: [AppColors.primary, AppColors.accent]),
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.35),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+              color: AppColors.primary.withOpacity(0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -423,14 +477,14 @@ class _AnimatedScanNowButtonState extends State<AnimatedScanNowButton> with Sing
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search, color: Colors.white),
-              SizedBox(width: 8),
-              Text('SCAN NOW', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              Icon(Icons.center_focus_strong, color: Colors.black, size: 22),
+              SizedBox(width: 10),
+              Text('SCAN NOW', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
             ],
           ),
         ),
