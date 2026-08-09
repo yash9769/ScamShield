@@ -4,7 +4,70 @@
 // Email-specific: /breachedaccount/{email} (requires Pwned API key for production)
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+
+class BreachCheckException implements Exception {
+  final String message;
+  const BreachCheckException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class BackendBreachInfo {
+  final String name;
+  final String domain;
+  final String date;
+  final List<String> dataClasses;
+
+  const BackendBreachInfo({
+    required this.name,
+    required this.domain,
+    required this.date,
+    required this.dataClasses,
+  });
+
+  factory BackendBreachInfo.fromJson(Map<String, dynamic> json) {
+    return BackendBreachInfo(
+      name: json['name'] ?? 'Unknown Breach',
+      domain: json['domain'] ?? 'unknown.com',
+      date: json['date'] ?? 'unknown',
+      dataClasses: List<String>.from(json['dataClasses'] ?? []),
+    );
+  }
+}
+
+class BreachCheckResult {
+  final String email;
+  final bool exposed;
+  final int breachCount;
+  final List<BackendBreachInfo> breaches;
+  final String source;
+  final String checkedAt;
+
+  const BreachCheckResult({
+    required this.email,
+    required this.exposed,
+    required this.breachCount,
+    required this.breaches,
+    required this.source,
+    required this.checkedAt,
+  });
+
+  factory BreachCheckResult.fromJson(Map<String, dynamic> json) {
+    return BreachCheckResult(
+      email: json['email'] ?? '',
+      exposed: json['exposed'] ?? false,
+      breachCount: json['breachCount'] ?? 0,
+      breaches: (json['breaches'] as List? ?? [])
+          .map((b) => BackendBreachInfo.fromJson(b as Map<String, dynamic>))
+          .toList(),
+      source: json['source'] ?? 'XposedOrNot',
+      checkedAt: json['checkedAt'] ?? '',
+    );
+  }
+}
 
 class BreachInfo {
   final String name;
@@ -59,8 +122,15 @@ class BreachService {
   static const _baseUrl = 'https://haveibeenpwned.com/api/v3';
   static const _userAgent = 'ScamShield-App/1.0';
 
-  // Optional: set this from secure storage / build config for email-specific checks
+  // HIBP API key — required for per-email breach lookup.
+  // The /v3/breaches endpoint (all known breaches) is free and works without a key.
+  // The /v3/breachedaccount/{email} endpoint requires a subscription key from:
+  // https://haveibeenpwned.com/API/Key
+  // Set this from your backend config or secure storage — never hard-code it.
   static String? apiKey;
+
+  /// Whether per-email lookup is available (requires API key).
+  static bool get emailCheckAvailable => apiKey != null && apiKey!.isNotEmpty;
 
   static final List<BreachInfo> _fallbackBreaches = [
     const BreachInfo(
@@ -175,27 +245,11 @@ class BreachService {
       } catch (_) {}
     }
 
-    // Default high-precision lookup engine based on domain & email patterns
-    await Future.delayed(const Duration(milliseconds: 900));
-
-    final domain = cleanEmail.split('@').last;
-    final results = <BreachInfo>[];
-
-    if (cleanEmail.contains('test') || cleanEmail.contains('alex') || cleanEmail.contains('user') || cleanEmail.contains('admin') || cleanEmail.length % 2 == 0) {
-      results.add(_fallbackBreaches[0]); // LinkedIn
-      results.add(_fallbackBreaches[1]); // Canva
-    }
-
-    if (domain.contains('gmail') || domain.contains('yahoo') || domain.contains('hotmail') || cleanEmail.contains('a')) {
-      results.add(_fallbackBreaches[4]); // Twitter
-    }
-
-    if (cleanEmail.contains('work') || cleanEmail.contains('corp') || cleanEmail.contains('tech')) {
-      results.add(_fallbackBreaches[2]); // Dropbox
-      results.add(_fallbackBreaches[3]); // Adobe
-    }
-
-    return results.isEmpty ? [_fallbackBreaches[0]] : results;
+    // No API key configured. The HIBP /breachedaccount/{email} endpoint requires
+    // a paid API key — without one, we cannot look up an individual email.
+    // We return an empty list with a clear indication that the check was not
+    // performed, rather than fabricating breach results based on the email address.
+    return [];
   }
 
   /// Search breaches by name/domain filter (client-side filtering of full list).
@@ -208,5 +262,38 @@ class BreachService {
       b.domain.toLowerCase().contains(q) ||
       b.dataClasses.any((d) => d.toLowerCase().contains(q))
     ).toList();
+  }
+
+  static String get _backendUrl =>
+      Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+
+  /// Query the ScamShield backend to check if an email has been exposed using XposedOrNot.
+  static Future<BreachCheckResult> checkEmailBreach(String email) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final url = '$_backendUrl/api/v1/breach?email=${Uri.encodeComponent(cleanEmail)}';
+
+    try {
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return BreachCheckResult.fromJson(data);
+      } else if (response.statusCode == 400) {
+        throw const BreachCheckException('invalid_input');
+      } else if (response.statusCode == 429) {
+        throw const BreachCheckException('rate_limit');
+      } else if (response.statusCode == 504) {
+        throw const BreachCheckException('timeout');
+      } else {
+        throw const BreachCheckException('api_error');
+      }
+    } on SocketException {
+      throw const BreachCheckException('api_error');
+    } catch (e) {
+      if (e is BreachCheckException) {
+        rethrow;
+      }
+      throw const BreachCheckException('api_error');
+    }
   }
 }
