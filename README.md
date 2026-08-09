@@ -17,16 +17,16 @@
 - **Risk Score Dashboard**: Dynamic risk score card (0–100) with visual severity ratings (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
 - **Explainable AI Intelligence**: Powered by Google Gemini 1.5/2.0, providing concise human-readable security breakdowns explaining *why* an application is suspicious.
 - **File & Certificate Fingerprinting**: Extracts MD5, SHA-1, SHA-256 hashes, file sizes, and parses X.509 signer certificates.
-- **Dangerous Permission Analyzer**: Interactive list categorizing Android permissions into high-risk and normal tiers using custom risk mapping ([permission_mapper.dart](file:///c:/Users/yashodhanrajapkar/Documents/ScamShield/lib/utils/permission_mapper.dart)).
+- **Dangerous Permission Analyzer**: Interactive list categorizing Android permissions into high-risk and normal tiers using custom risk mapping ([permission_mapper.dart](lib/utils/permission_mapper.dart)).
 - **Hardcoded Secret & API Key Extractor**: Scans decompiled DEX/DSO sources for leaked AWS keys, JWT tokens, Bearer tokens, private keys, and database credentials.
 - **URL & Tracker Extraction**: Identifies hardcoded HTTP/HTTPS endpoints, webhooks, and third-party tracking URLs.
-- **Executive PDF Report Export**: Export detailed, publication-ready PDF security audits directly from the device ([report_generator_service.dart](file:///c:/Users/yashodhanrajapkar/Documents/ScamShield/lib/services/report_generator_service.dart)).
+- **Executive PDF Report Export**: Export detailed, publication-ready PDF security audits directly from the device ([report_generator_service.dart](lib/services/report_generator_service.dart)).
 
 ### 🔍 Multi-Tool Static Analysis Pipeline
 - **MobSF (Mobile Security Framework)**: Seamless integration via REST API to execute containerized static binary scans.
 - **APKTool & JADX Decompiler**: Manifest unpacking, resource extraction, and DEX-to-Java source code decompilation.
 - **Androguard Engine**: Deep structural analysis of APK manifest components (Activities, Services, Receivers, Providers) and permissions.
-- **YARA Malware Rule Matching**: Signature-based detection using customizable YARA security rules ([sample_rules.yar](file:///c:/Users/yashodhanrajapkar/Documents/ScamShield/backend/yara_rules/sample_rules.yar)).
+- **YARA Malware Rule Matching**: Signature-based detection using customizable YARA security rules ([sample_rules.yar](backend/yara_rules/sample_rules.yar)).
 - **Automated Caching & Deduplication**: Fast SHA-256 hash lookup in PostgreSQL to instantly return cached security reports for previously analyzed APKs.
 
 ### 🛡️ Threat Intelligence & OSINT Correlation
@@ -273,7 +273,7 @@ flutter test
 
 ## 🛡️ Risk Engine Scoring Rules
 
-ScamShield evaluates APK security risks on a 0 to 100 scale using a weighted scoring matrix defined in [risk_weights.yaml](file:///c:/Users/yashodhanrajapkar/Documents/ScamShield/backend/app/config/risk_weights.yaml):
+ScamShield evaluates APK security risks on a 0 to 100 scale using a weighted scoring matrix defined in [risk_weights.yaml](backend/app/config/risk_weights.yaml):
 
 - **Dangerous Permissions**: Weighted by criticality (e.g., `SEND_SMS`, `SYSTEM_ALERT_WINDOW`, `RECEIVE_BOOT_COMPLETED`, `READ_CONTACTS`).
 - **Hardcoded Secrets**: Detection of API keys, AWS tokens, private keys (+15 points per critical secret).
@@ -296,6 +296,20 @@ For deeper architectural details, setup guides, and user manuals, refer to the `
 - 📖 [Installation & Deployment Guide](docs/INSTALLATION_GUIDE.md)
 - 🏗️ [Project Technical Report](docs/PROJECT_REPORT.md)
 - 📱 [User Operating Manual](docs/USER_MANUAL.md)
+
+---
+
+## 🔒 XposedOrNot Data Breach Integration
+
+ScamShield integrates the **XposedOrNot** threat database to verify if user email addresses/identities have been exposed in public data breaches.
+
+- **Endpoint Used**: `GET /api/v1/breach?email={email}` (or the alias `/breach?email={email}`).
+- **Downstream API**: Calls `https://api.xposedornot.com/v1/breach-analytics?email={email}` server-side.
+- **Authentication**: Public endpoint requires no credentials by default. You can optionally specify `XPOSEDORNOT_API_KEY` in environment variables for high-volume commercial rate limits.
+- **Environment Variables**:
+  - `XPOSEDORNOT_API_KEY`: Paid API key for XposedOrNot API (optional).
+- **Error Handling**:
+  - Handles timeout, rate limiting, and server connection failures gracefully. A failed check is displayed as a warning error in the UI (e.g. `Exposure Check Failed`) instead of incorrectly declaring the email safe.
 
 ---
 
