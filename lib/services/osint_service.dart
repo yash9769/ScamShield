@@ -59,6 +59,9 @@ class OsintService {
       final response = await http.get(url).timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        if (data['checked'] == false) {
+          return _unavailable('VirusTotal');
+        }
         final malicious = (data['malicious'] ?? 0) as int;
         return OsintResult(
           provider: 'VirusTotal',
@@ -100,9 +103,11 @@ class OsintService {
         if (!allUnchecked && results.isNotEmpty) {
           return results.map((r) {
             final isMalicious = r['malicious'] == true;
+            final checked = r['checked'] == true;
             return OsintResult(
               provider: 'Google Safe Browsing',
               isMalicious: isMalicious,
+              available: checked,
               details: isMalicious
                   ? 'Flagged as dangerous by Google Safe Browsing.'
                   : (r['note'] as String? ?? 'No threats found.'),
@@ -140,6 +145,9 @@ class OsintService {
       final response = await http.get(url).timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        if (data['checked'] == false) {
+          return _unavailable('AbuseIPDB');
+        }
         final score = data['abuseConfidenceScore'] as int? ?? 0;
         final isMalicious = score > 50;
         return OsintResult(
