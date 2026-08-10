@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/scan_now_bottom_sheet.dart';
+import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import 'sim_lock_screen.dart';
 import 'breach_screen.dart';
@@ -98,31 +99,37 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatusSection(context),
+              Reveal(delay: Reveal.step(0), child: _buildStatusSection(context)),
               const SizedBox(height: 24),
-              _buildStatsGrid(),
+              Reveal(delay: Reveal.step(1), child: _buildStatsGrid()),
               const SizedBox(height: 28),
-              const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              Reveal(
+                delay: Reveal.step(2),
+                child: const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              ),
               const SizedBox(height: 14),
-              _buildQuickActions(context),
+              Reveal(delay: Reveal.step(3), child: _buildQuickActions(context)),
               const SizedBox(height: 28),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Threat Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
-                          .then((_) => _loadStats());
-                    },
-                    child: const Text('VIEW ALL >', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ],
+              Reveal(
+                delay: Reveal.step(4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Threat Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
+                            .then((_) => _loadStats());
+                      },
+                      child: const Text('VIEW ALL >', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
-              _buildThreatActivity(),
+              Reveal(delay: Reveal.step(5), child: _buildThreatActivity()),
               const SizedBox(height: 24),
-              _buildUpgradeBanner(context),
+              Reveal(delay: Reveal.step(6), child: _buildUpgradeBanner(context)),
             ],
           ),
         ),
@@ -141,10 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -155,9 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
+              color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: statusColor.withOpacity(0.4)),
+              border: Border.all(color: statusColor.withValues(alpha: 0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -172,14 +179,21 @@ class _HomeScreenState extends State<HomeScreen> {
           Stack(
             alignment: Alignment.center,
             children: [
+              // Signature: an ambient radar sweep circling the shield to signal
+              // continuous, active monitoring.
+              RadarSweep(
+                size: 150,
+                color: statusColor,
+                duration: const Duration(seconds: 4),
+              ),
               Container(
                 width: 140,
                 height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withOpacity(0.6), width: 2),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 2),
                   boxShadow: [
-                    BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 24, spreadRadius: 4),
+                    BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 24, spreadRadius: 4),
                   ],
                 ),
               ),
@@ -232,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 6,
                 height: 6,
-                decoration: BoxDecoration(color: accentColor.withOpacity(0.5), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.5), shape: BoxShape.circle),
               ),
             ],
           ),
@@ -266,10 +280,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SimLockScreen()));
         }),
         _buildActionIcon(context, Icons.email_outlined, 'EMAIL CHECK', () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const BreachScreen(initialIndex: 1)));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const BreachScreen(initialIndex: 0)));
         }),
         _buildActionIcon(context, Icons.public, 'BREACHES', () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const BreachScreen(initialIndex: 0)));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const BreachScreen(initialIndex: 1)));
         }),
         _buildActionIcon(context, Icons.lock_clock_outlined, 'SAFE VAULT', () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SafeVaultScreen()));
@@ -279,9 +293,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActionIcon(BuildContext context, IconData icon, String label, VoidCallback onTap) {
-    return InkWell(
+    return Pressable(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
           Container(
@@ -290,9 +303,9 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 3)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 3)),
               ],
             ),
             child: Icon(icon, color: AppColors.primary, size: 26),
@@ -312,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+          border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
         ),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
@@ -363,13 +376,13 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 14),
@@ -394,12 +407,12 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withOpacity(0.12), AppColors.surface],
+          colors: [AppColors.primary.withValues(alpha: 0.12), AppColors.surface],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,7 +479,7 @@ class _AnimatedScanNowButtonState extends State<AnimatedScanNowButton> with Sing
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.35),
+              color: AppColors.primary.withValues(alpha: 0.35),
               blurRadius: 18,
               offset: const Offset(0, 5),
             ),

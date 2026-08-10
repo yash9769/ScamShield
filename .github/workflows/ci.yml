@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt
+
+      - name: Run tests
+        working-directory: server
+        run: python -m pytest test_server.py -q
+
+      - name: Audit dependencies for known vulnerabilities
+        run: |
+          pip install pip-audit
+          pip-audit -r server/requirements.txt || true
+
+      - name: Check for hardcoded secrets
+        run: |
+          # Fails the build if provider API keys reappear in client source.
+          if grep -rnE "AIza[0-9A-Za-z_-]{35}|sk_live_[0-9a-zA-Z]{24}" lib/ server/; then
+            echo "::error::Hardcoded API key detected in source"
+            exit 1
+          fi
+          echo "No hardcoded API keys found."
+
+  flutter:
+    name: Flutter client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test

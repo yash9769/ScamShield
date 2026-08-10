@@ -49,11 +49,77 @@ rule Generic_Keylogger
         all of them
 }
 
-rule TestRule
-{
- strings:
-  $a="Firebase"
 
- condition:
-  $a
+rule SMS_Interception
+{
+    meta:
+        description = "SMS interception combined with exfiltration capability, typical of OTP-stealing malware"
+        author = "ScamShield"
+        severity = "high"
+    strings:
+        $recv = "android.provider.Telephony.SMS_RECEIVED"
+        $abort = "abortBroadcast"
+        $body = "getMessageBody"
+    condition:
+        all of them
+}
+
+rule Overlay_Attack
+{
+    meta:
+        description = "Screen-overlay primitives used by credential-harvesting banking trojans"
+        author = "ScamShield"
+        severity = "high"
+    strings:
+        $o1 = "TYPE_APPLICATION_OVERLAY"
+        $o2 = "SYSTEM_ALERT_WINDOW"
+        $o3 = "addView"
+        $o4 = "WindowManager"
+    condition:
+        3 of them
+}
+
+rule Dynamic_Code_Loading
+{
+    meta:
+        description = "Runtime loading of code fetched after install, used to hide payloads from static review"
+        author = "ScamShield"
+        severity = "medium"
+    strings:
+        $d1 = "DexClassLoader"
+        $d2 = "PathClassLoader"
+        $d3 = "loadClass"
+        $d4 = "getDeclaredMethod"
+    condition:
+        $d1 and 2 of ($d2, $d3, $d4)
+}
+
+rule Device_Admin_Abuse
+{
+    meta:
+        description = "Requests device-admin privileges alongside lock/wipe controls, seen in ransomware"
+        author = "ScamShield"
+        severity = "high"
+    strings:
+        $a1 = "DeviceAdminReceiver"
+        $a2 = "lockNow"
+        $a3 = "resetPassword"
+        $a4 = "wipeData"
+    condition:
+        $a1 and 2 of ($a2, $a3, $a4)
+}
+
+rule Root_Detection_Evasion
+{
+    meta:
+        description = "Root/emulator checks used to evade sandboxed analysis"
+        author = "ScamShield"
+        severity = "medium"
+    strings:
+        $r1 = "/system/bin/su"
+        $r2 = "test-keys"
+        $r3 = "isDeviceRooted"
+        $r4 = "generic_x86"
+    condition:
+        3 of them
 }

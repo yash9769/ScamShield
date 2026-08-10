@@ -9,6 +9,7 @@ import asyncio
 import json
 import time
 from typing import Optional
+import httpx
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -76,12 +77,21 @@ class GeminiService:
         self._client = None
         self._genai_types = None
         self._available = False
+        self._is_groq = False
         self._init_client()
 
     def _init_client(self) -> None:
-        """Initialise the Gemini client. Fails silently if SDK is missing."""
+        """Initialise the LLM client (Gemini or Groq)."""
+        # 1. Check if we should use Groq
+        if self._settings.groq_available:
+            self._is_groq = True
+            self._available = True
+            logger.info("Groq client initialised", extra={"models": self._settings.GROQ_MODELS})
+            return
+
+        # 2. Check if we should use Gemini
         if not self._settings.gemini_available:
-            logger.info("GEMINI_API_KEY not set — Gemini disabled")
+            logger.info("Neither Gemini nor Groq API keys configured — running in heuristic-only mode")
             return
         try:
             from google import genai
@@ -103,7 +113,7 @@ class GeminiService:
 
     async def analyze(self, text: str) -> Optional[AnalysisResult]:
         """
-        Analyse text with Gemini AI.
+        Analyse text with Groq or Gemini AI.
 
         Tries each configured model in order.
         Returns None if all models fail or quota is exhausted.
@@ -112,6 +122,14 @@ class GeminiService:
             return None
 
         clean_text = sanitize_text(text)
+
+        if self._is_groq:
+            for model_name in self._settings.GROQ_MODELS:
+                result = await self._try_groq_model(model_name, clean_text)
+                if result is not None:
+                    return result
+            logger.warning("All Groq models exhausted — falling back to heuristic")
+            return None
 
         for model_name in self._settings.GEMINI_MODELS:
             result = await self._try_model(model_name, clean_text)
@@ -157,6 +175,57 @@ class GeminiService:
                     await asyncio.sleep(0.5 * attempt)
 
         return None
+
+    async def _try_groq_model(self, model_name: str, text: str) -> Optional[AnalysisResult]:
+        """Attempt analysis with a single Groq model, with retries."""
+        for attempt in range(1, self._settings.GEMINI_MAX_RETRIES + 1):
+            try:
+                result = await asyncio.wait_for(
+                    self._call_groq(model_name, text),
+                    timeout=self._settings.GEMINI_TIMEOUT,
+                )
+                logger.info(
+                    "Groq analysis complete",
+                    extra={"model": model_name, "attempt": attempt, "score": result.riskScore},
+                )
+                return result
+            except asyncio.TimeoutError:
+                logger.warning("Groq timeout", extra={"model": model_name, "attempt": attempt})
+                break
+            except Exception as exc:
+                err = str(exc)
+                logger.warning("Groq model error", extra={"model": model_name, "attempt": attempt, "error": err[:200]})
+                if any(sig in err.upper() for sig in ("RATE_LIMIT", "QUOTA", "NOT_FOUND", "404")):
+                    break
+                if attempt < self._settings.GEMINI_MAX_RETRIES:
+                    await asyncio.sleep(0.5 * attempt)
+        return None
+
+    async def _call_groq(self, model_name: str, text: str) -> AnalysisResult:
+        """Make the actual Groq API call using httpx (OpenAI-compatible endpoint)."""
+        # Resolve the Groq API key — accept it in either GROQ_API_KEY or GEMINI_API_KEY
+        api_key = self._settings.GROQ_API_KEY or self._settings.GEMINI_API_KEY
+        async with httpx.AsyncClient(timeout=self._settings.GEMINI_TIMEOUT) as client:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Analyse this message:\n\n{text}"},
+                    ],
+                    "temperature": self._settings.GEMINI_TEMPERATURE,
+                    "response_format": {"type": "json_object"},
+                    "max_tokens": 1024,
+                },
+            )
+        response.raise_for_status()
+        raw_text = response.json()["choices"][0]["message"]["content"]
+        return self._parse_response(raw_text)
 
     async def _call_gemini(self, model_name: str, text: str) -> AnalysisResult:
         """Make the actual Gemini API call (runs in executor to avoid blocking)."""

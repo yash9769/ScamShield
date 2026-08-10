@@ -8,8 +8,8 @@ from rich.table import Table
 
 console = Console()
 
-APK_DIR = "/Users/yashodhanrajapkar/Documents/ScamShield/ScamShield_Test_APKs"
-BASE_URL = "http://localhost:8000"
+APK_DIR = os.getenv("SCAMSHIELD_TEST_APK_DIR", os.path.join(os.path.dirname(__file__), "test_apks"))
+BASE_URL = os.getenv("SCAMSHIELD_BASE_URL", "http://localhost:8000")
 
 APKS_TO_TEST = [
     "1_benign_debug.apk",

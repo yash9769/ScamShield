@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../widgets/motion.dart';
 import '../main.dart';
 import 'register_screen.dart';
 import '../services/auth_service.dart';
@@ -74,43 +75,54 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary.withOpacity(0.4), width: 2),
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/icon.png',
-                        width: 96,
-                        height: 96,
-                        fit: BoxFit.cover,
+                Reveal(
+                  delay: Reveal.step(0),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 2),
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/icon.png',
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'ScamShield Enterprise',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: 0.5),
+                Reveal(
+                  delay: Reveal.step(1),
+                  child: const Text(
+                    'ScamShield Enterprise',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: 0.5),
+                  ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'AI & Static Analysis Security Suite',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                Reveal(
+                  delay: Reveal.step(2),
+                  child: const Text(
+                    'AI & Static Analysis Security Suite',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
                 ),
                 const SizedBox(height: 36),
-                Container(
+                Reveal(
+                  delay: Reveal.step(3),
+                  child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+                    border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
                   ),
                   child: Column(
                     children: [
@@ -155,29 +167,36 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
+                ),
                 const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _bypassAsGuest,
-                  icon: const Icon(Icons.flash_on, color: AppColors.primary, size: 18),
-                  label: const Text('CONTINUE AS GUEST', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.primary.withOpacity(0.4)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                Reveal(
+                  delay: Reveal.step(4),
+                  child: OutlinedButton.icon(
+                    onPressed: _bypassAsGuest,
+                    icon: const Icon(Icons.flash_on, color: AppColors.primary, size: 18),
+                    label: const Text('CONTINUE AS GUEST', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Don\'t have an account?', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
-                      },
-                      child: const Text('Create Account', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
-                    ),
-                  ],
+                Reveal(
+                  delay: Reveal.step(5),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Don\'t have an account?', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
+                        },
+                        child: const Text('Create Account', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

@@ -1,149 +1,168 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
+/// Result of an OSINT threat-intelligence lookup (VirusTotal, Google Safe
+/// Browsing, AbuseIPDB, URLhaus, ...).
+///
+/// [isMalicious] should only ever be `true` when a real provider positively
+/// flagged the indicator. When a lookup could not be completed (no network,
+/// provider down, check not available on this build), [available] is
+/// `false` and [isMalicious] is always `false` — callers must check
+/// [available] before treating a "not malicious" result as a clean bill of
+/// health, otherwise an unreachable provider would silently look identical
+/// to "verified safe".
 class OsintResult {
   final String provider;
   final bool isMalicious;
+  final bool available;
   final String details;
 
   OsintResult({
     required this.provider,
     required this.isMalicious,
     required this.details,
+    this.available = true,
   });
 }
 
+/// Threat-intelligence lookups (VirusTotal / Google Safe Browsing / AbuseIPDB).
+///
+/// IMPORTANT — these are third-party checks that require secret API keys.
+/// Those keys must never be embedded in the mobile app: anyone can decompile
+/// an APK and extract hardcoded strings (this app's own APK scanner does
+/// exactly that to other apps). A previous version of this file shipped
+/// live-looking VirusTotal / Google Safe Browsing / AbuseIPDB keys directly
+/// in this source file, which is a real secret-exposure vulnerability —
+/// those keys have been removed.
+///
+/// The correct architecture is to proxy these lookups through the backend
+/// (see backend/app/services/osint.py / osint_service.py), where keys live
+/// only in server-side environment variables. The server's POST /scan
+/// endpoint already returns a VirusTotal verdict for APK hashes. Standalone
+/// URL/IP checks from the client are routed through [_backendBaseUrl] below;
+/// if the backend is unreachable or has no key configured for a given
+/// provider, the lookup is honestly reported as unavailable instead of
+/// fabricating a "safe" or "malicious" result.
 class OsintService {
-  static const String _vtApiKey = 'f0a274108a769b6be642dc340073ef0b43d6d19bb83a53e733f3b8b1304af93c';
-  static const String _gsbApiKey = 'AIzaSyAk_8k4xtxBu-jjgqQ4n634XjhuvGBcANU';
-  static const String _abuseIpdbApiKey = '78f080e4882e44abc1add341c53eab002f1a6066704a764e778e82b86e8c8cecf36112e7d681baa0';
+  static String get _backendBaseUrl =>
+      Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
 
-  /// Check a file hash (SHA-256, SHA-1, or MD5) against VirusTotal.
+  static const Duration _timeout = Duration(seconds: 6);
+
+  /// Check a file hash (SHA-256, SHA-1, or MD5) against VirusTotal via the
+  /// backend. For APK scans, prefer the hash verdict already included in the
+  /// POST /scan response instead of calling this separately.
   static Future<OsintResult> checkHashVirusTotal(String hash) async {
-    if (_vtApiKey.isEmpty) {
-      return _mockCheckHash(hash, 'VirusTotal');
-    }
-
     try {
-      final url = Uri.parse('https://www.virustotal.com/api/v3/files/$hash');
-      final response = await http.get(url, headers: {'x-apikey': _vtApiKey});
-
+      final url = Uri.parse('$_backendBaseUrl/osint/hash/$hash');
+      final response = await http.get(url).timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final stats = data['data']?['attributes']?['last_analysis_stats'];
-        if (stats != null) {
-          final malicious = (stats['malicious'] ?? 0) as int;
-          return OsintResult(
-            provider: 'VirusTotal',
-            isMalicious: malicious > 0,
-            details: '$malicious security vendors flagged this file as malicious.',
-          );
-        }
-      } else if (response.statusCode == 404) {
+        final malicious = (data['malicious'] ?? 0) as int;
         return OsintResult(
           provider: 'VirusTotal',
-          isMalicious: false,
-          details: 'File hash not found in VirusTotal database.',
+          isMalicious: malicious > 0,
+          details: (data['note'] as String?) ??
+              '$malicious security vendor(s) flagged this file as malicious.',
         );
       }
-    } catch (e) {
-      // Fallback on error
+    } catch (_) {
+      // Backend unreachable — fall through to the honest "unavailable" result below.
     }
-    return _mockCheckHash(hash, 'VirusTotal (Fallback)');
+    return _unavailable('VirusTotal');
   }
 
-  /// Check multiple URLs against Google Safe Browsing.
+  /// Check multiple URLs against Google Safe Browsing via the backend.
+  ///
+  /// If the backend is unreachable or has no Safe Browsing key configured, we
+  /// do NOT simply report every URL as "unavailable" — instead each URL is
+  /// screened against URLhaus, a keyless malware-URL database that is safe to
+  /// query directly from the client. That way a missing Safe Browsing key
+  /// degrades to a real secondary verdict rather than an empty "no URLs
+  /// checked" result.
   static Future<List<OsintResult>> checkUrlsGoogleSafeBrowsing(List<String> urls) async {
-    if (_gsbApiKey.isEmpty || urls.isEmpty) {
-      return urls.map((url) => _mockCheckUrl(url, 'Google Safe Browsing')).toList();
-    }
-
+    if (urls.isEmpty) return [];
     try {
-      final endpoint = Uri.parse('https://safebrowsing.googleapis.com/v4/threatMatches:find?key=$_gsbApiKey');
-      final body = {
-        "client": {
-          "clientId": "scamshield",
-          "clientVersion": "1.0.0"
-        },
-        "threatInfo": {
-          "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
-          "platformTypes": ["ANY_PLATFORM"],
-          "threatEntryTypes": ["URL"],
-          "threatEntries": urls.map((u) => {"url": u}).toList()
-        }
-      };
-
-      final response = await http.post(
-        endpoint,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-
+      final endpoint = Uri.parse('$_backendBaseUrl/osint/urls');
+      final response = await http
+          .post(endpoint,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'urls': urls}))
+          .timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final matches = data['matches'] as List<dynamic>?;
-        
-        final maliciousUrls = <String>{};
-        if (matches != null) {
-          for (final match in matches) {
-            final url = match['threat']['url'] as String?;
-            if (url != null) maliciousUrls.add(url);
-          }
+        final results = data['results'] as List<dynamic>? ?? [];
+        // The backend echoes a `checked` flag per URL. When it is false the
+        // provider key is not configured server-side, so fall back to URLhaus.
+        final allUnchecked = results.isNotEmpty &&
+            results.every((r) => r['checked'] == false);
+        if (!allUnchecked && results.isNotEmpty) {
+          return results.map((r) {
+            final isMalicious = r['malicious'] == true;
+            return OsintResult(
+              provider: 'Google Safe Browsing',
+              isMalicious: isMalicious,
+              details: isMalicious
+                  ? 'Flagged as dangerous by Google Safe Browsing.'
+                  : (r['note'] as String? ?? 'No threats found.'),
+            );
+          }).toList();
         }
-
-        return urls.map((url) {
-          final isMalicious = maliciousUrls.contains(url);
-          return OsintResult(
-            provider: 'Google Safe Browsing',
-            isMalicious: isMalicious,
-            details: isMalicious ? 'Flagged as dangerous by Google Safe Browsing.' : 'Safe',
-          );
-        }).toList();
       }
-    } catch (e) {
-      // Fallback
+    } catch (_) {
+      // Fall through to the keyless URLhaus fallback below.
     }
-
-    return urls.map((url) => _mockCheckUrl(url, 'Google Safe Browsing (Fallback)')).toList();
+    return _urlhausFallback(urls);
   }
 
-  /// Check an IP address against AbuseIPDB.
+  /// Screen each URL against the keyless URLhaus database as a fallback when
+  /// Google Safe Browsing could not be reached or is not configured.
+  static Future<List<OsintResult>> _urlhausFallback(List<String> urls) async {
+    return Future.wait(urls.map((u) async {
+      final r = await checkUrlhaus(u);
+      if (!r.available) return r;
+      return OsintResult(
+        provider: 'URLhaus (fallback)',
+        isMalicious: r.isMalicious,
+        details: r.isMalicious
+            ? 'Listed in the URLhaus malware-URL database.'
+            : 'Not listed in URLhaus. Google Safe Browsing was unavailable, so '
+                'this is a secondary check, not a full clean bill of health.',
+      );
+    }));
+  }
+
+  /// Check an IP address against AbuseIPDB via the backend.
   static Future<OsintResult> checkIpAbuseIPDB(String ip) async {
-    if (_abuseIpdbApiKey.isEmpty) {
-      return _mockCheckIp(ip, 'AbuseIPDB');
-    }
-
     try {
-      final url = Uri.parse('https://api.abuseipdb.com/api/v2/check?ipAddress=$ip&maxAgeInDays=90');
-      final response = await http.get(url, headers: {
-        'Accept': 'application/json',
-        'Key': _abuseIpdbApiKey,
-      });
-
+      final url = Uri.parse('$_backendBaseUrl/osint/ip/$ip');
+      final response = await http.get(url).timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final score = data['data']?['abuseConfidenceScore'] as int? ?? 0;
-        final isMalicious = score > 50; // threshold
+        final score = data['abuseConfidenceScore'] as int? ?? 0;
+        final isMalicious = score > 50;
         return OsintResult(
           provider: 'AbuseIPDB',
           isMalicious: isMalicious,
-          details: isMalicious ? 'Abuse confidence score: $score%' : 'No significant abuse reports.',
+          details: isMalicious
+              ? 'Abuse confidence score: $score%'
+              : (data['note'] as String? ?? 'No significant abuse reports.'),
         );
       }
-    } catch (e) {
-      // Fallback
+    } catch (_) {
+      // Fall through
     }
-    return _mockCheckIp(ip, 'AbuseIPDB (Fallback)');
+    return _unavailable('AbuseIPDB');
   }
 
-  /// Check URL against URLhaus (No API key needed).
+  /// Check URL against URLhaus. No API key required, so this is safe to call
+  /// directly from the client.
   static Future<OsintResult> checkUrlhaus(String urlToCheck) async {
     try {
       final endpoint = Uri.parse('https://urlhaus-api.abuse.ch/v1/url/');
-      final response = await http.post(
-        endpoint,
-        body: {'url': urlToCheck},
-      );
+      final response =
+          await http.post(endpoint, body: {'url': urlToCheck}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -152,7 +171,7 @@ class OsintService {
           return OsintResult(
             provider: 'URLhaus',
             isMalicious: true,
-            details: 'URL is listed in URLhaus malware database.',
+            details: 'URL is listed in the URLhaus malware database.',
           );
         } else if (status == 'no_results') {
           return OsintResult(
@@ -162,39 +181,19 @@ class OsintService {
           );
         }
       }
-    } catch (e) {
-      // Fallback
+    } catch (_) {
+      // Fall through
     }
-    return _mockCheckUrl(urlToCheck, 'URLhaus (Fallback)');
+    return _unavailable('URLhaus');
   }
 
-  // --- MOCK PROVIDERS ---
-
-  static OsintResult _mockCheckHash(String hash, String provider) {
-    final isMalicious = hash.startsWith('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'); // empty SHA256 just for testing
+  static OsintResult _unavailable(String provider) {
     return OsintResult(
       provider: provider,
-      isMalicious: isMalicious,
-      details: isMalicious ? 'Mock: Flagged as malicious malware signature.' : 'Mock: Hash appears safe.',
-    );
-  }
-
-  static OsintResult _mockCheckUrl(String url, String provider) {
-    final lower = url.toLowerCase();
-    final isMalicious = lower.contains('free-money') || lower.contains('bit.ly/scam');
-    return OsintResult(
-      provider: provider,
-      isMalicious: isMalicious,
-      details: isMalicious ? 'Mock: Known malicious domain.' : 'Mock: URL appears safe.',
-    );
-  }
-
-  static OsintResult _mockCheckIp(String ip, String provider) {
-    final isMalicious = ip == '192.168.1.99'; // random trigger
-    return OsintResult(
-      provider: provider,
-      isMalicious: isMalicious,
-      details: isMalicious ? 'Mock: High abuse confidence.' : 'Mock: Clean IP.',
+      isMalicious: false,
+      available: false,
+      details: 'Could not reach $provider (backend offline or not configured). '
+          'This result is unverified — it is NOT a confirmation of safety.',
     );
   }
 }

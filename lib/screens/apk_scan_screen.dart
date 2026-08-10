@@ -101,7 +101,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +130,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             final isCompleted = index < _currentStageIndex;
             final isCurrent = index == _currentStageIndex;
 
-            Color iconColor = AppColors.textSecondary.withOpacity(0.5);
+            Color iconColor = AppColors.textSecondary.withValues(alpha: 0.5);
             IconData icon = Icons.radio_button_unchecked;
 
             if (isCompleted) {
@@ -147,12 +147,12 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isCurrent
-                    ? AppColors.primary.withOpacity(0.12)
+                    ? AppColors.primary.withValues(alpha: 0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isCurrent
-                      ? AppColors.primary.withOpacity(0.4)
+                      ? AppColors.primary.withValues(alpha: 0.4)
                       : Colors.transparent,
                 ),
               ),
@@ -195,7 +195,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.android, color: AppColors.primary, size: 20),
@@ -208,85 +208,160 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  /// Chooses the layout based on state.
+  ///
+  /// Before/while scanning we show the large upload card. Once a report is
+  /// available the large card is intentionally *removed* and replaced by a
+  /// compact "scanned file" header that scrolls together with the report in a
+  /// single [SingleChildScrollView]. Previously the upload card was a fixed
+  /// sibling above a bounded scroll region, so it stayed pinned on screen and
+  /// never disappeared when the results were scrolled.
+  Widget _buildBody() {
+    if (_report != null && !_isScanning) {
+      return SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // File Picker Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border:
-                    Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.cloud_upload_outlined,
-                      color: AppColors.primary, size: 44),
-                  const SizedBox(height: 12),
-                  const Text('Select Android APK Binary',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  const Text(
-                      'Extract permissions, secrets, YARA signatures & OSINT metrics',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12)),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _isScanning ? null : _pickAndScanApk,
-                    icon: const Icon(Icons.file_open_outlined,
-                        color: Colors.black),
-                    label: Text(
-                        _fileName != null
-                            ? 'SELECT DIFFERENT APK'
-                            : 'CHOOSE APK FILE',
-                        style: const TextStyle(
-                            color: Colors.black, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 14),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            if (_isScanning)
-              Expanded(
-                child: Center(child: _buildProgressSteps()),
-              ),
-
-            if (_error != null && !_isScanning)
-              Expanded(
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.danger),
-                    ),
-                    child: Text('Error: $_error',
-                        style: const TextStyle(
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ),
-
-            if (_report != null && !_isScanning)
-              Expanded(
-                child: SingleChildScrollView(
-                  child: _buildReportView(_report!),
-                ),
-              ),
+            _buildScannedFileHeader(),
+            const SizedBox(height: 16),
+            _buildReportView(_report!),
           ],
         ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPickerCard(),
+        const SizedBox(height: 20),
+        if (_isScanning)
+          Expanded(
+            child: Center(child: _buildProgressSteps()),
+          ),
+        if (_error != null && !_isScanning)
+          Expanded(
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.danger),
+                ),
+                child: Text('Error: $_error',
+                    style: const TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Large upload card shown before/while scanning.
+  Widget _buildPickerCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_upload_outlined,
+              color: AppColors.primary, size: 44),
+          const SizedBox(height: 12),
+          const Text('Select Android APK Binary',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text(
+              'Extract permissions, secrets, YARA signatures & OSINT metrics',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _isScanning ? null : _pickAndScanApk,
+            icon: const Icon(Icons.file_open_outlined, color: Colors.black),
+            label: Text(
+                _fileName != null ? 'SELECT DIFFERENT APK' : 'CHOOSE APK FILE',
+                style: const TextStyle(
+                    color: Colors.black, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Compact header shown above the report once a scan completes. Replaces the
+  /// large upload card and keeps a "scan another" affordance without occupying
+  /// the whole viewport.
+  Widget _buildScannedFileHeader() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.insert_drive_file_outlined,
+                color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('SCANNED FILE',
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 1)),
+                const SizedBox(height: 2),
+                Text(
+                  _fileName ?? 'application.apk',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: _isScanning ? null : _pickAndScanApk,
+            icon: const Icon(Icons.refresh, size: 16, color: AppColors.primary),
+            label: const Text('NEW SCAN',
+                style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12)),
+          ),
+        ],
       ),
     );
   }
@@ -444,7 +519,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: levelColor.withOpacity(0.10),
+        color: levelColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: levelColor, width: 2),
       ),
@@ -560,7 +635,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
 
     if (!checked) {
       statusColor = AppColors.textSecondary;
-      statusText = 'Not Available';
+      statusText = 'Cloud Check Not Run';
       statusIcon = Icons.cloud_off_outlined;
     } else if (malicious > 0) {
       statusColor = AppColors.danger;
@@ -598,14 +673,25 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     final checked = sb['checked'] as bool? ?? false;
 
     if (!checked) {
+      final note = sb['note'] as String?;
+      final urlsFound = sb['urls_found'] as int? ?? results.length;
       return _buildInfoCard([
-        const Row(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.cloud_off_outlined,
+            const Icon(Icons.cloud_off_outlined,
                 color: AppColors.textSecondary, size: 18),
-            SizedBox(width: 8),
-            Text('Not configured — no URLs checked.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                note ??
+                    (urlsFound == 0
+                        ? 'No URLs were extracted from this APK, so there was nothing to check.'
+                        : '$urlsFound URL(s) extracted. Reconnect to the ScamShield backend to screen them live.'),
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              ),
+            ),
           ],
         ),
       ]);
@@ -690,9 +776,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.danger.withOpacity(0.12),
+              color: AppColors.danger.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.danger.withOpacity(0.4)),
+              border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
             ),
             child: Text(m,
                 style: const TextStyle(
@@ -730,7 +816,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.07),
+              color: AppColors.primary.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -779,12 +865,12 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: isDangerous
-                    ? AppColors.danger.withOpacity(0.15)
-                    : AppColors.surfaceLight.withOpacity(0.5),
+                    ? AppColors.danger.withValues(alpha: 0.15)
+                    : AppColors.surfaceLight.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                     color: isDangerous
-                        ? AppColors.danger.withOpacity(0.5)
+                        ? AppColors.danger.withValues(alpha: 0.5)
                         : Colors.transparent),
               ),
               child: Text(
@@ -888,7 +974,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 child: LinearProgressIndicator(
                   value: pct.clamp(0.0, 1.0),
                   color: barColor,
-                  backgroundColor: barColor.withOpacity(0.15),
+                  backgroundColor: barColor.withValues(alpha: 0.15),
                   minHeight: 5,
                 ),
               ),
@@ -936,7 +1022,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

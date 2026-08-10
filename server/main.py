@@ -29,6 +29,7 @@ from slowapi.util import get_remote_address
 # ── Environment ────────────────────────────────────────────────────────────────
 load_dotenv()
 GEMINI_API_KEY           = os.getenv("GEMINI_API_KEY", "")
+GROQ_API_KEY             = os.getenv("GROQ_API_KEY", "")
 VIRUSTOTAL_API_KEY       = os.getenv("VIRUSTOTAL_API_KEY", "")
 GOOGLE_SAFE_BROWSING_KEY = os.getenv("GOOGLE_SAFE_BROWSING_API_KEY", "")
 ABUSEIPDB_API_KEY        = os.getenv("ABUSEIPDB_API_KEY", "")
@@ -36,6 +37,10 @@ XPOSEDORNOT_API_KEY      = os.getenv("XPOSEDORNOT_API_KEY", "")
 LOG_LEVEL                = os.getenv("LOG_LEVEL", "INFO")
 RATE_LIMIT_ENABLED       = os.getenv("RATE_LIMIT_ENABLED", "true").lower() != "false"
 ADMIN_API_KEY            = os.getenv("ADMIN_API_KEY", "scamshield_admin_sec_key_2026")
+
+# Resolve effective AI key and provider
+_groq_key = GROQ_API_KEY or (GEMINI_API_KEY if GEMINI_API_KEY.startswith("gsk_") else "")
+_use_groq  = bool(_groq_key)
 
 async def verify_admin_auth(request: Request):
     auth_header = request.headers.get("Authorization", "")
@@ -104,22 +109,29 @@ init_audit_db()
 
 MAX_APK_SIZE    = 100 * 1024 * 1024
 
-# ── Gemini SDK ─────────────────────────────────────────────────────────────────
-gemini_client    = None
+# ── Groq (preferred) / Gemini SDK ─────────────────────────────────────────────
+GROQ_AVAILABLE   = False
 GEMINI_AVAILABLE = False
-try:
-    from google import genai
-    from google.genai import types as genai_types
-    if GEMINI_API_KEY:
-        gemini_client    = genai.Client(api_key=GEMINI_API_KEY)
-        GEMINI_AVAILABLE = True
-        logger.info("[ScamShield] Gemini AI ready.")
-    else:
-        logger.warning("[ScamShield] No GEMINI_API_KEY — heuristic-only mode.")
-except ImportError:
-    logger.warning("[ScamShield] google-genai not installed.")
+gemini_client    = None
 
+GROQ_MODELS   = ["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "llama-3.1-8b-instant"]
 GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
+
+if _use_groq:
+    GROQ_AVAILABLE = True
+    logger.info("[ScamShield] Groq AI ready.")
+else:
+    try:
+        from google import genai
+        from google.genai import types as genai_types
+        if GEMINI_API_KEY:
+            gemini_client    = genai.Client(api_key=GEMINI_API_KEY)
+            GEMINI_AVAILABLE = True
+            logger.info("[ScamShield] Gemini AI ready.")
+        else:
+            logger.warning("[ScamShield] No GEMINI_API_KEY or GROQ_API_KEY — heuristic-only mode.")
+    except ImportError:
+        logger.warning("[ScamShield] google-genai not installed.")
 
 # ── Androguard ─────────────────────────────────────────────────────────────────
 try:
@@ -284,7 +296,50 @@ def extract_json(text: str) -> dict:
         return json.loads(m.group(0))
     raise ValueError(f"No JSON in response: {text[:200]}")
 
-# ── Gemini AI analysis ─────────────────────────────────────────────────────────
+# ── Groq AI analysis ──────────────────────────────────────────────────────────────────────────────────
+import httpx as _httpx
+
+async def analyze_with_groq(text: str) -> Optional[AnalysisResult]:
+    if not GROQ_AVAILABLE:
+        return None
+    for model in GROQ_MODELS:
+        try:
+            async with _httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {_groq_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": f"Analyse this for scam indicators:\n\n{text}"},
+                        ],
+                        "temperature": 0.1,
+                        "response_format": {"type": "json_object"},
+                        "max_tokens": 1024,
+                    },
+                )
+            resp.raise_for_status()
+            raw = resp.json()["choices"][0]["message"]["content"]
+            data = extract_json(raw)
+            data["riskScore"] = max(0, min(100, int(data.get("riskScore", 0))))
+            data["aiPowered"] = True
+            valid = {c.value for c in IconCategory}
+            for r in data.get("reasons", []):
+                if r.get("iconCategory") not in valid:
+                    r["iconCategory"] = "suspicious"
+            logger.info(f"Groq {model} succeeded")
+            return AnalysisResult(**data)
+        except Exception as e:
+            logger.warning(f"Groq {model} failed: {str(e)[:120]}")
+            continue
+    logger.warning("All Groq models failed — heuristic fallback.")
+    return None
+
+# ── Gemini AI analysis ──────────────────────────────────────────────────────────────────────────────────
 async def analyze_with_gemini(text: str) -> Optional[AnalysisResult]:
     if not gemini_client:
         return None
@@ -823,7 +878,7 @@ async def analyze_message(request: Request, body: AnalysisRequest):
             reasons=[DetectionReason(label="No Content", description="No message provided.",
                                      scoreContribution=0, iconCategory=IconCategory.safe)],
             summary="No content provided.", aiPowered=False)
-    ai = await analyze_with_gemini(text)
+    ai = await analyze_with_groq(text) or await analyze_with_gemini(text)
     res = ai if ai else heuristic_analyze(text)
     log_audit_event("text", text[:100], res.riskScore, res.classification.value)
     return res
@@ -852,7 +907,7 @@ async def analyze_voice(request: Request, file: UploadFile = File(...)):
         else:
             audio_summary = f"Audio recording ({len(contents)} bytes). Analysis performed."
 
-    result = await analyze_with_gemini(audio_summary) or heuristic_analyze(audio_summary)
+    result = await analyze_with_groq(audio_summary) or await analyze_with_gemini(audio_summary) or heuristic_analyze(audio_summary)
     log_audit_event("voice", file.filename or "voice_note.wav", result.riskScore, result.classification.value)
     return result
 
@@ -885,7 +940,7 @@ async def analyze_image(request: Request, file: UploadFile = File(...)):
         logger.warning(f"Image analysis error: {e}")
         extracted_text = f"Image binary analysis ({len(contents)} bytes)."
 
-    result = await analyze_with_gemini(extracted_text) or heuristic_analyze(extracted_text)
+    result = await analyze_with_groq(extracted_text) or await analyze_with_gemini(extracted_text) or heuristic_analyze(extracted_text)
     log_audit_event("image", file.filename or "screenshot.png", result.riskScore, result.classification.value)
     return result
 

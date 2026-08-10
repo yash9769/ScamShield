@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
+import '../services/settings_service.dart';
+import '../services/auth_service.dart';
+import '../data/repositories/scan_repository.dart';
+import '../data/models/scan_record.dart';
+import 'login_screen.dart';
 import 'history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -11,9 +17,22 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final bool _threatAlerts = true;
-  final bool _deepfakeFilter = true;
-  final bool _cloudSync = false;
+  final ScanRepository _repo = ScanRepository();
+  ScanStatistics? _stats;
+
+  @override
+  void initState() {
+    super.initState();
+    SettingsService.init();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final s = await _repo.getStatistics();
+      if (mounted) setState(() => _stats = s);
+    } catch (_) {}
+  }
 
   void _showEditProfileDialog() {
     final nameController = TextEditingController(text: UserProfileService.nameNotifier.value);
@@ -117,7 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Secure Sign Out?'),
         content: const Text(
-          'Signing out will clear active session caches. Local vault notes remain encrypted on device.',
+          'You will be returned to the sign-in screen. Your saved data stays on this device.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -126,13 +145,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Session cache cleared. Signed out securely.'),
-                  backgroundColor: AppColors.danger,
-                ),
+              await AuthService.logout();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
@@ -143,7 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showSubscriptionInfo() {
+  void _showAboutInfo() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -151,20 +171,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.stars, color: AppColors.primary),
+            Icon(Icons.shield_outlined, color: AppColors.primary),
             SizedBox(width: 8),
-            Text('Active Subscription', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('About ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Plan: ScamShield Pro (Annual)', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 6),
-            Text('Status: Active • Renews Oct 2026', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-            SizedBox(height: 12),
-            Text('Includes 256-bit VPN, unlimited neural scanning, and dark web monitoring.', style: TextStyle(fontSize: 12, height: 1.4)),
+            Text('ScamShield 3.0 Enterprise', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 10),
+            Text('Features & Integrations:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text(
+              '- Explainable Gemini AI message evaluation\n'
+              '- Static APK Analysis (Androguard & YARA)\n'
+              '- VirusTotal & Safe Browsing threat intel APIs\n'
+              '- SQLite local database with zero dummy records',
+              style: TextStyle(fontSize: 12, height: 1.5),
+            ),
           ],
         ),
         actions: [
@@ -186,75 +212,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.shield, color: AppColors.primary),
             SizedBox(width: 8),
-            Text('ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('ScamShield Profile', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        actions: [
-          ValueListenableBuilder<String>(
-            valueListenable: UserProfileService.avatarNotifier,
-            builder: (ctx, avatar, _) => CircleAvatar(
-              radius: 15,
-              backgroundImage: NetworkImage(avatar),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            _buildProfileHeader(),
+            Reveal(delay: Reveal.step(0), child: _buildProfileHeader()),
             const SizedBox(height: 24),
-            _buildSecurityCards(),
-            const SizedBox(height: 32),
-            _buildSectionHeader('Intelligence Settings'),
-            const SizedBox(height: 16),
-            _buildSettingsList([
-              _buildSettingItem(
-                Icons.notifications_active_outlined,
-                'Threat Alerts',
-                'Real-time scam notifications',
-                hasSwitch: true,
-                switchValue: _threatAlerts,
-                onChanged: (v) {},
+            Reveal(delay: Reveal.step(1), child: _buildSecurityCards()),
+            const SizedBox(height: 28),
+            Reveal(delay: Reveal.step(2), child: _buildSectionHeader('Intelligence Settings')),
+            const SizedBox(height: 12),
+            Reveal(
+              delay: Reveal.step(3),
+              child: _buildSettingsList([
+              ValueListenableBuilder<bool>(
+                valueListenable: SettingsService.threatAlerts,
+                builder: (ctx, enabled, _) => _buildSettingItem(
+                  Icons.notifications_active_outlined,
+                  'Threat Alerts',
+                  'Real-time scam notifications',
+                  hasSwitch: true,
+                  switchValue: enabled,
+                  onChanged: (v) => SettingsService.setThreatAlerts(v),
+                ),
               ),
-              _buildSettingItem(
-                Icons.videocam_outlined,
-                'Deepfake Filter',
-                'AI-driven video verification',
-                hasSwitch: true,
-                switchValue: _deepfakeFilter,
-                onChanged: (v) {},
+              ValueListenableBuilder<bool>(
+                valueListenable: SettingsService.autoScanClipboard,
+                builder: (ctx, enabled, _) => _buildSettingItem(
+                  Icons.content_paste_search,
+                  'Clipboard Check',
+                  'Offer to scan copied links and messages',
+                  hasSwitch: true,
+                  switchValue: enabled,
+                  onChanged: (v) => SettingsService.setAutoScanClipboard(v),
+                ),
               ),
               _buildSettingItem(
                 Icons.history,
                 'Scan History',
-                _cloudSync ? 'Cloud sync enabled' : 'Local storage active',
+                '${_stats?.totalScans ?? 0} record(s) in local SQLite database',
                 hasSwitch: false,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
+                    .then((_) => _loadStats()),
               ),
             ]),
-            const SizedBox(height: 32),
-            _buildSectionHeader('Account Systems'),
-            const SizedBox(height: 16),
-            _buildSettingsList([
+            ),
+            const SizedBox(height: 28),
+            Reveal(delay: Reveal.step(4), child: _buildSectionHeader('Account & System')),
+            const SizedBox(height: 12),
+            Reveal(
+              delay: Reveal.step(5),
+              child: _buildSettingsList([
               _buildSettingItem(
-                Icons.credit_card,
-                'Subscription',
-                'Premium Plan - Active',
+                Icons.info_outline,
+                'About ScamShield',
+                'Version, AI & threat engines status',
                 hasSwitch: false,
-                onTap: _showSubscriptionInfo,
+                onTap: _showAboutInfo,
               ),
               _buildSettingItem(
                 Icons.logout,
                 'Secure Sign Out',
-                'Wipe local cache',
+                'Return to authentication screen',
                 hasSwitch: false,
                 isDestructive: true,
                 onTap: _showSignOutDialog,
               ),
             ]),
+            ),
           ],
         ),
       ),
@@ -264,7 +293,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileHeader() {
     return Column(
       children: [
-        GestureDetector(
+        Pressable(
           onTap: _showEditProfileDialog,
           child: Stack(
             children: [
@@ -275,72 +304,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.primary, width: 2),
+                    boxShadow: [
+                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 16, spreadRadius: 2),
+                    ],
                   ),
                   child: CircleAvatar(
-                    radius: 60,
+                    radius: 50,
                     backgroundImage: NetworkImage(avatar),
                   ),
                 ),
               ),
               Positioned(
                 bottom: 0,
-                right: 10,
+                right: 4,
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                  child: const Icon(Icons.edit, color: Colors.black, size: 16),
+                  child: const Icon(Icons.edit, color: Colors.black, size: 14),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.nameNotifier,
-          builder: (ctx, name, _) => Text(name, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          builder: (ctx, name, _) => Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ),
+        const SizedBox(height: 4),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.titleNotifier,
-          builder: (ctx, title, _) => Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          width: double.infinity,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [AppColors.primary, AppColors.accent]),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: ElevatedButton(
-            onPressed: _showEditProfileDialog,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.edit_note, color: Colors.black),
-                SizedBox(width: 8),
-                Text('EDIT INTELLIGENCE PROFILE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
+          builder: (ctx, title, _) => Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         ),
       ],
     );
   }
 
   Widget _buildSecurityCards() {
+    final total = _stats?.totalScans ?? 0;
     return Row(
       children: [
+        Expanded(child: _buildSecurityCard('TOTAL SCANS', '$total Executed', Icons.radar_rounded, total > 0 ? '$total LOGS' : '0 LOGS', AppColors.primary)),
+        const SizedBox(width: 12),
         Expanded(child: _buildSecurityCard('ENCRYPTION', 'Military Grade', Icons.lock_outline, 'ACTIVE', AppColors.success)),
-        const SizedBox(width: 16),
-        Expanded(child: _buildSecurityCard('PRIVACY MODE', 'Stealth Ops', Icons.shield_outlined, 'SECURE', AppColors.success)),
       ],
     );
   }
@@ -350,8 +356,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,21 +365,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: AppColors.primary, size: 24),
+              Icon(icon, color: badgeColor, size: 22),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+          const SizedBox(height: 14),
+          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -382,17 +388,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSectionHeader(String title) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
+      ),
     );
   }
 
-  Widget _buildSettingsList(List<Widget> items) {
+  Widget _buildSettingsList(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
-      child: Column(children: items),
+      child: Column(children: children),
     );
   }
 
@@ -406,45 +416,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
     bool isDestructive = false,
   }) {
-    return InkWell(
-      onTap: hasSwitch ? null : onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.background, width: 2)),
+          color: (isDestructive ? AppColors.danger : AppColors.primary).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : AppColors.primary, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDestructive ? AppColors.danger.withValues(alpha: 0.7) : Colors.white)),
-                  Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                ],
-              ),
-            ),
-            if (hasSwitch)
-              Switch(
-                value: switchValue,
-                onChanged: onChanged,
-                activeThumbColor: AppColors.primary,
-              )
-            else
-              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
-        ),
+        child: Icon(icon, color: isDestructive ? AppColors.danger : AppColors.primary, size: 20),
       ),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDestructive ? AppColors.danger : AppColors.textPrimary)),
+      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+      trailing: hasSwitch
+          ? Switch(
+              value: switchValue,
+              onChanged: onChanged,
+              activeThumbColor: AppColors.primary,
+            )
+          : const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
     );
   }
 }

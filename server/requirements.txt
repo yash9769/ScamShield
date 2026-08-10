@@ -1,5 +1,26 @@
-fastapi==0.110.0
-uvicorn==0.27.1
-google-generativeai==0.4.1
-pydantic==2.6.3
-python-dotenv==1.2.2
+# ── Core API ─────────────────────────────────────────────────────────────────
+# fastapi>=0.115 is required: the older 0.110 pin brought starlette 0.36, whose
+# TestClient is incompatible with the httpx>=0.28 that google-genai requires.
+fastapi>=0.115.0
+uvicorn[standard]>=0.27.1
+pydantic>=2.6.3
+python-dotenv>=1.0.1
+python-multipart>=0.0.9
+httpx>=0.28.1
+
+# ── AI ───────────────────────────────────────────────────────────────────────
+# NOTE: the package is "google-genai" (provides `from google import genai`).
+# The previous pin of "google-generativeai" does NOT provide that import path,
+# so the Gemini client silently failed to load and the API ran permanently in
+# heuristic-only mode.
+google-genai>=0.1.0
+
+# ── APK static analysis ──────────────────────────────────────────────────────
+androguard>=4.0.0
+yara-python>=4.5.0
+
+# ── Rate limiting ────────────────────────────────────────────────────────────
+slowapi>=0.1.9
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest>=8.0.0

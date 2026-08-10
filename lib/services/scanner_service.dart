@@ -109,11 +109,31 @@ class ScannerService {
         'matches': result.secrets.isNotEmpty ? ['Hardcoded_Secrets_Rule'] : [],
       },
       'osint': {
+        // On-device fallback: the cloud threat-intel providers are proxied
+        // through the ScamShield backend (which holds the API keys), so they
+        // are not "misconfigured" here — they simply were not run because the
+        // backend was unreachable for this scan. Report that honestly and with
+        // the same shape the server path returns, so the UI can render a clear
+        // status instead of a scary "not available / not configured" message.
         'virustotal': {
+          'checked': false,
           'malicious': 0,
           'suspicious': 0,
-          'note': 'Backend OSINT service unavailable (Processed via On-Device Engine)',
-        }
+          'note':
+              'Cloud reputation not run in on-device mode. Reconnect to the '
+              'ScamShield backend (with a VirusTotal key configured) for a live '
+              'multi-engine verdict.',
+        },
+        'safe_browsing': {
+          'checked': false,
+          'results': const <Map<String, dynamic>>[],
+          'urls_found': result.urls.length,
+          'note': result.urls.isEmpty
+              ? 'No URLs were extracted from this APK, so there was nothing to check.'
+              : '${result.urls.length} URL(s) extracted. Reconnect to the ScamShield '
+                  'backend (with a Google Safe Browsing key configured) to screen '
+                  'them live.',
+        },
       }
     };
   }
