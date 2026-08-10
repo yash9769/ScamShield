@@ -319,3 +319,23 @@ def test_breach_malformed(mock_get):
     r = client.get("/breach?email=test@example.com")
     assert r.status_code == 502
 
+
+def test_missing_admin_key_raises_error():
+    import subprocess
+    import os
+    env = os.environ.copy()
+    env.pop("ADMIN_API_KEY", None)
+    env.pop("PYTEST_CURRENT_TEST", None)
+    env.pop("CI", None)
+    # Run the main.py module import in a separate python process
+    res = subprocess.run(
+        ["python3", "-c", "import main"],
+        cwd="server",
+        env=env,
+        capture_output=True,
+        text=True
+    )
+    assert res.returncode != 0
+    assert "ValueError: ADMIN_API_KEY environment variable is required" in res.stderr
+
+

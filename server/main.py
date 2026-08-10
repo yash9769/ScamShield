@@ -36,7 +36,13 @@ ABUSEIPDB_API_KEY        = os.getenv("ABUSEIPDB_API_KEY", "")
 XPOSEDORNOT_API_KEY      = os.getenv("XPOSEDORNOT_API_KEY", "")
 LOG_LEVEL                = os.getenv("LOG_LEVEL", "INFO")
 RATE_LIMIT_ENABLED       = os.getenv("RATE_LIMIT_ENABLED", "true").lower() != "false"
-ADMIN_API_KEY            = os.getenv("ADMIN_API_KEY", "scamshield_admin_sec_key_2026")
+ADMIN_API_KEY            = os.getenv("ADMIN_API_KEY", "")
+if not ADMIN_API_KEY:
+    import sys
+    if "pytest" in sys.modules or os.getenv("PYTEST_CURRENT_TEST") or os.getenv("CI"):
+        ADMIN_API_KEY = "scamshield_admin_sec_key_2026"
+    else:
+        raise ValueError("ADMIN_API_KEY environment variable is required and must not be empty.")
 
 # Resolve effective AI key and provider
 _groq_key = GROQ_API_KEY or (GEMINI_API_KEY if GEMINI_API_KEY.startswith("gsk_") else "")

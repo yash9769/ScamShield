@@ -56,7 +56,7 @@ class Settings(BaseSettings):
 
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://scamshield:scamshield_password@localhost:5432/scamshield",
+        default="postgresql+asyncpg://scamshield@localhost:5432/scamshield",
         description="PostgreSQL Database URL",
     )
 
