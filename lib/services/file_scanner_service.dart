@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'settings_service.dart';
 import 'scam_detector.dart';
 import 'apk_analyzer_service.dart';
 import 'osint_service.dart';
@@ -181,6 +182,13 @@ class FileScannerService {
 
   /// Reads clipboard text and runs the scam detector.
   static Future<FileScanResult?> scanClipboard() async {
+    if (!SettingsService.autoScanClipboard.value) {
+      return FileScanResult.failure(
+        source: ScanSource.clipboard,
+        message: 'Clipboard scanning is disabled in settings.',
+        fileName: 'Clipboard',
+      );
+    }
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim() ?? '';
