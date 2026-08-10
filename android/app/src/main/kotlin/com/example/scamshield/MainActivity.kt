@@ -1,5 +1,7 @@
 package com.example.scamshield
 
+import android.app.admin.DevicePolicyManager
+import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,10 +16,18 @@ class MainActivity : FlutterActivity() {
             if (call.method == "checkDeviceIntegrity") {
                 val isRooted = checkRootMethod1() || checkRootMethod2()
                 val isEmulator = checkIsEmulator()
+                
+                val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
+                val encryptionStatus = dpm?.storageEncryptionStatus ?: DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED
+                val isHardwareEncrypted = encryptionStatus == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE ||
+                        encryptionStatus == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY ||
+                        (android.os.Build.VERSION.SDK_INT >= 24 &&
+                         encryptionStatus == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER)
+
                 val integrityData = mapOf(
                     "isRooted" to isRooted,
                     "isEmulator" to isEmulator,
-                    "isHardwareEncrypted" to true,
+                    "isHardwareEncrypted" to isHardwareEncrypted,
                     "bootloaderLocked" to !isRooted,
                     "statusMessage" to if (isRooted) "WARN: Root access or test-keys detected" else "SECURE: Hardware integrity verified"
                 )

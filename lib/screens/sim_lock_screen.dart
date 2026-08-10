@@ -43,11 +43,14 @@ class _SimLockScreenState extends State<SimLockScreen> {
           final nativeRes = await channel.invokeMethod<Map>('checkDeviceIntegrity');
           if (nativeRes != null) {
             info['Root Status'] = nativeRes['isRooted'] == true ? 'Rooted / Modified' : 'Clean (Not Rooted)';
-            info['Hardware Encryption'] = nativeRes['isHardwareEncrypted'] == true ? 'Active (AES-256)' : 'Disabled';
+            info['Hardware Encryption'] = nativeRes['isHardwareEncrypted'] == true ? 'Active (Verified)' : 'Disabled';
+          } else {
+            info['Root Status'] = 'Not verified';
+            info['Hardware Encryption'] = 'Not verified';
           }
         } catch (_) {
-          info['Root Status'] = 'Clean (Standard System)';
-          info['Hardware Encryption'] = 'Active (Hardware Storage)';
+          info['Root Status'] = 'Not verified';
+          info['Hardware Encryption'] = 'Not verified';
         }
       } else if (Platform.isIOS) {
         final d = await plugin.iosInfo;
@@ -56,6 +59,8 @@ class _SimLockScreenState extends State<SimLockScreen> {
         info['iOS Version'] = d.systemVersion;
         info['System Name'] = d.systemName;
         info['Is Physical Device'] = d.isPhysicalDevice ? 'Yes' : 'No (Simulator)';
+        info['Root / Jailbreak Status'] = 'Not verified';
+        info['Hardware Encryption'] = 'Not verified';
       }
     } catch (_) {
       info['Error'] = 'Could not read device info';
