@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     GEMINI_MAX_RETRIES: int = Field(default=2, description="Max retry attempts per model")
     GEMINI_TEMPERATURE: float = Field(default=0.1, description="Gemini generation temperature")
 
+    # ── AI / Groq ─────────────────────────────────────────────────────────────
+    GROQ_API_KEY: str = Field(default="", description="Groq API key")
+    GROQ_MODELS: List[str] = Field(
+        default=["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "llama-3.1-8b-instant"],
+        description="Ordered list of Groq models to try",
+    )
+
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://scamshield:scamshield_password@localhost:5432/scamshield",
@@ -120,7 +127,12 @@ class Settings(BaseSettings):
     @property
     def gemini_available(self) -> bool:
         """Check if Gemini is configured."""
-        return bool(self.GEMINI_API_KEY)
+        return bool(self.GEMINI_API_KEY) and not self.GEMINI_API_KEY.startswith("gsk_")
+
+    @property
+    def groq_available(self) -> bool:
+        """Check if Groq is configured."""
+        return bool(self.GROQ_API_KEY) or self.GEMINI_API_KEY.startswith("gsk_")
 
     @property
     def virustotal_available(self) -> bool:

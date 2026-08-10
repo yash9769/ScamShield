@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import 'learning_module_screen.dart';
 
@@ -11,7 +12,6 @@ class LearnScreen extends StatefulWidget {
 }
 
 class _LearnScreenState extends State<LearnScreen> {
-  // Multi-question Spot the Scam Challenge
   int _challengeIndex = 0;
   int _score = 0;
 
@@ -25,31 +25,24 @@ class _LearnScreenState extends State<LearnScreen> {
     },
     {
       'source': 'Email • Bank Alert',
-      'message': '”Dear Customer, we noticed a new device login to your Chase online banking from Moscow, RU. If this was not you, reset your password immediately.”',
+      'message': '”Dear Customer, we noticed a new device login to your online banking from Moscow, RU. If this was not you, check your account settings.”',
       'question': 'Is this a legitimate security notification?',
       'isScam': false,
       'explanation': 'SAFE ALERT! Standard security alert informing you of unusual activity. Verify by opening your official bank app directly.',
     },
     {
       'source': 'Phone Call • Unknown Number',
-      'message': '”Hello, this is officer Davis from IRS Fraud Prevention. There is a warrant for your arrest for unpaid taxes. Pay \$500 in Target gift cards to clear your file.”',
+      'message': '”Hello, this is officer Davis from IRS Fraud Prevention. Pay \$500 in Target gift cards immediately to clear your tax arrest warrant.”',
       'question': 'Should you follow the caller instructions?',
       'isScam': true,
       'explanation': 'SCAM! Government agencies like the IRS or Police will NEVER demand payment in gift cards or crypto.',
     },
     {
       'source': 'WhatsApp • Unsaved Contact',
-      'message': '”Hi Mom! I lost my phone and wallet. This is my new temporary number. Can you send \$450 via Zelle to help pay my taxi?”',
+      'message': '”Hi Mom! I lost my phone and wallet. This is my temporary number. Can you send \$450 via Zelle to pay my taxi?”',
       'question': 'Is this a safe request to transfer funds?',
       'isScam': true,
       'explanation': 'SCAM! Classic Emergency Impersonation fraud. Always call your relative on their known original phone number to verify first.',
-    },
-    {
-      'source': 'Website Pop-up • Safari',
-      'message': '”WARNING! (3) Viruses Detected on your iPhone! System memory corrupted. Tap CLEAN NOW to install Security Cleaner 2026.”',
-      'question': 'Is this system warning genuine?',
-      'isScam': true,
-      'explanation': 'SCAM! Web browsers cannot scan your phone for system viruses. These are rogue scareware ads trying to install malware.',
     },
   ];
 
@@ -69,7 +62,7 @@ Phishing is the practice of sending fraud messages designed to trick victims int
 Scammers exploit human emotions — panic ("account frozen"), greed ("you won a \$1,000 gift card"), or authority ("IRS tax audit"). When emotion is triggered, critical thinking drops.
 
 2. Lookalike Domains & Shortened Links:
-Attacking links often replace subtle characters (e.g. paypa1.com vs paypal.com or arnbc.com vs ambc.com). Shortened bit.ly or tinyurl links hide the true malicious destination.
+Attacking links often replace subtle characters (e.g. paypa1.com vs paypal.com). Shortened bit.ly or tinyurl links hide the true malicious destination.
 
 3. Verification Golden Rule:
 If you receive an alert from any service (Bank, Netflix, Courier), NEVER tap the link in the message. Always open your browser, type the official domain manually, or launch the official mobile app.
@@ -101,85 +94,81 @@ If you receive an alert from any service (Bank, Netflix, Courier), NEVER tap the
   );
 
   static const _urlModule = LearningModuleData(
-    title: 'URL Deep Dive',
-    subtitle: 'Decoding Web Links & Identifying Spoofed Domains',
-    icon: Icons.travel_explore,
+    title: 'URL & Web Safety',
+    subtitle: 'Spotting Malicious Domains & Typosquatting',
+    icon: Icons.public,
     keyTakeaways: [
-      'The true domain is located immediately to the left of the extension (.com, .org).',
-      'Subdomains like bank.com.fakeportal.net belong to fakeportal.net, NOT bank.com.',
-      'HTTPS indicates encrypted connection, NOT that the site owner is trustworthy.',
+      'Typosquatting replaces subtle characters (e.g., "rn" looking like "m").',
+      'HTTPS encrypts traffic but DOES NOT mean the website is legitimate.',
+      'Top-Level Domains like .top, .xyz, .cc are heavily abused by scammers.',
     ],
     fullLessonText: '''
-Understanding URL structures is your strongest weapon against web-based fraud.
+Websites can be cloned in minutes to mirror legitimate banking or shopping portals.
 
-1. Anatomy of a URL:
-In https://login.secure.bankofamerica.com.auth-verify.net/login:
-- Scheme: https://
-- Subdomain: login.secure.bankofamerica.com
-- Primary Domain: auth-verify.net (THIS IS THE ACTUAL HOST!)
+1. Typosquatting & Subdomain Tricks:
+Scammers register lookalike domains like `paypal-security-update.com` where the actual domain owner is `paypal-security-update.com`, NOT `paypal.com`.
 
-2. Typosquatting:
-Scammers register domains with common misspellings (e.g. gogle.com, netfIix.com with capital I) to catch users making typing mistakes.
+2. The HTTPS Fallback Fallacy:
+Green padlock (HTTPS) only means the connection is encrypted. Fraudulent phishing sites can easily obtain free SSL certificates.
 
-3. SSL / HTTPS Misconception:
-Seeing a padlock icon (HTTPS) only means your communication with that server is encrypted. Anyone can generate free SSL certificates for fake phishing websites.
+3. Domain Inspection Rule:
+Look at the characters directly before `.com`, `.org`, or `.gov`. In `login.chase.com.fake-login.xyz`, the actual domain is `fake-login.xyz`.
 ''',
     quizQuestions: [
       QuizQuestion(
-        question: 'Who owns the website https://chase.com.security-alert-99.org?',
+        question: 'In the URL http://login.apple.com.security-verify.top, what is the actual domain owner?',
         options: [
-          'Chase Bank',
-          'security-alert-99.org',
+          'apple.com',
+          'security-verify.top',
+          'login.apple.com',
           'Apple Inc.',
-          'Google Cloud',
         ],
         correctIndex: 1,
-        explanation: 'The domain name right before .org is the actual owner: security-alert-99.org.',
+        explanation: 'The domain owner is determined by the string immediately preceding the TLD (.top). Here, security-verify.top owns the domain.',
       ),
     ],
   );
 
   static const _bankModule = LearningModuleData(
-    title: 'Bank Fraud',
-    subtitle: 'Protecting OTPs, Banking Credentials, & MPINs',
-    icon: Icons.account_balance_outlined,
+    title: 'Banking & Financial Scams',
+    subtitle: 'Protecting OTPs, Wire Transfers & QR Codes',
+    icon: Icons.account_balance,
     keyTakeaways: [
-      'Bank staff will NEVER ask for your 6-digit OTP, password, or card CVV.',
-      'Vishing calls often spoof official bank helpline numbers using VoIP services.',
-      'Always use biometric authentication and in-app customer support.',
+      'Banks will NEVER ask for your One-Time Password (OTP) or PIN over the phone.',
+      'Fake buyers on marketplaces send QR codes claiming "Scan to RECEIVE payment".',
+      'Never send funds via wire or Zelle to "secure your account".',
     ],
     fullLessonText: '''
-Bank fraud attacks target direct financial loss through social engineering.
+Financial scams trick victims into transferring money or surrendering bank credentials.
 
-1. One-Time Passwords (OTPs):
-OTPs act as the final key to authorization. Scammers pretend to be bank security officers helping you "cancel a fraudulent transaction", while actually asking you to read out the OTP to complete their transaction!
+1. Fake Bank Agent Calls:
+Caller ID spoofing makes the call look like it originates from your bank\'s official number. The caller claims your account is under attack and asks for your 2FA OTP to "block" the transaction.
 
-2. Caller ID Spoofing:
-Caller ID can easily be manipulated using VoIP tools. Even if your caller ID says "Chase Customer Care", do not share confidential details. Hang up and call the number on the back of your debit card.
+2. QR Code Payment Traps:
+Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. Scanning a QR code NEVER deposits money into your bank account.
 ''',
     quizQuestions: [
       QuizQuestion(
-        question: 'A caller claiming to be from your bank security team asks for your OTP to stop a hacker. What should you do?',
+        question: 'A caller claiming to be from your bank asks for your 6-digit SMS verification code to stop a fraudulent charge. What should you do?',
         options: [
-          'Read out the OTP quickly to stop the transfer',
-          'Hang up immediately. Bank staff will never ask for your OTP',
-          'Give them a fake 4-digit PIN instead',
-          'Ask them to email you the request first',
+          'Read out the code quickly before it expires',
+          'Hang up immediately. Bank staff never ask for 2FA OTP codes',
+          'Ask the caller for their employee ID before giving the code',
+          'Transfer your money to a new account',
         ],
         correctIndex: 1,
-        explanation: 'No legitimate bank employee will ever ask for your secret OTP under any circumstances.',
+        explanation: 'OTP codes grant full account access. Bank representatives will NEVER ask for your OTP.',
       ),
     ],
   );
 
-  void _handleAnswer(bool userTappedYes) {
-    final currentChallenge = _challenges[_challengeIndex];
-    final isScam = currentChallenge['isScam'] as bool;
-    final isCorrect = (userTappedYes && !isScam) || (!userTappedYes && isScam);
+  void _answerChallenge(bool choice) {
+    final current = _challenges[_challengeIndex];
+    final isCorrect = choice == current['isScam'];
 
-    setState(() {
-      if (isCorrect) _score++;
-    });
+    if (isCorrect) {
+      setState(() => _score++);
+    }
 
     showDialog(
       context: context,
@@ -189,90 +178,24 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
         title: Row(
           children: [
             Icon(
-              isCorrect ? Icons.check_circle : Icons.warning_rounded,
+              isCorrect ? Icons.check_circle : Icons.cancel,
               color: isCorrect ? AppColors.success : AppColors.danger,
-              size: 28,
             ),
-            const SizedBox(width: 10),
-            Text(
-              isCorrect ? 'Correct Analysis!' : 'Security Warning!',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: isCorrect ? AppColors.success : AppColors.danger,
-              ),
-            ),
+            const SizedBox(width: 8),
+            Text(isCorrect ? 'Correct Decision!' : 'Incorrect Analysis', style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(currentChallenge['explanation'] as String, style: const TextStyle(fontSize: 13, height: 1.5)),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (_challengeIndex < _challenges.length - 1) {
-                setState(() {
-                  _challengeIndex++;
-                });
-              } else {
-                _showChallengeCompleteDialog();
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: Text(
-              _challengeIndex < _challenges.length - 1 ? 'Next Scenario →' : 'View Results 🏆',
-              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showChallengeCompleteDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Text('🏆', style: TextStyle(fontSize: 28)),
-            SizedBox(width: 10),
-            Text('Challenge Complete!', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'You scored $_score out of ${_challenges.length}!',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Your vigilance score has been updated. Keep practicing daily scenarios to stay sharp against evolving threat tactics.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
-            ),
-          ],
-        ),
+        content: Text(current['explanation'], style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary)),
         actions: [
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               setState(() {
-                _challengeIndex = 0;
-                _score = 0;
+                _challengeIndex = (_challengeIndex + 1) % _challenges.length;
               });
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Restart Quiz', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: const Text('Next Scenario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -283,19 +206,17 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.shield, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
+        title: const Text('Cyber Threat Academy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        centerTitle: false,
         actions: [
-          ValueListenableBuilder<String>(
-            valueListenable: UserProfileService.avatarNotifier,
-            builder: (ctx, avatar, _) => CircleAvatar(
-              radius: 15,
-              backgroundImage: NetworkImage(avatar),
+          GestureDetector(
+            onTap: () {},
+            child: ValueListenableBuilder<String>(
+              valueListenable: UserProfileService.avatarNotifier,
+              builder: (ctx, avatar, _) => CircleAvatar(
+                radius: 14,
+                backgroundImage: NetworkImage(avatar),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -306,60 +227,44 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildVigilanceScore(),
-            const SizedBox(height: 32),
-            const Row(
-              children: [
-                Icon(Icons.check_circle, color: AppColors.success, size: 18),
-                SizedBox(width: 8),
-                Text('Daily Safe Protocol', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
+            Reveal(delay: Reveal.step(0), child: _buildVigilanceScore()),
+            const SizedBox(height: 28),
+            Reveal(
+              delay: Reveal.step(1),
+              child: const Text('DAILY SAFETY PROTOCOLS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
             ),
-            const SizedBox(height: 16),
-            _buildProtocolCard(Icons.email_outlined, 'EMAIL SECURITY', 'Always hover over links to verify the actual destination URL before clicking.', AppColors.success),
             const SizedBox(height: 12),
-            _buildProtocolCard(Icons.phonelink_lock, 'MFA ADVICE', 'Never share a One-Time Password (OTP) with anyone, even if they claim to be from support.', AppColors.success),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('CHALLENGE MODE', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-                    Text('Spot the Scam', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+            Reveal(delay: Reveal.step(2), child: _buildProtocolCard(Icons.email_outlined, 'EMAIL INTEGRITY', 'Hover over embedded links to inspect true destination URLs before clicking.', AppColors.primary)),
+            const SizedBox(height: 10),
+            Reveal(delay: Reveal.step(3), child: _buildProtocolCard(Icons.phonelink_lock, 'OTP DEFENSE', 'Never share One-Time Passwords (OTP) with anyone claiming to be from customer support.', AppColors.success)),
+            const SizedBox(height: 28),
+            Reveal(
+              delay: Reveal.step(4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('SPOT THE SCAM CHALLENGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                    child: Text('Scenario ${_challengeIndex + 1}/${_challenges.length}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
-                  child: Text('Scenario ${_challengeIndex + 1} of ${_challenges.length}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildChallengeCard(),
-            const SizedBox(height: 32),
-            const Text('INTERACTIVE LEARNING MODULES', style: TextStyle(color: AppColors.accent, fontSize: 11, fontWeight: FontWeight.bold)),
-            const Text('Read Concept → Pass Quiz', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildExploreCard(
-              context,
-              _phishingModule,
+            const SizedBox(height: 12),
+            Reveal(delay: Reveal.step(5), child: _buildChallengeCard()),
+            const SizedBox(height: 28),
+            Reveal(
+              delay: Reveal.step(6),
+              child: const Text('INTERACTIVE SECURITY MODULES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
             ),
-            const SizedBox(height: 16),
-            _buildExploreCard(
-              context,
-              _urlModule,
-            ),
-            const SizedBox(height: 16),
-            _buildExploreCard(
-              context,
-              _bankModule,
-            ),
+            const SizedBox(height: 12),
+            Reveal(delay: Reveal.step(7), child: _buildExploreCard(context, _phishingModule)),
+            const SizedBox(height: 12),
+            Reveal(delay: Reveal.step(8), child: _buildExploreCard(context, _urlModule)),
+            const SizedBox(height: 12),
+            Reveal(delay: Reveal.step(9), child: _buildExploreCard(context, _bankModule)),
           ],
         ),
       ),
@@ -373,6 +278,7 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
       ),
       child: Column(
         children: [
@@ -380,27 +286,27 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 120,
-                height: 120,
+                width: 110,
+                height: 110,
                 child: CircularProgressIndicator(
-                  value: 0.78 + (_score * 0.04).clamp(0.0, 0.2),
+                  value: (78 + (_score * 4)) / 100,
                   strokeWidth: 8,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.surfaceLight,
                   valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
               Column(
                 children: [
-                  Text('${78 + (_score * 4)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                  const Text('VIGILANCE SCORE', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                  Text('${78 + (_score * 4)}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  const Text('SCORE', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, letterSpacing: 1)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text('Elite Defender', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Cyber Vigilance Rating', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          const Text('You’re in the top 5% of secure users this week.', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+          const Text('Complete scenarios to level up your threat awareness rating.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
         ],
       ),
     );
@@ -412,20 +318,24 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(title, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
-                Text(description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4)),
               ],
             ),
           ),
@@ -437,79 +347,46 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
   Widget _buildChallengeCard() {
     final current = _challenges[_challengeIndex];
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(current['source'], style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.4)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.chat_bubble, color: AppColors.accent, size: 16),
-                    const SizedBox(width: 8),
-                    Text(current['source'] as String, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
-                  ),
-                  child: Text(
-                    current['message'] as String,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
+            child: Text(current['message'], style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary)),
           ),
-          const SizedBox(height: 16),
-          Text(current['question'] as String, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          Text(current['question'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _handleAnswer(true),
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Safe'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.textSecondary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                child: ElevatedButton.icon(
+                  onPressed: () => _answerChallenge(true),
+                  icon: const Icon(Icons.gpp_bad, color: Colors.white, size: 18),
+                  label: const Text('SCAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, padding: const EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [AppColors.danger, AppColors.warning]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleAnswer(false),
-                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                    label: const Text('Scam', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
+                child: ElevatedButton.icon(
+                  onPressed: () => _answerChallenge(false),
+                  icon: const Icon(Icons.gpp_good, color: Colors.black, size: 18),
+                  label: const Text('SAFE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, padding: const EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),
             ],
@@ -519,53 +396,45 @@ Caller ID can easily be manipulated using VoIP tools. Even if your caller ID say
     );
   }
 
-  Widget _buildExploreCard(BuildContext context, LearningModuleData module) {
-    return Container(
-      padding: const EdgeInsets.all(24),
+  Widget _buildExploreCard(BuildContext context, LearningModuleData data) {
+    return Pressable(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => LearningModuleScreen(module: data)));
+      },
+      child: Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(module.icon, color: AppColors.primary, size: 32),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text('LESSON + QUIZ', style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+            child: Icon(data.icon, color: AppColors.primary, size: 24),
           ),
-          const SizedBox(height: 16),
-          Text(module.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(module.subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          const SizedBox(height: 16),
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => LearningModuleScreen(module: module)),
-              );
-            },
-            child: const Row(
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('START MODULE', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
-                SizedBox(width: 4),
-                Icon(Icons.arrow_forward, color: AppColors.primary, size: 14),
+                Text(data.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 2),
+                Text(data.subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ],
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios, color: AppColors.primary, size: 18),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => LearningModuleScreen(module: data)));
+            },
+          ),
         ],
       ),
+    ),
     );
   }
 }

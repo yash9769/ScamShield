@@ -118,10 +118,60 @@ class BreachInfo {
   }
 }
 
+/// Aggregate, global breach statistics derived from the full known-breach
+/// dataset (Have I Been Pwned's public `/breaches` feed, or the bundled
+/// fallback set when offline). These power the "Scale of the Problem" hero
+/// cards. Every number is computed from real breach records — nothing here is
+/// fabricated: [exposedEmails]/[exposedPasswords] only sum breaches whose
+/// disclosed data classes actually include those categories.
+class BreachStats {
+  final int totalBreaches;
+  final int exposedRecords;
+  final int exposedEmails;
+  final int exposedPasswords;
+  final String latestBreachDate; // ISO yyyy-MM-dd, or '' if unknown
+
+  const BreachStats({
+    required this.totalBreaches,
+    required this.exposedRecords,
+    required this.exposedEmails,
+    required this.exposedPasswords,
+    required this.latestBreachDate,
+  });
+
+  /// Compact human-readable form: 11.6B, 5.2B, 836.0M, 772, ...
+  static String format(int n) {
+    if (n >= 1000000000) return '${(n / 1000000000).toStringAsFixed(1)}B';
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+    return '$n';
+  }
+
+  static const _months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  /// "2026-07-31" -> "July 31, 2026". Falls back to the raw string on any
+  /// parse failure so the UI never shows a crash artifact.
+  String get latestBreachDatePretty {
+    try {
+      final parts = latestBreachDate.split('-');
+      if (parts.length != 3) return latestBreachDate;
+      final y = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      final d = int.parse(parts[2]);
+      if (m < 1 || m > 12) return latestBreachDate;
+      return '${_months[m - 1]} $d, $y';
+    } catch (_) {
+      return latestBreachDate;
+    }
+  }
+}
+
 class BreachService {
   static const _baseUrl = 'https://haveibeenpwned.com/api/v3';
   static const _userAgent = 'ScamShield-App/1.0';
-
   // HIBP API key — required for per-email breach lookup.
   // The /v3/breaches endpoint (all known breaches) is free and works without a key.
   // The /v3/breachedaccount/{email} endpoint requires a subscription key from:
@@ -216,6 +266,47 @@ class BreachService {
       }
     } catch (_) {}
     return _fallbackBreaches.take(limit).toList();
+  }
+
+  /// Compute the global "Scale of the Problem" statistics from the full known
+  /// breach dataset. Uses the same HIBP feed as [getRecentBreaches] (falling
+  /// back to the bundled set offline), so the hero numbers stay consistent
+  /// with the Recent Breaches list. Emails/passwords are counted only for
+  /// breaches whose disclosed data classes include those categories.
+  static Future<BreachStats> getBreachStats() async {
+    final all = await getRecentBreaches(limit: 100000);
+
+    int exposedRecords = 0;
+    int exposedEmails = 0;
+    int exposedPasswords = 0;
+    String latest = '';
+
+    bool mentions(List<String> classes, List<String> needles) {
+      for (final c in classes) {
+        final lc = c.toLowerCase();
+        for (final n in needles) {
+          if (lc.contains(n)) return true;
+        }
+      }
+      return false;
+    }
+
+    for (final b in all) {
+      exposedRecords += b.pwnCount;
+      if (mentions(b.dataClasses, ['email'])) exposedEmails += b.pwnCount;
+      if (mentions(b.dataClasses, ['password'])) exposedPasswords += b.pwnCount;
+      if (b.breachDate.isNotEmpty && b.breachDate.compareTo(latest) > 0) {
+        latest = b.breachDate;
+      }
+    }
+
+    return BreachStats(
+      totalBreaches: all.length,
+      exposedRecords: exposedRecords,
+      exposedEmails: exposedEmails,
+      exposedPasswords: exposedPasswords,
+      latestBreachDate: latest,
+    );
   }
 
   /// Check if an email has been in any known breach.

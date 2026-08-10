@@ -118,6 +118,15 @@ class ScanRepository {
     return count;
   }
 
+
+  // ── Aliases used by HistoryScreen ─────────────────────────────────────────
+
+  /// Deletes a single scan by id (alias for [deleteScan]).
+  Future<void> deleteById(int id) => deleteScan(id);
+
+  /// Deletes all history (alias for [clearHistory]).
+  Future<void> clearAll() => clearHistory();
+
   // ── Statistics ────────────────────────────────────────────────────────────
 
   /// Computes aggregated [ScanStatistics] over all records.

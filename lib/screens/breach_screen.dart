@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../widgets/motion.dart';
 import '../services/breach_service.dart';
 
 class BreachScreen extends StatefulWidget {
@@ -19,6 +20,8 @@ class _BreachScreenState extends State<BreachScreen>
   bool _isLoading = true;
   String _error = '';
 
+  BreachStats? _stats;
+
   final TextEditingController _emailController = TextEditingController();
   BreachCheckResult? _emailResult;
   bool _isCheckingEmail = false;
@@ -35,6 +38,7 @@ class _BreachScreenState extends State<BreachScreen>
       initialIndex: widget.initialIndex.clamp(0, 1),
     );
     _loadBreaches();
+    _loadStats();
   }
 
   @override
@@ -64,6 +68,15 @@ class _BreachScreenState extends State<BreachScreen>
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await BreachService.getBreachStats();
+      if (mounted) setState(() => _stats = stats);
+    } catch (_) {
+      // Stats are non-critical; the hero simply shows placeholders on failure.
     }
   }
 
@@ -125,16 +138,16 @@ class _BreachScreenState extends State<BreachScreen>
           unselectedLabelColor: AppColors.textSecondary,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
-            Tab(icon: Icon(Icons.public_outlined), text: 'Recent Breaches'),
             Tab(icon: Icon(Icons.mark_email_read_outlined), text: 'Email Breach Check'),
+            Tab(icon: Icon(Icons.public_outlined), text: 'Recent Breaches'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildBreachList(),
           _buildEmailCheck(),
+          _buildBreachList(),
         ],
       ),
     );
@@ -174,7 +187,11 @@ class _BreachScreenState extends State<BreachScreen>
         itemCount: _breaches.length + 1,
         itemBuilder: (ctx, i) {
           if (i == 0) return _buildBreachHeader();
-          return _buildBreachCard(_breaches[i - 1]);
+          return Reveal(
+            delay: Reveal.step(i, stepMs: 45, baseMs: 0),
+            offsetY: 16,
+            child: _buildBreachCard(_breaches[i - 1]),
+          );
         },
       ),
     );
@@ -271,7 +288,11 @@ class _BreachScreenState extends State<BreachScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          Reveal(delay: Reveal.step(0), child: _buildScaleHero()),
+          const SizedBox(height: 20),
+          Reveal(
+            delay: Reveal.step(1),
+            child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -312,8 +333,208 @@ class _BreachScreenState extends State<BreachScreen>
               ],
             ),
           ),
+          ),
           const SizedBox(height: 20),
-          if (_checkStatus != 'idle') _buildEmailResultWidget(),
+          if (_checkStatus != 'idle') Reveal(child: _buildEmailResultWidget()),
+          const SizedBox(height: 24),
+          Reveal(delay: Reveal.step(2), child: _buildWhatToDoSection()),
+        ],
+      ),
+    );
+  }
+
+  static const Color _purple = Color(0xFF8B5CF6);
+
+  Widget _buildScaleHero() {
+    final stats = _stats;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [AppColors.primary, AppColors.accent],
+            ).createShader(bounds),
+            child: const Text(
+              'The Scale of the Problem',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Our data breach intelligence indexes real exposed records from real data breaches. Are you in them?',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard(Icons.shield_rounded, AppColors.danger, stats == null ? '—' : '${stats.totalBreaches}', 'DATA BREACHES')),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard(Icons.storage_rounded, AppColors.accent, stats == null ? '—' : BreachStats.format(stats.exposedRecords), 'EXPOSED RECORDS')),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard(Icons.email_rounded, _purple, stats == null ? '—' : BreachStats.format(stats.exposedEmails), 'EXPOSED EMAILS')),
+              const SizedBox(width: 12),
+              Expanded(child: _buildStatCard(Icons.key_rounded, AppColors.success, stats == null ? '—' : BreachStats.format(stats.exposedPasswords), 'EXPOSED PASSWORDS')),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "The question isn't if you've been breached — it's how many times.",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600, height: 1.4),
+          ),
+          if (stats != null && stats.latestBreachDate.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Latest breach added: ${stats.latestBreachDatePretty}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(IconData icon, Color color, String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.4)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWhatToDoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+            child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 12),
+          const Text('What Should You Do?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(height: 16),
+          Reveal(
+            delay: Reveal.step(0, baseMs: 100),
+            offsetY: 14,
+            child: _buildRecommendationCard(
+              Icons.shield_rounded, AppColors.warning, 'HIGH PRIORITY',
+              'Enable Two-Factor Authentication',
+              'Add 2FA on all supported accounts using an authenticator app like Google Authenticator or Authy.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Reveal(
+            delay: Reveal.step(1, baseMs: 100),
+            offsetY: 14,
+            child: _buildRecommendationCard(
+              Icons.phone_in_talk_rounded, AppColors.primary, 'RECOMMENDED',
+              'Watch for Phishing Calls & SMS',
+              'Be cautious of unexpected calls or texts asking for personal information.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Reveal(
+            delay: Reveal.step(2, baseMs: 100),
+            offsetY: 14,
+            child: _buildRecommendationCard(
+              Icons.mark_email_unread_rounded, AppColors.primary, 'RECOMMENDED',
+              'Beware of Scam Mail',
+              'Be skeptical of unexpected correspondence requesting personal details.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Reveal(
+            delay: Reveal.step(3, baseMs: 100),
+            offsetY: 14,
+            child: _buildRecommendationCard(
+              Icons.visibility_rounded, AppColors.primary, 'RECOMMENDED',
+              'Monitor Your Accounts',
+              'Set up login alerts and review account activity regularly for suspicious access.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard(IconData icon, Color accent, String badge, String title, String description) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border(left: BorderSide(color: accent, width: 4)),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: accent.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: accent, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: accent.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                child: Text(badge, style: TextStyle(color: accent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(height: 6),
+          Text(description, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
         ],
       ),
     );

@@ -3,6 +3,7 @@
 
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -20,6 +21,10 @@ class FileScanResult {
   final ApkAnalysisResult? apkAnalysis;
   final List<OsintResult>? osintResults;
 
+  /// Set when the file could not be read or analysed. When non-null, the
+  /// caller must surface this instead of presenting [analysis] as a verdict.
+  final String? error;
+
   const FileScanResult({
     required this.analysis,
     required this.fileName,
@@ -27,7 +32,31 @@ class FileScanResult {
     required this.rawContent,
     this.apkAnalysis,
     this.osintResults,
+    this.error,
   });
+
+  bool get hasError => error != null;
+
+  /// Builds a failure result. The analysis carries a zero score and a neutral
+  /// classification so a read failure can never be mistaken for a verdict.
+  factory FileScanResult.failure({
+    required ScanSource source,
+    required String message,
+    String fileName = 'Unknown',
+  }) {
+    return FileScanResult(
+      analysis: AnalysisResult(
+        classification: ScamClassification.safe,
+        riskScore: 0,
+        reasons: const [],
+        summary: 'Not analysed - $message',
+      ),
+      fileName: fileName,
+      source: source,
+      rawContent: '',
+      error: message,
+    );
+  }
 }
 
 class FileScannerService {
@@ -97,17 +126,16 @@ class FileScannerService {
           rawContent: content,
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('File scan failed: $e');
+      return FileScanResult.failure(
+        source: ScanSource.file,
+        message: 'the file could not be read. Check permissions and try again.',
+      );
+    }
 
-    // Fallback demo document scan so file pick NEVER fails or crashes for the user
-    const sampleText = 'URGENT INVOICE OVERDUE\nDear Customer, your bank account ending in 4920 has an unresolved charge of \$849.00. Click here to verify immediately: http://bit.ly/bank-auth-check';
-    final analysis = ScamDetector.analyze(sampleText);
-    return FileScanResult(
-      analysis: analysis,
-      fileName: 'Invoice_Overdue_Notice.pdf',
-      source: ScanSource.file,
-      rawContent: sampleText,
-    );
+    // User cancelled the picker - no result, and no invented one.
+    return null;
   }
 
   /// Picks an image from gallery and analyses its filename/metadata for scam indicators.
@@ -122,7 +150,13 @@ class FileScannerService {
 
       if (picked != null) {
         final name = picked.name;
-        final content = 'Image OCR Content\nFilename: $name\nPath: ${picked.path}\nExtracted text: Urgent Security Verification Required. Transfer \$500 to unlock account.';
+        // There is no on-device OCR in this build, and the backend's OCR
+        // endpoint lives in the unmounted backend/app tree. This previously
+        // invented "extracted text" describing a wire-transfer scam and ran
+        // the detector over it, so every image the user picked produced the
+        // same fabricated scam verdict. We now analyse only what we genuinely
+        // have - the filename - and say so plainly.
+        final content = 'Filename: $name';
         final analysis = ScamDetector.analyze(content);
 
         return FileScanResult(
@@ -130,19 +164,19 @@ class FileScannerService {
           fileName: name,
           source: ScanSource.image,
           rawContent: content,
+          error: 'Text extraction (OCR) is not available in this build, so only '
+              'the filename was checked. Paste the message text to analyse it fully.',
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Image scan failed: $e');
+      return FileScanResult.failure(
+        source: ScanSource.image,
+        message: 'the image could not be read. Check permissions and try again.',
+      );
+    }
 
-    // Fallback demo screenshot scan so image pick ALWAYS produces results
-    const sampleImageContent = 'OCR Scan Result:\nSMS Screenshot\nSender: +1 (800) 555-0199\n"ALERT: Unusual login attempt from Russia. Verify credentials immediately at: security-login-portal.net"';
-    final analysis = ScamDetector.analyze(sampleImageContent);
-    return FileScanResult(
-      analysis: analysis,
-      fileName: 'Bank_Alert_Screenshot.png',
-      source: ScanSource.image,
-      rawContent: sampleImageContent,
-    );
+    return null;
   }
 
   /// Reads clipboard text and runs the scam detector.
@@ -159,15 +193,19 @@ class FileScannerService {
           rawContent: text,
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Clipboard scan failed: $e');
+      return FileScanResult.failure(
+        source: ScanSource.clipboard,
+        message: 'the clipboard could not be read.',
+        fileName: 'Clipboard',
+      );
+    }
 
-    const defaultClip = 'Suspicious Clipboard Content: "Your package delivery failed. Pay \$2.50 customs fee at: postal-redelivery-service.info"';
-    final analysis = ScamDetector.analyze(defaultClip);
-    return FileScanResult(
-      analysis: analysis,
-      fileName: 'Clipboard Text',
+    return FileScanResult.failure(
       source: ScanSource.clipboard,
-      rawContent: defaultClip,
+      message: 'the clipboard is empty. Copy a message or link first.',
+      fileName: 'Clipboard',
     );
   }
 

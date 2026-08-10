@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../widgets/motion.dart';
 
 class QuizQuestion {
   final String question;
@@ -136,7 +137,9 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Card
-          Container(
+          Reveal(
+            delay: Reveal.step(0),
+            child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -162,24 +165,37 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
               ],
             ),
           ),
+          ),
           const SizedBox(height: 24),
-          const Text('Key Defense Principles', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Reveal(
+            delay: Reveal.step(1),
+            child: const Text('Key Defense Principles', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(height: 12),
-          ...m.keyTakeaways.map((t) => Padding(
+          ...m.keyTakeaways.asMap().entries.map((entry) => Reveal(
+                delay: Reveal.step(entry.key + 2, baseMs: 80),
+                offsetY: 14,
+                child: Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.verified, color: AppColors.success, size: 18),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(t, style: const TextStyle(fontSize: 14, height: 1.5))),
+                    Expanded(child: Text(entry.value, style: const TextStyle(fontSize: 14, height: 1.5))),
                   ],
                 ),
+              ),
               )),
           const SizedBox(height: 24),
-          const Text('Detailed Intelligence Report', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Reveal(
+            delay: Reveal.step(6),
+            child: const Text('Detailed Intelligence Report', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(height: 12),
-          Container(
+          Reveal(
+            delay: Reveal.step(7),
+            child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -190,8 +206,11 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
               style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.7),
             ),
           ),
+          ),
           const SizedBox(height: 24),
-          SizedBox(
+          Reveal(
+            delay: Reveal.step(8),
+            child: SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton.icon(
@@ -205,6 +224,7 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
+          ),
           ),
         ],
       ),
@@ -325,9 +345,8 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: InkWell(
+              child: Pressable(
                 onTap: () => _submitAnswer(i),
-                borderRadius: BorderRadius.circular(14),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
