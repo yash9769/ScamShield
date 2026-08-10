@@ -247,7 +247,7 @@ class _BreachScreenState extends State<BreachScreen>
                   'https://www.google.com/s2/favicons?domain=${breach.domain}&sz=32',
                   width: 32,
                   height: 32,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
@@ -696,7 +696,7 @@ class _BreachScreenState extends State<BreachScreen>
                   'https://www.google.com/s2/favicons?domain=${breach.domain}&sz=32',
                   width: 32,
                   height: 32,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
