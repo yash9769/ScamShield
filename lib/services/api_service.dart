@@ -69,7 +69,20 @@ class ApiService {
     } catch (e) {
       debugPrint('Voice API error: $e');
     }
-    return analyzeMessage("Voice note recorded and analyzed. Check urgency and financial prompts carefully.");
+    return const AnalysisResult(
+      classification: ScamClassification.suspicious,
+      riskScore: 0,
+      aiPowered: false,
+      reasons: [
+        DetectionReason(
+          label: 'Voice Note Scan Failed',
+          description: 'Voice note analysis failed or backend was unreachable.',
+          scoreContribution: 0,
+          iconCategory: IconCategory.suspicious,
+        )
+      ],
+      summary: 'Voice note could not be analyzed because the service was unreachable or returned an error.',
+    );
   }
 
   /// Calls the FastAPI backend to analyze a screenshot image file via OCR.
@@ -85,7 +98,20 @@ class ApiService {
     } catch (e) {
       debugPrint('Image OCR API error: $e');
     }
-    return analyzeMessage("Screenshot image analyzed via OCR. Inspect extracted URLs and sender detail.");
+    return const AnalysisResult(
+      classification: ScamClassification.suspicious,
+      riskScore: 0,
+      aiPowered: false,
+      reasons: [
+        DetectionReason(
+          label: 'Image Scan Failed',
+          description: 'OCR analysis failed or backend was unreachable.',
+          scoreContribution: 0,
+          iconCategory: IconCategory.suspicious,
+        )
+      ],
+      summary: 'OCR image analysis failed because the service was unreachable or returned an error.',
+    );
   }
 
 
