@@ -1,5 +1,6 @@
 import subprocess
 import os
+import shutil
 import logging
 from typing import Dict, Any, List
 import re
@@ -19,7 +20,7 @@ class JADXAnalyzer:
             # -d: output directory
             # --no-res: do not decode resources (APKTool handles this)
             cmd = ["jadx", "-d", output_dir, "--no-res", apk_path]
-            subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=60)
             logger.info("JADX finished successfully.")
             
             # Basic static analysis on decompiled sources
@@ -30,12 +31,24 @@ class JADXAnalyzer:
                 "output_dir": output_dir,
                 "findings": findings
             }
+        except subprocess.TimeoutExpired as e:
+            logger.error("JADX timed out after 60 seconds.")
+            return {
+                "status": "error",
+                "error": "JADX analysis timed out."
+            }
         except subprocess.CalledProcessError as e:
             logger.error(f"JADX failed: {e.stderr}")
             return {
                 "status": "error",
                 "error": e.stderr
             }
+        finally:
+            if os.path.exists(output_dir):
+                try:
+                    shutil.rmtree(output_dir)
+                except Exception as ex:
+                    logger.warning(f"Failed to clean up JADX temp directory: {ex}")
 
     def _scan_sources(self, output_dir: str) -> Dict[str, List[str]]:
         findings = {
