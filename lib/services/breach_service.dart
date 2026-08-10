@@ -355,8 +355,11 @@ class BreachService {
     ).toList();
   }
 
-  static String get _backendUrl =>
-      Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+  static String get _backendUrl {
+    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
+    if (customUrl.isNotEmpty) return customUrl;
+    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+  }
 
   /// Query the ScamShield backend to check if an email has been exposed using XposedOrNot.
   static Future<BreachCheckResult> checkEmailBreach(String email) async {

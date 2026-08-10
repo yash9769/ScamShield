@@ -45,8 +45,11 @@ class OsintResult {
 /// provider, the lookup is honestly reported as unavailable instead of
 /// fabricating a "safe" or "malicious" result.
 class OsintService {
-  static String get _backendBaseUrl =>
-      Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+  static String get _backendBaseUrl {
+    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
+    if (customUrl.isNotEmpty) return customUrl;
+    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+  }
 
   static const Duration _timeout = Duration(seconds: 6);
 
