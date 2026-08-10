@@ -246,7 +246,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
                   const Text('SPOT THE SCAM CHALLENGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
                     child: Text('Scenario ${_challengeIndex + 1}/${_challenges.length}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -278,7 +278,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
@@ -318,14 +318,14 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 14),
@@ -351,7 +351,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +363,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.4)),
+              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.4)),
             ),
             child: Text(current['message'], style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary)),
           ),
@@ -406,13 +406,13 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
             child: Icon(data.icon, color: AppColors.primary, size: 24),
           ),
           const SizedBox(width: 14),

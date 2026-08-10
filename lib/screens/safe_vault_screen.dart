@@ -120,7 +120,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: category,
+                  initialValue: category,
                   dropdownColor: AppColors.surface,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(labelText: 'Category'),
@@ -215,16 +215,16 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         boxShadow: [
-          BoxShadow(color: AppColors.primary.withOpacity(0.08), blurRadius: 16),
+          BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 16),
         ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
             child: const Icon(Icons.shield, color: AppColors.primary, size: 28),
           ),
           const SizedBox(width: 14),
@@ -260,7 +260,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5))),
+                decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5))),
                 child: const Icon(Icons.lock_clock_outlined, size: 54, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
@@ -302,7 +302,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +313,7 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
                     Text(note.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                       child: Text(note.category, style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                   ],

@@ -205,10 +205,10 @@ class _RadarSweepState extends State<RadarSweep>
                 shape: BoxShape.circle,
                 gradient: SweepGradient(
                   colors: [
-                    widget.color.withOpacity(0.0),
-                    widget.color.withOpacity(0.0),
-                    widget.color.withOpacity(0.28),
-                    widget.color.withOpacity(0.0),
+                    widget.color.withValues(alpha: 0.0),
+                    widget.color.withValues(alpha: 0.0),
+                    widget.color.withValues(alpha: 0.28),
+                    widget.color.withValues(alpha: 0.0),
                   ],
                   stops: const [0.0, 0.62, 0.9, 1.0],
                 ),

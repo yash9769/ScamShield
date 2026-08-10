@@ -203,9 +203,9 @@ class _BreachScreenState extends State<BreachScreen>
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.danger.withOpacity(0.12),
+          color: AppColors.danger.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -234,7 +234,7 @@ class _BreachScreenState extends State<BreachScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +250,7 @@ class _BreachScreenState extends State<BreachScreen>
                   errorBuilder: (_, __, ___) => Container(
                     width: 32,
                     height: 32,
-                    decoration: BoxDecoration(color: AppColors.danger.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
                     child: const Icon(Icons.security, color: AppColors.danger, size: 18),
                   ),
                 ),
@@ -267,7 +267,7 @@ class _BreachScreenState extends State<BreachScreen>
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.danger.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                 child: Text(
                   '${(breach.pwnCount / 1000).toStringAsFixed(0)}K LEAKED',
                   style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold, fontSize: 10),
@@ -297,7 +297,7 @@ class _BreachScreenState extends State<BreachScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +352,7 @@ class _BreachScreenState extends State<BreachScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -414,7 +414,7 @@ class _BreachScreenState extends State<BreachScreen>
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.4)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -447,7 +447,7 @@ class _BreachScreenState extends State<BreachScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
       ),
       child: Column(
         children: [
@@ -520,13 +520,13 @@ class _BreachScreenState extends State<BreachScreen>
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: accent.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
                 child: Icon(icon, color: accent, size: 20),
               ),
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: accent.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
                 child: Text(badge, style: TextStyle(color: accent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
               ),
             ],
@@ -564,9 +564,9 @@ class _BreachScreenState extends State<BreachScreen>
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.danger.withOpacity(0.12),
+          color: AppColors.danger.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.danger.withOpacity(0.4)),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
         ),
         child: Column(
           children: [
@@ -595,9 +595,9 @@ class _BreachScreenState extends State<BreachScreen>
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.12),
+          color: AppColors.success.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.success.withOpacity(0.4)),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -640,9 +640,9 @@ class _BreachScreenState extends State<BreachScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.danger.withOpacity(0.12),
+              color: AppColors.danger.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.danger.withOpacity(0.4)),
+              border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,7 +683,7 @@ class _BreachScreenState extends State<BreachScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,7 +700,7 @@ class _BreachScreenState extends State<BreachScreen>
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.15),
+                      color: AppColors.danger.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.security, color: AppColors.danger, size: 18),
@@ -720,7 +720,7 @@ class _BreachScreenState extends State<BreachScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.danger.withOpacity(0.12),
+                  color: AppColors.danger.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -739,7 +739,7 @@ class _BreachScreenState extends State<BreachScreen>
             children: breach.dataClasses.map((dc) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight.withOpacity(0.4),
+                color: AppColors.surfaceLight.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(dc, style: const TextStyle(fontSize: 10, color: AppColors.textPrimary)),

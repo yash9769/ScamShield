@@ -162,7 +162,7 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       padding: const EdgeInsets.all(4),
       child: Column(
@@ -221,7 +221,7 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -290,7 +290,7 @@ class _ScanScreenState extends State<ScanScreen>
         gradient: hasText
             ? const LinearGradient(colors: [AppColors.primary, AppColors.accent])
             : null,
-        color: hasText ? null : AppColors.surfaceLight.withOpacity(0.4),
+        color: hasText ? null : AppColors.surfaceLight.withValues(alpha: 0.4),
       ),
       child: ElevatedButton(
         onPressed: _isAnalyzing ? null : _analyze,
@@ -326,7 +326,7 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -336,7 +336,7 @@ class _ScanScreenState extends State<ScanScreen>
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha: 0.15),
               ),
               child: const Icon(Icons.psychology, color: AppColors.primary, size: 48),
             ),
@@ -376,9 +376,9 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: badgeColor.withOpacity(0.5)),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
         boxShadow: [
-          BoxShadow(color: badgeColor.withOpacity(0.12), blurRadius: 20, spreadRadius: 2),
+          BoxShadow(color: badgeColor.withValues(alpha: 0.12), blurRadius: 20, spreadRadius: 2),
         ],
       ),
       child: Column(
@@ -388,7 +388,7 @@ class _ScanScreenState extends State<ScanScreen>
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: badgeColor.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
                 child: Icon(badgeIcon, color: badgeColor, size: 28),
               ),
               const SizedBox(width: 14),
@@ -406,7 +406,7 @@ class _ScanScreenState extends State<ScanScreen>
                         if (r.aiPowered)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                             child: const Text('GEMINI AI', style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.bold)),
                           ),
                       ],
@@ -435,7 +435,7 @@ class _ScanScreenState extends State<ScanScreen>
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+                border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -485,7 +485,7 @@ class _ScanScreenState extends State<ScanScreen>
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.surfaceLight.withOpacity(0.4)),
+                border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.4)),
               ),
               child: Row(
                 children: [

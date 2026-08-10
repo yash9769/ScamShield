@@ -193,7 +193,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+                  border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
                 ),
                 child: const Icon(Icons.inbox_outlined, size: 54, color: AppColors.textSecondary),
               ),
@@ -260,14 +260,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: badgeColor.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
                   child: Icon(badgeIcon, color: badgeColor, size: 22),
                 ),
                 const SizedBox(width: 14),

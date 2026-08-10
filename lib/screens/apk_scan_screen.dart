@@ -101,7 +101,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +130,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             final isCompleted = index < _currentStageIndex;
             final isCurrent = index == _currentStageIndex;
 
-            Color iconColor = AppColors.textSecondary.withOpacity(0.5);
+            Color iconColor = AppColors.textSecondary.withValues(alpha: 0.5);
             IconData icon = Icons.radio_button_unchecked;
 
             if (isCompleted) {
@@ -147,12 +147,12 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isCurrent
-                    ? AppColors.primary.withOpacity(0.12)
+                    ? AppColors.primary.withValues(alpha: 0.12)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isCurrent
-                      ? AppColors.primary.withOpacity(0.4)
+                      ? AppColors.primary.withValues(alpha: 0.4)
                       : Colors.transparent,
                 ),
               ),
@@ -195,7 +195,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.android, color: AppColors.primary, size: 20),
@@ -250,7 +250,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.danger.withOpacity(0.1),
+                  color: AppColors.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.danger),
                 ),
@@ -272,7 +272,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
       ),
       child: Column(
         children: [
@@ -314,14 +314,14 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.insert_drive_file_outlined,
@@ -519,7 +519,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: levelColor.withOpacity(0.10),
+        color: levelColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: levelColor, width: 2),
       ),
@@ -776,9 +776,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.danger.withOpacity(0.12),
+              color: AppColors.danger.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.danger.withOpacity(0.4)),
+              border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
             ),
             child: Text(m,
                 style: const TextStyle(
@@ -816,7 +816,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.07),
+              color: AppColors.primary.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -865,12 +865,12 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: isDangerous
-                    ? AppColors.danger.withOpacity(0.15)
-                    : AppColors.surfaceLight.withOpacity(0.5),
+                    ? AppColors.danger.withValues(alpha: 0.15)
+                    : AppColors.surfaceLight.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                     color: isDangerous
-                        ? AppColors.danger.withOpacity(0.5)
+                        ? AppColors.danger.withValues(alpha: 0.5)
                         : Colors.transparent),
               ),
               child: Text(
@@ -974,7 +974,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 child: LinearProgressIndicator(
                   value: pct.clamp(0.0, 1.0),
                   color: barColor,
-                  backgroundColor: barColor.withOpacity(0.15),
+                  backgroundColor: barColor.withValues(alpha: 0.15),
                   minHeight: 5,
                 ),
               ),
@@ -1022,7 +1022,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.5)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

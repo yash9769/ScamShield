@@ -81,9 +81,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary.withOpacity(0.4), width: 2),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 2),
                       ),
                       child: ClipOval(
                         child: Image.asset(
@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.surfaceLight.withOpacity(0.6)),
+                    border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
                   ),
                   child: Column(
                     children: [
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     icon: const Icon(Icons.flash_on, color: AppColors.primary, size: 18),
                     label: const Text('CONTINUE AS GUEST', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.primary.withOpacity(0.4)),
+                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
