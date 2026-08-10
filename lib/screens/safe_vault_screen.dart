@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 
@@ -64,30 +63,53 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
   Future<void> _loadNotes() async {
     setState(() => _isLoading = true);
     try {
-      String? raw;
-      try {
-        raw = await _storage.read(key: _vaultKey);
-      } catch (_) {
-        final prefs = await SharedPreferences.getInstance();
-        raw = prefs.getString(_vaultKey);
-      }
-
+      final raw = await _storage.read(key: _vaultKey);
       if (raw != null && raw.isNotEmpty) {
         final List<dynamic> decoded = json.decode(raw);
         _notes = decoded.map((e) => VaultNote.fromJson(e)).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Secure Vault load error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to read from secure vault storage. Decryption failed.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _saveNotes() async {
+  Future<bool> _saveNotes() async {
     final encoded = json.encode(_notes.map((n) => n.toJson()).toList());
     try {
       await _storage.write(key: _vaultKey, value: encoded);
-    } catch (_) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_vaultKey, encoded);
+      return true;
+    } catch (e) {
+      debugPrint('Secure Vault save error: $e');
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('Storage Error', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
+            content: const Text(
+              'Secure storage is unavailable on this device. '
+              'To protect your privacy, this vault item cannot be saved in plaintext.'
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        );
+      }
+      return false;
     }
   }
 
@@ -168,13 +190,22 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
 
     if (result != null) {
       setState(() => _notes.insert(0, result));
-      await _saveNotes();
+      final success = await _saveNotes();
+      if (!success) {
+        setState(() => _notes.removeAt(0));
+      }
     }
   }
 
   Future<void> _deleteNote(VaultNote note) async {
-    setState(() => _notes.removeWhere((n) => n.id == note.id));
-    await _saveNotes();
+    final originalIndex = _notes.indexWhere((n) => n.id == note.id);
+    if (originalIndex == -1) return;
+
+    setState(() => _notes.removeAt(originalIndex));
+    final success = await _saveNotes();
+    if (!success) {
+      setState(() => _notes.insert(originalIndex, note));
+    }
   }
 
   @override
@@ -288,6 +319,33 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
           child: Dismissible(
           key: Key('note_${note.id}'),
           direction: DismissDirection.endToStart,
+          confirmDismiss: (direction) async {
+            return await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.surface,
+                title: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                    SizedBox(width: 8),
+                    Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                content: Text('Are you sure you want to permanently delete "${note.title}" from your secure vault?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                    child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
+          },
           onDismissed: (_) => _deleteNote(note),
           background: Container(
             margin: const EdgeInsets.only(bottom: 12),
