@@ -32,7 +32,7 @@ jobs:
       - name: Audit dependencies for known vulnerabilities
         run: |
           pip install pip-audit
-          pip-audit -r server/requirements.txt || true
+          pip-audit -r server/requirements.txt
 
       - name: Check for hardcoded secrets
         run: |
