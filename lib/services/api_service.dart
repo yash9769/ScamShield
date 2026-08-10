@@ -24,7 +24,7 @@ class ApiService {
         Uri.parse('$_baseUrl/analyze'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'text': text}),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -64,8 +64,8 @@ class ApiService {
     try {
       final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/analyze-voice'));
       request.files.add(await http.MultipartFile.fromPath('file', audioFile.path));
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
+      final response = await http.Response.fromStream(streamedResponse).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }
@@ -93,8 +93,8 @@ class ApiService {
     try {
       final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/analyze-image'));
       request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
+      final response = await http.Response.fromStream(streamedResponse).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }
