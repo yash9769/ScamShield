@@ -45,7 +45,7 @@ def test_phase_3_and_4_audit_log_hardening_and_redaction():
     print("\n--- PHASE 3 & 4: Audit Log Data Redaction & Server-Side Bound Testing ---")
     
     # Trigger event with API Key in content
-    sensitive_target = "Analysis of API key: AIzaSyDUMMYFAKEKEYFORTESTS0000000000000000 in string"
+    sensitive_target = "Analysis of API key: AIzaSyDUMMYFAKEKEYFORTESTS0000000000 in string"
     httpx.post(f"{BASE_URL}/analyze", json={"text": sensitive_target})
     
     # Fetch logs with admin auth
