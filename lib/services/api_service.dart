@@ -11,8 +11,11 @@ class ApiService {
   // (which resolves to the emulator itself). Hardcoding the loopback address
   // meant every text analysis silently failed on Android and fell into the
   // error path. Matches the resolution used by ScannerService/OsintService.
-  static String get _baseUrl =>
-      Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+  static String get _baseUrl {
+    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
+    if (customUrl.isNotEmpty) return customUrl;
+    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+  }
 
   /// Calls the FastAPI backend to analyze the text using Gemini AI.
   static Future<AnalysisResult> analyzeMessage(String text) async {

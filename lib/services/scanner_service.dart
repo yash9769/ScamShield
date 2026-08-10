@@ -8,7 +8,13 @@ class ScannerService {
   final String baseUrl;
 
   ScannerService({String? baseUrl}) 
-      : baseUrl = baseUrl ?? (Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
+      : baseUrl = baseUrl ?? _resolveBaseUrl();
+
+  static String _resolveBaseUrl() {
+    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
+    if (customUrl.isNotEmpty) return customUrl;
+    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+  }
 
   Future<Map<String, dynamic>> scanApk(PlatformFile apkFile) async {
     try {
