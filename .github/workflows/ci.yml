@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # The backend requires ADMIN_API_KEY outside of tests; CI gets a throwaway.
+  ADMIN_API_KEY: ci-only-throwaway-key-not-for-production
+  DATABASE_URL: postgresql+asyncpg://scamshield:scamshield@localhost:5432/scamshield
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: scamshield
+          POSTGRES_PASSWORD: scamshield
+          POSTGRES_DB: scamshield
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scamshield"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      # actions/checkout@v4.2.2 — pinned to commit SHA to prevent mutable-tag supply-chain attack
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # actions/setup-python@v5.3.0
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Verify Alembic migrations apply cleanly
+        working-directory: backend
+        run: |
+          alembic upgrade head
+          alembic current
+
+      - name: Run unit tests
+        working-directory: backend
+        run: python -m pytest tests/unit -q
+
+      - name: Run API and integration tests
+        working-directory: backend
+        run: python -m pytest tests/api tests/integration -q
+
+      - name: Run full suite (incl. admin, docs-gating and performance tests)
+        working-directory: backend
+        run: python -m pytest tests/ -q
+
+      - name: Audit dependencies for known vulnerabilities
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+          echo "pip-audit completed — any vulnerability above fails this step."
+
+  security:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Check for hardcoded secrets in source
+        run: |
+          # Fails the build if provider API keys or a defaulted admin key reappear.
+          if grep -rnE "AIza[0-9A-Za-z_-]{35}|sk_live_[0-9a-zA-Z]{24}|AKIA[0-9A-Z]{16}" lib/ backend/; then
+            echo "::error::Hardcoded API key detected in source"
+            exit 1
+          fi
+          if grep -rnE "scamshield_admin_sec_key_2026|ADMIN_API_KEY.*=[ ]*[\"'][^\"']*[^\"']" lib/ backend/ --include="*.dart" --include="*.py" --include="*.kt"; then
+            echo "::error::Suspicious admin key / defaulted credential detected"
+            exit 1
+          fi
+          echo "No hardcoded secrets found."
+
+      - name: Verify no legacy server/ directory references remain
+        run: |
+          # Hard fail: the old server/ was archived to _archived_server/.
+          # Any new reference to server/ in README or docs is a mistake.
+          # NOTE: this workflow file (.github/) is intentionally NOT scanned —
+          # its own step names and comments mention server/.
+          if grep -rn "^.*[^_]server/" README.md docs/ \
+              --include="*.md" 2>/dev/null \
+              | grep -v "python-server\|web-server\|_archived_server"; then
+            echo "::error::References to the removed legacy server/ remain. Use backend/ instead."
+            exit 1
+          fi
+          # Also fail if someone accidentally re-created the live server/ directory.
+          if [ -d "server" ]; then
+            echo "::error::Legacy server/ directory exists. It must not be present — use _archived_server/."
+            exit 1
+          fi
+          echo "No legacy server/ references found."
+
+  flutter:
+    name: Flutter client
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout@v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # subosito/flutter-action@v2.18.0
+      - uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aef
+        with:
+          channel: stable
+
+      - name: Install packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+

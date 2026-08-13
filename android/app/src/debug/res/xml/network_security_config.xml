@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG-ONLY network security override.
+
+  This file is in src/debug/ and is therefore ONLY active for debug builds
+  (assembled with `flutter run` or `flutter build apk --debug`). The release
+  variant in src/main/ has `cleartextTrafficPermitted="false"` which remains
+  the default for any production APK.
+
+  Why we need this: the Android emulator reaches the host machine via 10.0.2.2,
+  not localhost. The API runs on http://10.0.2.2:8000 during local development.
+  Without this override, the strict base-config would block that connection in
+  debug builds as well, making local testing impossible without changing the
+  production config.
+
+  NEVER add this file to the main/ or release/ source set.
+-->
+<network-security-config>
+    <!--
+      Release policy (inherited): cleartextTrafficPermitted=false globally.
+      We only punch a hole for the two loopback addresses used by the emulator.
+    -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+            <!-- Trust user-installed CA certificates in debug for HTTPS proxy tools. -->
+            <certificates src="user"/>
+        </trust-anchors>
+    </base-config>
+
+    <!-- Allow cleartext to the Android emulator host alias and plain localhost only. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

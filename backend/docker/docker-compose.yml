@@ -1,0 +1,156 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ScamShield production stack.
+#
+# SECURITY NOTES:
+#  * Only the API (8000) is exposed to the host. PostgreSQL, Redis and MobSF
+#    live on the private `scamshield_net` network with NO host port mappings.
+#    To re-expose a service for local debugging, add e.g. `- "5433:5432"`
+#    under that service's `ports:` — never in production.
+#  * API client auth is ON by default (API_AUTH_ENABLED=true). The Flutter app
+#    sends a per-install X-Device-Token automatically.
+#  * MOBSF_API_KEY and POSTGRES_PASSWORD have NO defaults — the stack refuses
+#    to start without them. Set both in backend/.env:
+#      POSTGRES_PASSWORD=<long random string>
+#      MOBSF_API_KEY=<long random string>
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── ScamShield API ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: scamshield-api:2.1.0
+    container_name: scamshield_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Required — the API refuses to start without it (no default, no fallback).
+      - ADMIN_API_KEY=${ADMIN_API_KEY:?ADMIN_API_KEY must be set in .env}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Database — password comes from .env, never hardcoded.
+      - DATABASE_URL=postgresql+asyncpg://scamshield:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@db:5432/scamshield
+      # Optional OSINT
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+      # Redis (points to the redis service below)
+      - REDIS_URL=redis://redis:6379
+      # MobSF — required key from .env
+      - MOBSF_URL=http://mobsf:8000
+      - MOBSF_API_KEY=${MOBSF_API_KEY:?MOBSF_API_KEY must be set in .env}
+      # App config
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+      # Explicit origins only. NEVER set this to "*" in production.
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-[]}
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-60/minute}
+      # Client auth — ON by default. Flutter sends X-Device-Token.
+      - API_AUTH_ENABLED=${API_AUTH_ENABLED:-true}
+      - API_KEYS=${API_KEYS:-[]}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      # Trusted reverse proxies allowed to set X-Forwarded-For (e.g. nginx).
+      # Comma-separated IPs/CIDRs; leave empty when the API is directly exposed.
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
+    env_file:
+      - ../.env
+    volumes:
+      - /tmp/scamshield:/tmp/scamshield  # Temp audio/image files
+      - ../yara_rules:/app/yara_rules    # Mount YARA rules
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mobsf:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # ── MobSF (Mobile Security Framework) ───────────────────────────────────────
+  # Pinned to a specific release (never :latest) for reproducible builds.
+  mobsf:
+    image: opensecurity/mobile-security-framework-mobsf:v4.5.2
+    container_name: scamshield_mobsf
+    restart: unless-stopped
+    # No host port — only reachable on the private network.
+    environment:
+      - MOBSF_API_KEY=${MOBSF_API_KEY:?MOBSF_API_KEY must be set in .env}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Redis (rate limiting + OSINT cache) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: scamshield_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save ""
+    # No host port — only reachable on the private network.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ── PostgreSQL Database ─────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: scamshield_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: scamshield
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: scamshield
+    # No host port — only reachable on the private network.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scamshield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scamshield_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  scamshield_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

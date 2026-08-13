@@ -1,0 +1,41 @@
+# ── FastAPI & Core ─────────────────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.1
+pydantic>=2.6.3
+pydantic-settings>=2.2.1
+python-dotenv>=1.0.1
+aiofiles>=23.2.1
+httpx>=0.27.0
+slowapi>=0.1.9
+redis>=5.0.3
+python-multipart>=0.0.9
+
+# ── AI / ML / NLP ─────────────────────────────────────────────────────────────
+google-genai>=0.1.0
+openai-whisper>=20231117
+easyocr>=1.7.1
+pdf2image>=1.17.0
+python-whois>=0.8.0
+
+# ── ScamShield Phase 2 ────────────────────────────────────────────────────────
+androguard>=4.0.0
+yara-python>=4.5.0
+pyyaml>=6.0.1
+reportlab>=4.1.0
+# ── Database & Utils ────────────────────────────────────────────────────────
+sqlalchemy[asyncio]>=2.0.28
+asyncpg>=0.29.0
+# Sync Postgres driver used by Alembic migrations (asyncpg cannot run DDL).
+psycopg2-binary>=2.9.9
+alembic>=1.13.1
+tenacity>=8.2.3
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.0.2
+pytest-asyncio>=0.23.5
+pytest-cov>=4.1.0
+
+# ── Crash Reporting ──────────────────────────────────────────────────────────
+# Sentry is initialized only when SENTRY_DSN env var is set;
+# it has zero effect on deployments that omit it.
+sentry-sdk[fastapi]>=2.0.0

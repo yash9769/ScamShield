@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScamShield — Admin Dashboard</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0d1117; color: #e6edf3; padding: 24px;
+  }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  header h1 { font-size: 20px; margin: 0; }
+  .pill { background: #1f6feb; color: #fff; padding: 3px 10px; border-radius: 999px; font-size: 11px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; }
+  .card h3 { margin: 0 0 6px; font-size: 13px; color: #8b949e; font-weight: 500; }
+  .card .value { font-size: 26px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; background: #161b22; border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #21262d; font-size: 12px; }
+  th { color: #8b949e; text-transform: uppercase; font-size: 11px; letter-spacing: .5px; }
+  tr:last-child td { border-bottom: none; }
+  .danger { color: #f85149; } .warning { color: #d29922; } .ok { color: #3fb950; }
+  input, button { padding: 10px 14px; border-radius: 8px; border: 1px solid #30363d; background: #0d1117; color: #e6edf3; font-size: 13px; }
+  button { background: #1f6feb; border: none; cursor: pointer; font-weight: 600; }
+  button:hover { background: #388bfd; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ScamShield Admin</h1>
+  <span class="pill" id="svc">API</span>
+</header>
+
+<section class="cards">
+  <div class="card"><h3>Total Audit Events</h3><div class="value" id="events">—</div></div>
+  <div class="card"><h3>Service</h3><div class="value ok" id="status">…</div></div>
+</section>
+
+<table>
+  <thead><tr><th>Time</th><th>Type</th><th>Target</th><th>Input Hash</th><th>Len</th><th>Score</th><th>Level</th></tr></thead>
+  <tbody id="logs"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
+</table>
+
+<script>
+  // No default key: the operator must enter the ADMIN_API_KEY that was
+  // configured on the server (env var). The key is kept in this tab only.
+  const ADMIN_KEY_STORE = 'scamshield_admin_key';
+  let adminKey = sessionStorage.getItem(ADMIN_KEY_STORE) || '';
+
+  function request(path, options = {}) {
+    return fetch(path, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey, ...(options.headers || {}) },
+    });
+  }
+
+  async function load() {
+    if (!adminKey) {
+      const entered = prompt('Enter ADMIN_API_KEY to access the dashboard:');
+      if (!entered) return;
+      adminKey = entered;
+      sessionStorage.setItem(ADMIN_KEY_STORE, adminKey);
+    }
+
+    const statusRes = await request('/api/stats');
+    if (statusRes.status === 401) {
+      sessionStorage.removeItem(ADMIN_KEY_STORE);
+      adminKey = '';
+      document.getElementById('logs').innerHTML =
+        '<tr><td colspan="5" class="danger">Unauthorized. Check ADMIN_API_KEY.</td></tr>';
+      return;
+    }
+    if (statusRes.ok) {
+      const stats = await statusRes.json();
+      document.getElementById('events').textContent = stats.total_audit_events ?? '—';
+      document.getElementById('status').textContent = stats.status ?? 'ok';
+    }
+
+    const logRes = await request('/api/audit-logs?limit=50');
+    if (logRes.ok) {
+      const rows = await logRes.json();
+      const tbody = document.getElementById('logs');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted">No audit events yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map((r) => {
+        const levelCls = ['CRITICAL','HIGH'].includes(r.risk_level) ? 'danger'
+          : r.risk_level === 'MEDIUM' ? 'warning' : 'ok';
+        return `<tr>
+          <td class="muted">${escapeHtml(r.timestamp)}</td>
+          <td>${escapeHtml(r.event_type)}</td>
+          <td>${escapeHtml(r.target)}</td>
+          <td class="muted" title="SHA-256 prefix of the scanned content (raw content is never stored)">${escapeHtml(r.target_fingerprint || '')}</td>
+          <td class="muted">${r.target_length ?? ''}</td>
+          <td>${r.risk_score}</td>
+          <td class="${levelCls}">${escapeHtml(r.risk_level)}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  load();
+</script>
+</body>
+</html>
