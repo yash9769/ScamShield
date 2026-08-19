@@ -29,6 +29,7 @@ class BackendConfig {
     if (backendUrlOverride.isNotEmpty) {
       return _stripTrailingSlash(backendUrlOverride);
     }
+    if (kIsWeb) return 'http://localhost:8000';
     // Dev fallbacks only — never reachable in release builds (see [validate]).
     return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
   }

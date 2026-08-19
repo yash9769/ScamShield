@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
+import '../widgets/premium_cta.dart';
 import '../services/user_profile_service.dart';
 import 'learning_module_screen.dart';
 
@@ -49,7 +51,7 @@ class _LearnScreenState extends State<LearnScreen> {
   static const _phishingModule = LearningModuleData(
     title: 'Phishing 101',
     subtitle: 'Mastering Psychological Urgency & Identity Scams',
-    icon: Icons.link_off,
+    icon: Icons.link_off_rounded,
     keyTakeaways: [
       'Artificial Urgency ("Act within 10 minutes") is designed to bypass logical reasoning.',
       'Scammers use spoofed sender IDs matching known brands like Amazon, FedEx, or Apple.',
@@ -96,7 +98,7 @@ If you receive an alert from any service (Bank, Netflix, Courier), NEVER tap the
   static const _urlModule = LearningModuleData(
     title: 'URL & Web Safety',
     subtitle: 'Spotting Malicious Domains & Typosquatting',
-    icon: Icons.public,
+    icon: Icons.public_rounded,
     keyTakeaways: [
       'Typosquatting replaces subtle characters (e.g., "rn" looking like "m").',
       'HTTPS encrypts traffic but DOES NOT mean the website is legitimate.',
@@ -132,7 +134,7 @@ Look at the characters directly before `.com`, `.org`, or `.gov`. In `login.chas
   static const _bankModule = LearningModuleData(
     title: 'Banking & Financial Scams',
     subtitle: 'Protecting OTPs, Wire Transfers & QR Codes',
-    icon: Icons.account_balance,
+    icon: Icons.account_balance_rounded,
     keyTakeaways: [
       'Banks will NEVER ask for your One-Time Password (OTP) or PIN over the phone.',
       'Fake buyers on marketplaces send QR codes claiming "Scan to RECEIVE payment".',
@@ -178,14 +180,20 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
         title: Row(
           children: [
             Icon(
-              isCorrect ? Icons.check_circle : Icons.cancel,
-              color: isCorrect ? AppColors.success : AppColors.danger,
+              isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              color: isCorrect ? AppColors.safeEmerald : AppColors.danger,
             ),
             const SizedBox(width: 8),
-            Text(isCorrect ? 'Correct Decision!' : 'Incorrect Analysis', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              isCorrect ? 'Correct Decision!' : 'Incorrect Analysis',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
-        content: Text(current['explanation'], style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary)),
+        content: Text(
+          current['explanation'],
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.4, color: AppColors.textPrimary),
+        ),
         actions: [
           ElevatedButton(
             onPressed: () {
@@ -194,8 +202,8 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
                 _challengeIndex = (_challengeIndex + 1) % _challenges.length;
               });
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Next Scenario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cobalt),
+            child: Text('Next Scenario', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -206,7 +214,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cyber Threat Academy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text('Cyber Threat Academy', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 20)),
         centerTitle: false,
         actions: [
           GestureDetector(
@@ -223,48 +231,26 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Reveal(delay: Reveal.step(0), child: _buildVigilanceScore()),
             const SizedBox(height: 28),
-            Reveal(
-              delay: Reveal.step(1),
-              child: const Text('DAILY SAFETY PROTOCOLS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
-            ),
+
+            Text('SPOT THE SCAM CHALLENGE', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.mutedText, letterSpacing: 1.2)),
             const SizedBox(height: 12),
-            Reveal(delay: Reveal.step(2), child: _buildProtocolCard(Icons.email_outlined, 'EMAIL INTEGRITY', 'Hover over embedded links to inspect true destination URLs before clicking.', AppColors.primary)),
-            const SizedBox(height: 10),
-            Reveal(delay: Reveal.step(3), child: _buildProtocolCard(Icons.phonelink_lock, 'OTP DEFENSE', 'Never share One-Time Passwords (OTP) with anyone claiming to be from customer support.', AppColors.success)),
+            Reveal(delay: Reveal.step(1), child: _buildChallengeCard()),
             const SizedBox(height: 28),
-            Reveal(
-              delay: Reveal.step(4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('SPOT THE SCAM CHALLENGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
-                    child: Text('Scenario ${_challengeIndex + 1}/${_challenges.length}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ),
+
+            Text('INTERACTIVE SECURITY MODULES', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.mutedText, letterSpacing: 1.2)),
             const SizedBox(height: 12),
-            Reveal(delay: Reveal.step(5), child: _buildChallengeCard()),
-            const SizedBox(height: 28),
-            Reveal(
-              delay: Reveal.step(6),
-              child: const Text('INTERACTIVE SECURITY MODULES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
-            ),
+            Reveal(delay: Reveal.step(2), child: _buildExploreCard(context, _phishingModule)),
             const SizedBox(height: 12),
-            Reveal(delay: Reveal.step(7), child: _buildExploreCard(context, _phishingModule)),
+            Reveal(delay: Reveal.step(3), child: _buildExploreCard(context, _urlModule)),
             const SizedBox(height: 12),
-            Reveal(delay: Reveal.step(8), child: _buildExploreCard(context, _urlModule)),
-            const SizedBox(height: 12),
-            Reveal(delay: Reveal.step(9), child: _buildExploreCard(context, _bankModule)),
+            Reveal(delay: Reveal.step(4), child: _buildExploreCard(context, _bankModule)),
+            const SizedBox(height: 90),
           ],
         ),
       ),
@@ -272,13 +258,14 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
   }
 
   Widget _buildVigilanceScore() {
+    final rating = 78 + (_score * 4);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -289,56 +276,25 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
                 width: 110,
                 height: 110,
                 child: CircularProgressIndicator(
-                  value: (78 + (_score * 4)) / 100,
+                  value: rating / 100.0,
                   strokeWidth: 8,
-                  backgroundColor: AppColors.surfaceLight,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  backgroundColor: AppColors.border,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.cobalt),
+                  strokeCap: StrokeCap.round,
                 ),
               ),
               Column(
                 children: [
-                  Text('${78 + (_score * 4)}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                  const Text('SCORE', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, letterSpacing: 1)),
+                  Text('$rating', style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  Text('SCORE', style: GoogleFonts.plusJakartaSans(fontSize: 9, color: AppColors.mutedText, letterSpacing: 1)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text('Cyber Vigilance Rating', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text('Cyber Vigilance Rating', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          const Text('Complete scenarios to level up your threat awareness rating.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProtocolCard(IconData icon, String title, String description, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                const SizedBox(height: 4),
-                Text(description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4)),
-              ],
-            ),
-          ),
+          Text('Complete scenarios to level up your threat awareness rating.', style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 12)),
         ],
       ),
     );
@@ -347,46 +303,53 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
   Widget _buildChallengeCard() {
     final current = _challenges[_challengeIndex];
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(current['source'], style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(current['source'], style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppColors.mutedText, fontWeight: FontWeight.bold)),
+              Text('${_challengeIndex + 1}/${_challenges.length}', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppColors.cobalt, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.4)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
             ),
-            child: Text(current['message'], style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary)),
+            child: Text(current['message'], style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.4, color: AppColors.textPrimary)),
           ),
           const SizedBox(height: 14),
-          Text(current['question'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 14),
+          Text(current['question'], style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
+                child: PremiumCTA(
+                  label: "SCAM",
+                  isDanger: true,
+                  icon: Icons.gpp_bad_rounded,
+                  height: 48,
                   onPressed: () => _answerChallenge(true),
-                  icon: const Icon(Icons.gpp_bad, color: Colors.white, size: 18),
-                  label: const Text('SCAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, padding: const EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton.icon(
+                child: PremiumCTA(
+                  label: "SAFE",
+                  icon: Icons.verified_rounded,
+                  height: 48,
                   onPressed: () => _answerChallenge(false),
-                  icon: const Icon(Icons.gpp_good, color: Colors.black, size: 18),
-                  label: const Text('SAFE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, padding: const EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),
             ],
@@ -397,44 +360,39 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
   }
 
   Widget _buildExploreCard(BuildContext context, LearningModuleData data) {
-    return Pressable(
+    return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (_) => LearningModuleScreen(module: data)));
       },
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
-            child: Icon(data.icon, color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(data.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                const SizedBox(height: 2),
-                Text(data.subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              ],
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: AppColors.cobalt.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(14)),
+              child: Icon(data.icon, color: AppColors.electricBlue, size: 24),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, color: AppColors.primary, size: 18),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => LearningModuleScreen(module: data)));
-            },
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(data.title, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(data.subtitle, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.cobalt, size: 16),
+          ],
+        ),
       ),
-    ),
     );
   }
 }

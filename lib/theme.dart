@@ -2,56 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color background = Color(0xFF0F172A);
-  static const Color surface = Color(0xFF1E293B);
-  static const Color surfaceLight = Color(0xFF334155);
-  static const Color primary = Color(0xFF06B6D4); // Neon Cyan
-  static const Color accent = Color(0xFF3B82F6);  // Electric Blue
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color danger = Color(0xFFEF4444);  // Crimson
-  static const Color success = Color(0xFF10B981); // Emerald
-  static const Color warning = Color(0x0fffe60b); // Amber
-  static const Color cardGlow = Color(0x1A06B6D4);
+  // Core Cobalt Shield Tokens
+  static const Color background = Color(0xFF0B1020);
+  static const Color deepBackground = Color(0xFF080D1C);
+  static const Color surface = Color(0xFF111A2D);
+  static const Color elevatedSurface = Color(0xFF17213A);
+  static const Color surfaceLight = Color(0xFF17213A);
+
+  static const Color primary = Color(0xFF315CF6); // Cobalt Blue
+  static const Color cobalt = Color(0xFF315CF6);
+  static const Color electricBlue = Color(0xFF4F7CFF);
+  static const Color accent = Color(0xFF4F7CFF);
+  static const Color softViolet = Color(0xFF7C6CFF);
+  static const Color aiViolet = Color(0xFF8B7CFF);
+
+  static const Color safeEmerald = Color(0xFF35D07F);
+  static const Color success = Color(0xFF35D07F);
+  static const Color safeMint = Color(0xFF8BE7B5);
+
+  static const Color warning = Color(0xFFF5B84B);
+  static const Color danger = Color(0xFFFF5C67);
+
+  static const Color textPrimary = Color(0xFFF7F5F0);
+  static const Color textSecondary = Color(0xFFA7B0C0);
+  static const Color mutedText = Color(0xFF68748A);
+
+  static const Color border = Color(0xFF24304A);
+  static const Color cardGlow = Color(0x26315CF6);
 }
 
-/// Accessibility-aware font sizing: ensures minimum readable size on small devices
-/// while respecting user text scale preferences.
+/// Accessibility-aware font sizing for editorial typography hierarchy
 class AppFontSizes {
-  /// Caption/helper text: 10px minimum for accessibility (AA standard)
   static const double caption = 11.0;
-  /// Small body text: 12px default, 11px minimum
   static const double small = 12.0;
-  /// Regular body text: 14px
   static const double regular = 14.0;
-  /// Subtitle text: 16px
   static const double subtitle = 16.0;
-  /// Heading text: 18px
-  static const double heading = 18.0;
-  /// Large heading: 20px+
-  static const double largeHeading = 20.0;
+  static const double heading = 20.0;
+  static const double largeHeading = 28.0;
+  static const double heroHeadline = 38.0;
 }
 
-// Cybersec type system:
-//   Orbitron — angular, techy display face for headings and the app-bar title
-//   Rajdhani — condensed, highly legible UI face for body text and controls
-// Every screen uses hardcoded TextStyles (no textTheme slot lookups), so the
-// Rajdhani text theme below is what actually swaps the app-wide font: its
-// bodyMedium becomes the inherited DefaultTextStyle that those hardcoded
-// styles merge onto without overriding the family. Orbitron is then wired into
-// the heading surfaces the theme controls directly.
-TextTheme _cyberTextTheme(TextTheme base) {
-  final TextTheme body = GoogleFonts.rajdhaniTextTheme(base);
-  TextStyle heading(TextStyle? s) =>
-      GoogleFonts.orbitron(textStyle: s, fontWeight: FontWeight.w700);
+TextTheme _cobaltTextTheme(TextTheme base) {
+  final TextTheme body = GoogleFonts.plusJakartaSansTextTheme(base);
+  TextStyle editorialHeading(TextStyle? s) => GoogleFonts.plusJakartaSans(
+        textStyle: s,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
+        color: AppColors.textPrimary,
+      );
+
   return body.copyWith(
-    displayLarge: heading(body.displayLarge),
-    displayMedium: heading(body.displayMedium),
-    displaySmall: heading(body.displaySmall),
-    headlineLarge: heading(body.headlineLarge),
-    headlineMedium: heading(body.headlineMedium),
-    headlineSmall: heading(body.headlineSmall),
-    titleLarge: heading(body.titleLarge),
+    displayLarge: editorialHeading(body.displayLarge?.copyWith(fontSize: 40, height: 1.05)),
+    displayMedium: editorialHeading(body.displayMedium?.copyWith(fontSize: 32, height: 1.1)),
+    displaySmall: editorialHeading(body.displaySmall?.copyWith(fontSize: 26, height: 1.15)),
+    headlineLarge: editorialHeading(body.headlineLarge?.copyWith(fontSize: 24)),
+    headlineMedium: editorialHeading(body.headlineMedium?.copyWith(fontSize: 20)),
+    headlineSmall: editorialHeading(body.headlineSmall?.copyWith(fontSize: 18)),
+    titleLarge: editorialHeading(body.titleLarge?.copyWith(fontSize: 16)),
+    bodyLarge: body.bodyLarge?.copyWith(color: AppColors.textPrimary, fontSize: 15, height: 1.4),
+    bodyMedium: body.bodyMedium?.copyWith(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+    bodySmall: body.bodySmall?.copyWith(color: AppColors.mutedText, fontSize: 11),
   );
 }
 
@@ -60,16 +70,15 @@ final ThemeData _baseDark = ThemeData(
   scaffoldBackgroundColor: AppColors.background,
   colorScheme: const ColorScheme.dark(
     primary: AppColors.primary,
-    secondary: AppColors.accent,
+    secondary: AppColors.electricBlue,
     surface: AppColors.surface,
   ),
 );
 
+DataColumn dataColumnPlaceholder = const DataColumn(label: Text(''));
+
 ThemeData appTheme = _baseDark.copyWith(
-  textTheme: _cyberTextTheme(_baseDark.textTheme),
-  // App-wide smooth screen transitions. ZoomPageTransitionsBuilder gives a
-  // premium fade-through-with-scale feel on every Navigator push, replacing the
-  // default platform slide — one place, whole app.
+  textTheme: _cobaltTextTheme(_baseDark.textTheme),
   pageTransitionsTheme: const PageTransitionsTheme(
     builders: {
       TargetPlatform.android: ZoomPageTransitionsBuilder(),
@@ -77,50 +86,59 @@ ThemeData appTheme = _baseDark.copyWith(
     },
   ),
   appBarTheme: AppBarTheme(
-    backgroundColor: AppColors.background,
+    backgroundColor: Colors.transparent,
     elevation: 0,
     centerTitle: false,
     iconTheme: const IconThemeData(color: AppColors.textPrimary),
-    titleTextStyle: GoogleFonts.orbitron(
+    titleTextStyle: GoogleFonts.plusJakartaSans(
       color: AppColors.textPrimary,
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: FontWeight.bold,
-      letterSpacing: 0.5,
+      letterSpacing: -0.3,
     ),
   ),
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: AppColors.surface,
     selectedItemColor: AppColors.primary,
-    unselectedItemColor: AppColors.textSecondary,
+    unselectedItemColor: AppColors.mutedText,
     type: BottomNavigationBarType.fixed,
-    elevation: 12,
+    elevation: 0,
   ),
   cardTheme: CardThemeData(
     color: AppColors.surface,
-    elevation: 4,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(22),
+      side: const BorderSide(color: AppColors.border, width: 1),
+    ),
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
     fillColor: AppColors.surface,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: AppColors.border, width: 1),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: AppColors.border, width: 1),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
     ),
     labelStyle: const TextStyle(color: AppColors.textSecondary),
-    hintStyle: const TextStyle(color: AppColors.textSecondary),
+    hintStyle: const TextStyle(color: AppColors.mutedText),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: AppColors.primary,
-      foregroundColor: Colors.black,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      textStyle: GoogleFonts.rajdhani(fontWeight: FontWeight.bold, fontSize: 16),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
     ),
   ),
 );
+

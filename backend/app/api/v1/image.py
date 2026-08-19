@@ -82,7 +82,7 @@ async def analyze_image(
     logger.info(
         "Image analysis request",
         extra={
-            "filename": file.filename,
+            "image_filename": file.filename,
             "content_type": file.content_type,
             "size_bytes": len(image_bytes),
         },
@@ -101,7 +101,8 @@ async def analyze_image(
         },
     )
 
-    analysis = await ai_engine.analyze(extracted_text)
+    text_to_analyze = extracted_text.strip() if extracted_text.strip() else f"Image file: {file.filename or 'screenshot.png'}"
+    analysis = await ai_engine.analyze(text_to_analyze)
 
     return ImageAnalysisResponse(
         extracted_text=extracted_text,

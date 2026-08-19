@@ -14,9 +14,6 @@ from fastapi import APIRouter, Request
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.schemas.response import HealthResponse
-from app.services.gemini_service import gemini_service
-from app.services.ocr_service import ocr_service
-from app.services.voice_service import voice_service
 
 logger = get_logger(__name__)
 
@@ -43,32 +40,31 @@ async def _check_redis(redis_url: str) -> dict:
 
 
 def _apk_tool_status() -> dict:
-    """Report which APK-analysis tools are actually present on this host.
-
-    The on-box pipeline (JADX, APKTool, YARA, Androguard) is optional: a
-    deployment without the tools still serves text/voice/image analysis and
-    falls back to heuristic-only APK handling. This endpoint makes that state
-    explicit so operators (and the client) never assume a full pipeline that
-    is not installed.
-    """
+    jadx_ok = shutil.which("jadx") is not None
+    apktool_ok = shutil.which("apktool") is not None
+    yara_ok = importlib.util.find_spec("yara") is not None
+    andro_ok = importlib.util.find_spec("androguard") is not None
     return {
-        "jadx": {"available": shutil.which("jadx") is not None},
-        "apktool": {"available": shutil.which("apktool") is not None},
-        "yara": {"available": importlib.util.find_spec("yara") is not None},
-        "androguard": {"available": importlib.util.find_spec("androguard") is not None},
+        "jadx": {"available": jadx_ok},
+        "apktool": {"available": apktool_ok},
+        "yara": {"available": yara_ok},
+        "androguard": {"available": andro_ok},
         "mobsf": {
             "available": bool(os.getenv("MOBSF_API_KEY")) and bool(os.getenv("MOBSF_URL")),
             "configured": bool(os.getenv("MOBSF_API_KEY")),
         },
-        "full_pipeline": all(
-            [
-                shutil.which("jadx") is not None,
-                shutil.which("apktool") is not None,
-                importlib.util.find_spec("yara") is not None,
-                importlib.util.find_spec("androguard") is not None,
-            ]
-        ),
+        "full_pipeline": all([jadx_ok, apktool_ok, yara_ok, andro_ok]),
     }
+
+
+def _check_whisper_installed() -> bool:
+    """Check if Whisper is installed WITHOUT loading the model (fast)."""
+    return importlib.util.find_spec("whisper") is not None
+
+
+def _check_ocr_installed() -> bool:
+    """Check if EasyOCR is installed WITHOUT loading the model (fast)."""
+    return importlib.util.find_spec("easyocr") is not None
 
 
 @router.get(
@@ -85,14 +81,19 @@ async def health_check(request: Request) -> dict:
     a non-critical downstream (LLM, OCR, voice) is unavailable. This endpoint
     is intentionally public (no client auth) so load balancers and Docker
     healthchecks can probe it without a device token.
+
+    Note: OCR and Voice availability is reported based on package installation
+    only — models are NOT loaded during health checks to keep response times fast.
     """
     settings = get_settings()
 
     gemini_available = settings.gemini_available
     groq_available = settings.groq_available
     llm_available = gemini_available or groq_available
-    whisper_available = bool(voice_service.available)
-    ocr_available = bool(ocr_service.available)
+    # Lightweight package presence checks — do NOT call service.available
+    # which triggers lazy model loading (takes 4-15 seconds first time).
+    whisper_available = _check_whisper_installed()
+    ocr_available = _check_ocr_installed()
     virustotal_available = settings.virustotal_available
     safe_browsing_available = bool(settings.GOOGLE_SAFE_BROWSING_API_KEY)
     abuseipdb_available = bool(settings.ABUSEIPDB_API_KEY)

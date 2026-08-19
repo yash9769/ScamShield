@@ -400,22 +400,22 @@ class ApkAnalyzerService {
     if (bytes.isEmpty) return '0' * 64;
 
     const nHashes = 32;
-    final mins = List<int>.filled(nHashes, 0x7fffffffffffffff);
+    final mins = List<int>.filled(nHashes, 0x7fffffff);
 
     for (int i = 0; i < bytes.length - 3; i++) {
-      // FNV-1a 64-bit (approximated in Dart's 64-bit int)
-      int h = 0xcbf29ce484222325;
+      // FNV-1a 32-bit (cross-platform Dart VM + JS web safe)
+      int h = 0x811c9dc5;
       h ^= bytes[i];
-      h = (h * 0x100000001b3) & 0x7fffffffffffffff;
+      h = (h * 0x01000193) & 0x7fffffff;
       h ^= bytes[i + 1];
-      h = (h * 0x100000001b3) & 0x7fffffffffffffff;
+      h = (h * 0x01000193) & 0x7fffffff;
       h ^= bytes[i + 2];
-      h = (h * 0x100000001b3) & 0x7fffffffffffffff;
+      h = (h * 0x01000193) & 0x7fffffff;
       h ^= bytes[i + 3];
-      h = (h * 0x100000001b3) & 0x7fffffffffffffff;
+      h = (h * 0x01000193) & 0x7fffffff;
 
       for (int j = 0; j < nHashes; j++) {
-        final hj = (h ^ (h >> (j + 1))) & 0x7fffffffffffffff;
+        final hj = (h ^ (h >> (j + 1))) & 0x7fffffff;
         if (hj < mins[j]) mins[j] = hj;
       }
     }

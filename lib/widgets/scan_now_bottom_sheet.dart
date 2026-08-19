@@ -1,16 +1,13 @@
 // lib/widgets/scan_now_bottom_sheet.dart
-// Real bottom sheet for SCAN NOW: file pick, image pick, clipboard scan.
+// Complete scan launcher bottom sheet — all scan types active and functional.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import 'motion.dart';
-import '../services/file_scanner_service.dart';
-import '../services/scam_detector.dart';
-import '../data/repositories/scan_repository.dart';
-import '../data/models/scan_record.dart';
-import '../services/report_generator_service.dart';
-import '../services/app_capabilities_service.dart';
 import '../screens/apk_scan_screen.dart';
+import '../screens/scan_screen.dart';
 
 class ScanNowBottomSheet extends StatefulWidget {
   const ScanNowBottomSheet({super.key});
@@ -29,90 +26,75 @@ class ScanNowBottomSheet extends StatefulWidget {
 }
 
 class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
-  bool _isScanning = false;
-  String _scanStatus = '';
-  FileScanResult? _result;
-  final ScanRepository _repo = ScanRepository();
+  void _openScanMessage() {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ScanScreen(initialTab: 0),
+      ),
+    );
+  }
 
-  Future<void> _runScan(Future<FileScanResult?> Function() scanner, String label) async {
-    setState(() {
-      _isScanning = true;
-      _scanStatus = 'Scanning $label...';
-      _result = null;
-    });
+  void _openScanUrl() {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ScanScreen(initialTab: 1),
+      ),
+    );
+  }
 
-    try {
-      final result = await scanner();
-      if (result == null) {
-        setState(() {
-          _isScanning = false;
-          _scanStatus = '';
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(label == 'Clipboard'
-                  ? 'Clipboard is empty.'
-                  : 'No file selected or permission denied.'),
-              backgroundColor: AppColors.surface,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-        return;
-      }
+  void _openScanFile() {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ScanScreen(initialTab: 4, autoPick: true),
+      ),
+    );
+  }
 
-      // A failed read must not be written to history or shown as a verdict.
-      if (result.hasError && result.rawContent.isEmpty) {
-        setState(() {
-          _isScanning = false;
-          _scanStatus = '';
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not scan: ${result.error}'),
-              backgroundColor: AppColors.danger,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-        return;
-      }
+  void _openScanImage() {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ScanScreen(initialTab: 3, autoPick: true),
+      ),
+    );
+  }
 
-      // Save to SQLite history
-      final record = ScanRecord.fromAnalysisResult(
-        inputText: result.rawContent,
-        result: result.analysis,
-        source: result.source == ScanSource.file
-            ? 'File: ${result.fileName}'
-            : result.source == ScanSource.image
-                ? 'Image: ${result.fileName}'
-                : 'Clipboard',
+  Future<void> _openScanClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    if (text.isNotEmpty) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ScanScreen(initialText: text),
+        ),
       );
-      await _repo.saveScan(record);
-
-      setState(() {
-        _isScanning = false;
-        _result = result;
-        _scanStatus = '';
-      });
-    } catch (e) {
-      setState(() {
-        _isScanning = false;
-        _scanStatus = '';
-      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Clipboard is empty. Copy a message or link first.',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: AppColors.surface,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const ScanScreen(initialTab: 0),
+        ),
+      );
     }
   }
 
-  /// Opens the full APK scanner. This is the deep static-analysis pipeline
-  /// (Androguard + YARA + OSINT + PDF export) that used to live in its own
-  /// bottom-nav tab. We dismiss the sheet first, then push the dedicated
-  /// screen so the user gets the complete multi-section report UI.
   void _openApkScanner() {
-    Navigator.of(context).pop(); // close the bottom sheet
+    Navigator.of(context).pop();
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ApkScanScreen()),
     );
@@ -123,7 +105,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
         child: Padding(
@@ -141,84 +123,124 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Scan Content',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                'What would you like to scan?',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Choose what to scan for scam indicators',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              const SizedBox(height: 4),
+              Text(
+                'All scans use Gemini AI + OSINT for full analysis',
+                style: GoogleFonts.plusJakartaSans(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              if (_isScanning) ...[
-                const SizedBox(height: 16),
-                const CircularProgressIndicator(color: AppColors.primary),
-                const SizedBox(height: 16),
-                Text(_scanStatus, style: const TextStyle(color: AppColors.textSecondary)),
-                const SizedBox(height: 16),
-              ] else if (_result != null) ...[
-                _buildResult(_result!),
-                const SizedBox(height: 16),
-                OutlinedButton(
-                  onPressed: () => setState(() => _result = null),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              // Row 1: Message + URL
+              Row(
+                children: [
+                  Expanded(
+                    child: Reveal(
+                      delay: Reveal.step(0),
+                      offsetY: 16,
+                      child: _buildCompactOption(
+                        icon: Icons.mark_chat_unread_rounded,
+                        color: AppColors.cobalt,
+                        title: 'Message',
+                        subtitle: 'SMS / Text',
+                        onTap: _openScanMessage,
+                      ),
+                    ),
                   ),
-                  child: const Text('Scan Another'),
-                ),
-              ] else ...[
-                Reveal(
-                  delay: Reveal.step(0),
-                  offsetY: 16,
-                  child: _buildOption(
-                    icon: Icons.folder_open_rounded,
-                    color: AppColors.primary,
-                    title: 'Scan File',
-                    subtitle: 'Pick a .txt, .pdf, .doc, .csv, or other file from your device',
-                    onTap: () => _runScan(FileScannerService.pickAndScanFile, 'File'),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Reveal(
+                      delay: Reveal.step(1),
+                      offsetY: 16,
+                      child: _buildCompactOption(
+                        icon: Icons.link_rounded,
+                        color: AppColors.electricBlue,
+                        title: 'URL / Link',
+                        subtitle: 'Web Check',
+                        onTap: _openScanUrl,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Reveal(
-                  delay: Reveal.step(1),
-                  offsetY: 16,
-                  child: _buildOption(
-                    icon: Icons.image_outlined,
-                    color: AppColors.accent,
-                    title: 'Scan Image',
-                    subtitle: 'Pick a screenshot or photo from your gallery',
-                    onTap: () => _runScan(FileScannerService.pickAndScanImage, 'Image'),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Row 2: Screenshot + File
+              Row(
+                children: [
+                  Expanded(
+                    child: Reveal(
+                      delay: Reveal.step(2),
+                      offsetY: 16,
+                      child: _buildCompactOption(
+                        icon: Icons.image_rounded,
+                        color: AppColors.accent,
+                        title: 'Screenshot',
+                        subtitle: 'OCR Scan',
+                        onTap: _openScanImage,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Reveal(
-                  delay: Reveal.step(2),
-                  offsetY: 16,
-                  child: _buildOption(
-                    icon: Icons.content_paste_rounded,
-                    color: AppColors.success,
-                    title: 'Scan Clipboard',
-                    subtitle: 'Instantly scan whatever text is copied on your clipboard',
-                    onTap: () => _runScan(FileScannerService.scanClipboard, 'Clipboard'),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Reveal(
+                      delay: Reveal.step(3),
+                      offsetY: 16,
+                      child: _buildCompactOption(
+                        icon: Icons.description_rounded,
+                        color: AppColors.primary,
+                        title: 'Document',
+                        subtitle: 'File Scan',
+                        onTap: _openScanFile,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Reveal(
-                  delay: Reveal.step(3),
-                  offsetY: 16,
-                  child: _buildOption(
-                    icon: Icons.android_rounded,
-                    color: AppColors.warning,
-                    title: 'Scan APK / App',
-                    subtitle: 'Deep static analysis of an Android .apk — permissions, secrets, YARA & OSINT',
-                    onTap: _openApkScanner,
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Row 3: Clipboard + APK
+              Row(
+                children: [
+                  Expanded(
+                    child: Reveal(
+                      delay: Reveal.step(4),
+                      offsetY: 16,
+                      child: _buildCompactOption(
+                        icon: Icons.content_paste_rounded,
+                        color: AppColors.success,
+                        title: 'Clipboard',
+                        subtitle: 'Quick Scan',
+                        onTap: _openScanClipboard,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Reveal(
+                      delay: Reveal.step(5),
+                      offsetY: 16,
+                      child: _buildCompactOption(
+                        icon: Icons.android_rounded,
+                        color: AppColors.warning,
+                        title: 'APK / App',
+                        subtitle: 'Deep Scan',
+                        onTap: _openApkScanner,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -227,7 +249,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
     );
   }
 
-  Widget _buildOption({
+  Widget _buildCompactOption({
     required IconData icon,
     required Color color,
     required String title,
@@ -239,186 +261,40 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                ],
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: AppColors.textPrimary,
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildResult(FileScanResult result) {
-    final analysis = result.analysis;
-    final Color color;
-    final IconData icon;
-    final String label;
-
-    if (!analysis.isAnalyzed) {
-      // "Could not analyse" is never rendered as a green safe verdict.
-      color = AppColors.textSecondary;
-      icon = Icons.help_outline_rounded;
-      label = 'NOT ANALYZED';
-    } else {
-      final caps = AppCapabilitiesService.capabilities.value;
-      final isFullAi = analysis.aiPowered && caps.hasFullAi;
-      switch (analysis.classification) {
-        case ScamClassification.scam:
-          color = AppColors.danger;
-          icon = Icons.warning_rounded;
-          label = 'SCAM DETECTED';
-        case ScamClassification.suspicious:
-          color = AppColors.warning;
-          icon = Icons.help_outline_rounded;
-          label = 'SUSPICIOUS';
-        case ScamClassification.safe:
-          color = isFullAi ? AppColors.success : AppColors.warning;
-          icon = isFullAi ? Icons.check_circle_rounded : Icons.shield_outlined;
-          label = isFullAi ? 'LOOKS SAFE' : 'NO THREATS FOUND (HEURISTIC ONLY)';
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(result.fileName,
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 11),
-                        overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${analysis.riskScore}',
-                  style: TextStyle(
-                      color: color, fontWeight: FontWeight.bold, fontSize: 20),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(analysis.summary,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
-          if (result.source == ScanSource.image || result.error != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: AppColors.warning, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      result.error ?? 'OCR unavailable — Filename and metadata analysis only.',
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          
-          if (result.apkAnalysis != null) ...[
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            const Text('Static Analysis Complete', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.verified_user, color: AppColors.primary, size: 16),
-                const SizedBox(width: 6),
-                Text('${result.apkAnalysis!.permissions.length} Permissions | ${result.apkAnalysis!.urls.length} Endpoints', 
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.picture_as_pdf, size: 18),
-              label: const Text('Export Full PDF Report'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () async {
-                try {
-                  final file = await ReportGeneratorService.generateApkReport(
-                    apk: result.apkAnalysis!,
-                    osintResults: result.osintResults ?? [],
-                    analysis: result.analysis,
-                    fileName: result.fileName,
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Report saved to: ${file.path}')),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to generate PDF: $e')),
-                    );
-                  }
-                }
-              },
-            ),
-          ]
-        ],
       ),
     );
   }

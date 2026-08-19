@@ -2,6 +2,7 @@
 // Centralized service for requesting permissions once and persisting consent.
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,12 +11,14 @@ class PermissionService {
 
   /// Check if permissions have already been requested & granted once.
   static Future<bool> hasGrantedPermissions() async {
+    if (kIsWeb) return true;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_permissionsGrantedKey) ?? false;
   }
 
   /// Request all essential app permissions once.
   static Future<bool> requestAllPermissionsOnce() async {
+    if (kIsWeb) return true;
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_permissionsGrantedKey) == true) {
       return true;

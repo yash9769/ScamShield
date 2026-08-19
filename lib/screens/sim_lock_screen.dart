@@ -1,6 +1,8 @@
-﻿import 'dart:io';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:app_settings/app_settings.dart';
 import '../theme.dart';
@@ -23,13 +25,13 @@ class _SimLockScreenState extends State<SimLockScreen> {
 
   // Derived risk signals
   PatchRisk _patchRisk = PatchRisk.unknown;
-  int _patchAgeMonths = -1;
   String _patchDate = 'Unknown';
+  int _patchAgeMonths = 0;
   bool _isEmulator = false;
   bool _isRooted = false;
   bool _hardwareEncryptionActive = false;
-  String _overallRiskLevel = 'Unknown';
-  Color _overallRiskColor = AppColors.textSecondary;
+  String _overallRiskLevel = 'LOW RISK';
+  Color _overallRiskColor = AppColors.safeEmerald;
   List<String> _remediationSteps = [];
 
   @override
@@ -38,8 +40,6 @@ class _SimLockScreenState extends State<SimLockScreen> {
     _loadDeviceInfo();
   }
 
-  /// Parses the Android security patch string (YYYY-MM-DD) and returns the
-  /// number of whole months elapsed since that date.
   int _monthsAgoPatch(String patchString) {
     try {
       final parts = patchString.split('-');
@@ -70,7 +70,14 @@ class _SimLockScreenState extends State<SimLockScreen> {
     final steps = <String>[];
 
     try {
-      if (Platform.isAndroid) {
+      if (kIsWeb) {
+        final webInfo = await plugin.webBrowserInfo;
+        info['Device'] = webInfo.browserName.name;
+        info['Platform'] = webInfo.platform ?? 'Web Browser';
+        info['User Agent'] = webInfo.userAgent ?? 'Unknown';
+        _overallRiskLevel = 'LOW RISK (WEB)';
+        _overallRiskColor = AppColors.safeEmerald;
+      } else if (Platform.isAndroid) {
         final d = await plugin.androidInfo;
         info['Device'] = '${d.manufacturer} ${d.model}';
         info['Android Version'] = 'Android ${d.version.release} (SDK ${d.version.sdkInt})';
@@ -90,7 +97,6 @@ class _SimLockScreenState extends State<SimLockScreen> {
         // Native security checks via method channel
         try {
           const channel = MethodChannel('com.example.scamshield/security');
-          // Add timeout to prevent indefinite hangs
           final nativeRes = await channel.invokeMethod<Map?>('checkDeviceIntegrity').timeout(
             const Duration(seconds: 5),
             onTimeout: () {
@@ -104,8 +110,6 @@ class _SimLockScreenState extends State<SimLockScreen> {
             _hardwareEncryptionActive = nativeRes['isHardwareEncrypted'] == true;
             final unknownSources = nativeRes['unknownSourcesEnabled'] == true;
             final bootloaderUnlocked = nativeRes['bootloaderUnlocked'] == true;
-            // Log successful native channel call for debugging
-            appDebugPrint('Device integrity check completed successfully', tag: 'SimLockScreen');
 
             info['Root / Integrity Status'] =
                 _isRooted ? 'ROOTED / MODIFIED' : 'Clean (not rooted)';
@@ -130,12 +134,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
             info['Root Status'] = 'Not verified';
             info['Hardware Encryption'] = 'Not verified';
           }
-        } on PlatformException catch (e) {
-          appErrorPrint('Platform exception in device integrity check: ${e.code} - ${e.message}', tag: 'SimLockScreen');
-          info['Root Status'] = 'Not verified (native bridge unavailable)';
-          info['Hardware Encryption'] = 'Not verified';
         } catch (e) {
-          appErrorPrint('Error in device integrity check: $e', tag: 'SimLockScreen');
           info['Root Status'] = 'Not verified (native bridge unavailable)';
           info['Hardware Encryption'] = 'Not verified';
         }
@@ -145,8 +144,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
           case PatchRisk.criticallyOutdated:
             steps.insert(0,
                 'URGENT: Install the latest security update immediately — '
-                'your patch is $_patchAgeMonths months old. '
-                'Tap "Check for Updates" below.');
+                'your patch is $_patchAgeMonths months old.');
             break;
           case PatchRisk.outdated:
             steps.insert(0,
@@ -161,14 +159,10 @@ class _SimLockScreenState extends State<SimLockScreen> {
             break;
         }
 
-        // Device & SIM protection steps (always recommended)
         steps.add('Enable SIM PIN in Settings → Security → SIM card lock to prevent unauthorized SIM swaps.');
-        steps.add(
-            'Contact your mobile carrier and set a verbal password to authorize SIM changes.');
-        steps.add(
-            'Switch 2FA from SMS to an authenticator app (e.g. Google Authenticator) — it\'s more secure.');
+        steps.add('Contact your mobile carrier and set a verbal password to authorize SIM changes.');
+        steps.add('Switch 2FA from SMS to an authenticator app.');
 
-        // Overall risk level
         int riskPoints = 0;
         if (_patchRisk == PatchRisk.criticallyOutdated) riskPoints += 40;
         if (_patchRisk == PatchRisk.outdated) riskPoints += 20;
@@ -184,7 +178,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
           _overallRiskColor = AppColors.warning;
         } else {
           _overallRiskLevel = 'LOW RISK';
-          _overallRiskColor = AppColors.success;
+          _overallRiskColor = AppColors.safeEmerald;
         }
       } else if (Platform.isIOS) {
         final d = await plugin.iosInfo;
@@ -192,13 +186,10 @@ class _SimLockScreenState extends State<SimLockScreen> {
         info['Model'] = d.model;
         info['iOS Version'] = d.systemVersion;
         info['Is Physical Device'] = d.isPhysicalDevice ? 'Yes' : 'No (Simulator)';
-        info['Root / Jailbreak Status'] = 'Not verified';
-        info['Hardware Encryption'] = 'Not verified';
         _overallRiskLevel = 'Not Verified';
         _overallRiskColor = AppColors.textSecondary;
-        steps.add(
-            'Keep iOS updated via Settings → General → Software Update.');
-        steps.add('Enable SIM PIN via Settings → Phone → SIM PIN to prevent SIM-swap attacks.');
+        steps.add('Keep iOS updated via Settings → General → Software Update.');
+        steps.add('Enable SIM PIN via Settings → Phone → SIM PIN.');
       }
     } catch (_) {
       info['Error'] = 'Could not read device info';
@@ -217,18 +208,18 @@ class _SimLockScreenState extends State<SimLockScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Device Security Check',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text('Device Security Check',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 20)),
         centerTitle: false,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.cobalt))
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               children: [
                 Reveal(delay: Reveal.step(0), child: _buildOverallRiskCard()),
                 const SizedBox(height: 16),
-                if (Platform.isAndroid) ...[
+                if (!kIsWeb && Platform.isAndroid) ...[
                   Reveal(delay: Reveal.step(1), child: _buildPatchStatusCard()),
                   const SizedBox(height: 16),
                 ],
@@ -241,7 +232,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
                   const SizedBox(height: 16),
                 ],
                 Reveal(delay: Reveal.step(5), child: _buildActionButtons()),
-                const SizedBox(height: 20),
+                const SizedBox(height: 90),
               ],
             ),
     );
@@ -260,40 +251,41 @@ class _SimLockScreenState extends State<SimLockScreen> {
             BoxShadow(color: _overallRiskColor.withValues(alpha: 0.12), blurRadius: 20),
           ],
         ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: _overallRiskColor.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _overallRiskColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _overallRiskLevel.contains('HIGH')
+                    ? Icons.shield_outlined
+                    : _overallRiskLevel.contains('MEDIUM')
+                        ? Icons.warning_amber_rounded
+                        : Icons.verified_user_outlined,
+                color: _overallRiskColor,
+                size: 36,
+              ),
             ),
-            child: Icon(
-              _overallRiskLevel.contains('HIGH')
-                  ? Icons.shield_outlined
-                  : _overallRiskLevel.contains('MEDIUM')
-                      ? Icons.warning_amber_rounded
-                      : Icons.verified_user_outlined,
-              color: _overallRiskColor,
-              size: 36,
+            const SizedBox(height: 14),
+            Text(
+              _overallRiskLevel,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: _overallRiskColor,
+                letterSpacing: 1,
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            _overallRiskLevel,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: _overallRiskColor,
-              letterSpacing: 1,
+            const SizedBox(height: 6),
+            const Text(
+              'SIM Swap & Device Integrity Assessment',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'SIM Swap & Device Integrity Assessment',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

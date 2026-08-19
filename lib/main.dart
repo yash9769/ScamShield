@@ -22,7 +22,9 @@ import 'services/settings_service.dart';
 import 'services/auth_service.dart';
 import 'services/clipboard_analyzer.dart';
 import 'services/osint_service.dart';
+import 'services/app_capabilities_service.dart';
 import 'widgets/offline_banner.dart';
+import 'widgets/scamshield_bottom_nav.dart';
 
 /// Sentry DSN — supplied at build time via:
 ///   flutter build apk --dart-define=SENTRY_DSN=https://xxx@yyy.ingest.sentry.io/zzz
@@ -37,6 +39,10 @@ void main() async {
   await SettingsService.init();
   final startLoggedIn = await AuthService.isLoggedIn();
   await PermissionService.requestAllPermissionsOnce();
+  // Probe backend capabilities immediately at startup — do NOT await so it
+  // never blocks the UI. The OfflineBanner / HomeScreen will react via
+  // ValueListenable when the check completes.
+  AppCapabilitiesService.init();
 
   if (_sentryDsn.isNotEmpty) {
     await SentryFlutter.init(
@@ -368,76 +374,28 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    const navItems = [
+      ScamShieldBottomNavItem(icon: Icons.shield_outlined, activeIcon: Icons.shield, label: 'HOME'),
+      ScamShieldBottomNavItem(icon: Icons.center_focus_weak, activeIcon: Icons.center_focus_strong, label: 'SCAN'),
+      ScamShieldBottomNavItem(icon: Icons.mark_email_unread_outlined, activeIcon: Icons.mark_email_unread, label: 'BREACH'),
+      ScamShieldBottomNavItem(icon: Icons.history_outlined, activeIcon: Icons.history, label: 'HISTORY'),
+      ScamShieldBottomNavItem(icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, label: 'LEARN'),
+      ScamShieldBottomNavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'PROFILE'),
+    ];
+
     return Scaffold(
+      extendBody: true,
       body: OfflineBanner(
         child: widget.navigationShell,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: BottomNavigationBar(
-              currentIndex: widget.navigationShell.currentIndex,
-              onTap: (index) {
-                // Add haptic feedback when switching tabs
-                HapticFeedback.selectionClick();
-                final routes = ['/home', '/scan', '/breach', '/history', '/learn', '/profile'];
-                context.go(routes[index]);
-              },
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              type: BottomNavigationBarType.fixed,
-              selectedFontSize: 11,
-              unselectedFontSize: 10,
-              selectedItemColor: AppColors.primary,
-              unselectedItemColor: AppColors.textSecondary,
-              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.shield_outlined),
-                  activeIcon: Icon(Icons.shield, color: AppColors.primary),
-                  label: 'HOME',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.qr_code_scanner),
-                  activeIcon: Icon(Icons.center_focus_strong, color: AppColors.primary),
-                  label: 'SCAN',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.mark_email_unread_outlined),
-                  activeIcon: Icon(Icons.mark_email_unread, color: AppColors.primary),
-                  label: 'BREACH',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.history_outlined),
-                  activeIcon: Icon(Icons.history, color: AppColors.primary),
-                  label: 'HISTORY',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.menu_book_outlined),
-                  activeIcon: Icon(Icons.menu_book, color: AppColors.primary),
-                  label: 'LEARN',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person, color: AppColors.primary),
-                  label: 'PROFILE',
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: ScamShieldBottomNav(
+        currentIndex: widget.navigationShell.currentIndex,
+        items: navItems,
+        onTap: (index) {
+          HapticFeedback.selectionClick();
+          final routes = ['/home', '/scan', '/breach', '/history', '/learn', '/profile'];
+          context.go(routes[index]);
+        },
       ),
     );
   }

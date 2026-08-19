@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/breach_service.dart';
@@ -77,7 +78,6 @@ class _BreachScreenState extends State<BreachScreen>
       final stats = await BreachService.getBreachStats();
       if (mounted) setState(() => _stats = stats);
     } catch (_) {
-      // Stats are non-critical; the hero simply shows placeholders on failure.
     }
   }
 
@@ -91,7 +91,6 @@ class _BreachScreenState extends State<BreachScreen>
       return;
     }
 
-    // Add haptic feedback when email check starts
     HapticFeedback.mediumImpact();
     setState(() {
       _isCheckingEmail = true;
@@ -131,17 +130,16 @@ class _BreachScreenState extends State<BreachScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data Breach Intelligence', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text('Data Breach Intelligence', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 20)),
         centerTitle: false,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          indicatorWeight: 3,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          indicatorColor: AppColors.cobalt,
+          labelColor: AppColors.cobalt,
+          unselectedLabelColor: AppColors.mutedText,
+          labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
-            Tab(icon: Icon(Icons.mark_email_read_outlined), text: 'Email Breach Check'),
+            Tab(icon: Icon(Icons.mark_email_read_outlined), text: 'Email Check'),
             Tab(icon: Icon(Icons.public_outlined), text: 'Recent Breaches'),
           ],
         ),
@@ -186,7 +184,7 @@ class _BreachScreenState extends State<BreachScreen>
       onRefresh: _loadBreaches,
       color: AppColors.primary,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 90),
         itemCount: _breaches.length + 1,
         itemBuilder: (ctx, i) {
           if (i == 0) return _buildBreachHeader();

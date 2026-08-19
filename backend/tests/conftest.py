@@ -16,11 +16,10 @@ from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 # Must be set before app.main is imported (settings are cached at import time).
-os.environ.setdefault("API_AUTH_ENABLED", "false")
-# Pin docs OFF so the shared test client always exercises the production
-# default (test_docs_gating.py). The factory-level gating tests override
-# this explicitly via Settings(**kwargs).
-os.environ.setdefault("ENABLE_DOCS", "false")
+os.environ["API_AUTH_ENABLED"] = "false"
+os.environ["ENABLE_DOCS"] = "false"
+os.environ["DEBUG"] = "false"
+os.environ["ALLOWED_ORIGINS"] = "[]"
 
 import pytest
 from fastapi.testclient import TestClient

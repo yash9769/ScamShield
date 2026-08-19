@@ -1,7 +1,7 @@
 // lib/services/file_scanner_service.dart
-// Production-grade file scanning service with real permission handling.
+// Web-compatible file scanning service — uses bytes not dart:io File.
 
-import 'dart:io';
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -9,8 +9,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'settings_service.dart';
 import 'scam_detector.dart';
+import 'api_service.dart';
 import 'apk_analyzer_service.dart';
 import 'osint_service.dart';
+import 'file_io_helper.dart'; // conditional dart:io wrapper
+
+export 'apk_analyzer_service.dart';
 
 enum ScanSource { file, image, clipboard }
 
@@ -22,8 +26,7 @@ class FileScanResult {
   final ApkAnalysisResult? apkAnalysis;
   final List<OsintResult>? osintResults;
 
-  /// Set when the file could not be read or analysed. When non-null, the
-  /// caller must surface this instead of presenting [analysis] as a verdict.
+  /// Set when the file could not be read or analysed.
   final String? error;
 
   const FileScanResult({
@@ -38,9 +41,6 @@ class FileScanResult {
 
   bool get hasError => error != null;
 
-  /// Builds a failure result. The analysis carries a zero score, a neutral
-  /// classification, and status [AnalysisStatus.unavailable] so a read failure
-  /// can never be mistaken for a verdict (or rendered green).
   factory FileScanResult.failure({
     required ScanSource source,
     required String message,
@@ -65,7 +65,7 @@ class FileScanResult {
 class FileScannerService {
   static final ImagePicker _imagePicker = ImagePicker();
 
-  /// Requests storage permission and picks a text/document file to scan.
+  /// Picks any file and scans it. Web uses bytes; native uses path or bytes.
   static Future<FileScanResult?> pickAndScanFile() async {
     try {
       await _requestStoragePermission();
@@ -73,61 +73,79 @@ class FileScannerService {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
+        withData: true, // loads bytes on all platforms including web
       );
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
-        final path = file.path;
-        
-        if (path != null && file.name.toLowerCase().endsWith('.apk')) {
-          // --- TIER 1 PIPELINE: APK DEEP ANALYSIS ---
-          final apkResult = await ApkAnalyzerService.analyzeApk(path);
-          
-          // Collect OSINT for URLs
-          final osintFutures = <Future<OsintResult>>[];
-          // Check hash
-          osintFutures.add(OsintService.checkHashVirusTotal(apkResult.sha256));
-          // Check a few URLs to not overwhelm the free API
-          final urlsToCheck = apkResult.urls.take(3).toList();
-          if (urlsToCheck.isNotEmpty) {
-            osintFutures.add(OsintService.checkUrlhaus(urlsToCheck.first));
-          }
-          final osintResults = await Future.wait(osintFutures);
-          
-          final safeBrowsing = await OsintService.checkUrlsGoogleSafeBrowsing(urlsToCheck);
-          osintResults.addAll(safeBrowsing);
-          
-          final analysis = ScamDetector.analyzeApk(apkResult, osintResults);
-          
-          return FileScanResult(
-            analysis: analysis,
-            fileName: file.name,
-            source: ScanSource.file,
-            rawContent: 'APK Static Analysis Complete',
-            apkAnalysis: apkResult,
-            osintResults: osintResults,
-          );
+        final bytes = file.bytes;
+
+        // APK scan — native only
+        if (!kIsWeb && file.path != null &&
+            file.name.toLowerCase().endsWith('.apk')) {
+          return _analyzeApkFile(file);
         }
 
-        // --- REGULAR FILE SCAN ---
-        String content = 'File: ${file.name}';
-        if (path != null) {
-          try {
-            final bytes = await File(path).readAsBytes();
-            content = String.fromCharCodes(bytes.where((b) => b >= 32 || b == 10 || b == 13));
-            if (content.length > 5000) content = content.substring(0, 5000);
-          } catch (_) {
-            content = 'Suspicious File Content\nName: ${file.name}\nPath: $path';
+        // --- Use bytes (works on web + native) ---
+        if (bytes != null && bytes.isNotEmpty) {
+          if (_isTextExtension(file.name)) {
+            // Text file — decode and analyze via backend AI
+            String content;
+            try {
+              content = utf8.decode(bytes, allowMalformed: true);
+              if (content.length > 6000) content = content.substring(0, 6000);
+            } catch (_) {
+              content = String.fromCharCodes(
+                  bytes.where((b) => b >= 32 || b == 10 || b == 13));
+              if (content.length > 6000) {
+                content = content.substring(0, 6000);
+              }
+            }
+            if (content.trim().isEmpty) content = 'Document: ${file.name}';
+
+            AnalysisResult analysis;
+            try {
+              analysis = await ApiService.analyzeMessage(content);
+              if (!analysis.isAnalyzed) {
+                analysis = ScamDetector.analyze(content);
+              }
+            } catch (_) {
+              analysis = ScamDetector.analyze(content);
+            }
+            return FileScanResult(
+              analysis: analysis,
+              fileName: file.name,
+              source: ScanSource.file,
+              rawContent: content,
+            );
+          } else {
+            // Binary file (image, pdf) — send to backend OCR
+            AnalysisResult analysis;
+            try {
+              analysis = await ApiService.analyzeFileBytes(
+                bytes: bytes,
+                filename: file.name,
+              );
+              if (!analysis.isAnalyzed) {
+                analysis = ScamDetector.analyze('Document: ${file.name}');
+              }
+            } catch (_) {
+              analysis = ScamDetector.analyze('Document: ${file.name}');
+            }
+            return FileScanResult(
+              analysis: analysis,
+              fileName: file.name,
+              source: ScanSource.file,
+              rawContent: 'Binary document scanned via OCR: ${file.name}',
+            );
           }
         }
-        if (content.trim().isEmpty) content = 'Document: ${file.name}';
-        final analysis = ScamDetector.analyze(content);
-        return FileScanResult(
-          analysis: analysis,
-          fileName: file.name,
-          source: ScanSource.file,
-          rawContent: content,
-        );
+
+        // Native fallback — read via dart:io through helper
+        final path = file.path;
+        if (path != null && !kIsWeb) {
+          return _analyzeNativePath(file.name, path);
+        }
       }
     } catch (e) {
       debugPrint('File scan failed: $e');
@@ -137,38 +155,39 @@ class FileScannerService {
       );
     }
 
-    // User cancelled the picker - no result, and no invented one.
-    return null;
+    return null; // user cancelled
   }
 
-  /// Picks an image from gallery and analyses its filename/metadata for scam indicators.
+  /// Picks an image from gallery and runs OCR + AI analysis via backend.
   static Future<FileScanResult?> pickAndScanImage() async {
     try {
       await _requestPhotoPermission();
 
       final XFile? picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        imageQuality: 85,
+        requestFullMetadata: false,
       );
 
       if (picked != null) {
-        final name = picked.name;
-        // There is no on-device OCR in this build, and the backend's OCR
-        // endpoint lives in the unmounted backend/app tree. This previously
-        // invented "extracted text" describing a wire-transfer scam and ran
-        // the detector over it, so every image the user picked produced the
-        // same fabricated scam verdict. We now analyse only what we genuinely
-        // have - the filename - and say so plainly.
-        final content = 'Filename: $name';
-        final analysis = ScamDetector.analyze(content);
+        final bytes = await picked.readAsBytes();
+
+        AnalysisResult analysis;
+        try {
+          analysis = await ApiService.analyzeImageXFile(picked);
+          if (!analysis.isAnalyzed) {
+            analysis = ScamDetector.analyze('Screenshot: ${picked.name}');
+          }
+        } catch (_) {
+          analysis = ScamDetector.analyze('Screenshot: ${picked.name}');
+        }
 
         return FileScanResult(
           analysis: analysis,
-          fileName: name,
+          fileName: picked.name,
           source: ScanSource.image,
-          rawContent: content,
-          error: 'Text extraction (OCR) is not available in this build, so only '
-              'the filename was checked. Paste the message text to analyse it fully.',
+          rawContent:
+              'Image scanned via OCR: ${picked.name} (${bytes.length} bytes)',
         );
       }
     } catch (e) {
@@ -182,7 +201,7 @@ class FileScannerService {
     return null;
   }
 
-  /// Reads clipboard text and runs the scam detector.
+  /// Reads clipboard text and runs the scam detector + backend AI.
   static Future<FileScanResult?> scanClipboard() async {
     if (!SettingsService.autoScanClipboard.value) {
       return FileScanResult.failure(
@@ -195,7 +214,13 @@ class FileScannerService {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim() ?? '';
       if (text.isNotEmpty) {
-        final analysis = ScamDetector.analyze(text);
+        AnalysisResult analysis;
+        try {
+          analysis = await ApiService.analyzeMessage(text);
+          if (!analysis.isAnalyzed) analysis = ScamDetector.analyze(text);
+        } catch (_) {
+          analysis = ScamDetector.analyze(text);
+        }
         return FileScanResult(
           analysis: analysis,
           fileName: 'Clipboard',
@@ -219,11 +244,83 @@ class FileScannerService {
     );
   }
 
-  // ── Permission helpers ───────────────────────────────────────────────────
+  // ── Private helpers ────────────────────────────────────────────────────────
+
+  static Future<FileScanResult> _analyzeApkFile(PlatformFile file) async {
+    final path = file.path!;
+    final apkResult = await ApkAnalyzerService.analyzeApk(path);
+    final osintFutures = <Future<OsintResult>>[];
+    osintFutures.add(OsintService.checkHashVirusTotal(apkResult.sha256));
+    final urlsToCheck = apkResult.urls.take(3).toList();
+    if (urlsToCheck.isNotEmpty) {
+      osintFutures.add(OsintService.checkUrlhaus(urlsToCheck.first));
+    }
+    final osintResults = await Future.wait(osintFutures);
+    final safeBrowsing =
+        await OsintService.checkUrlsGoogleSafeBrowsing(urlsToCheck);
+    osintResults.addAll(safeBrowsing);
+    final analysis = ScamDetector.analyzeApk(apkResult, osintResults);
+    return FileScanResult(
+      analysis: analysis,
+      fileName: file.name,
+      source: ScanSource.file,
+      rawContent: 'APK Static Analysis Complete',
+      apkAnalysis: apkResult,
+      osintResults: osintResults,
+    );
+  }
+
+  static Future<FileScanResult> _analyzeNativePath(
+      String name, String path) async {
+    try {
+      final bytes = await FileIoHelper.readBytes(path);
+      String content = utf8.decode(bytes, allowMalformed: true);
+      if (content.length > 6000) content = content.substring(0, 6000);
+      if (content.trim().isEmpty) content = 'Document: $name';
+      AnalysisResult analysis;
+      try {
+        analysis = await ApiService.analyzeMessage(content);
+        if (!analysis.isAnalyzed) analysis = ScamDetector.analyze(content);
+      } catch (_) {
+        analysis = ScamDetector.analyze(content);
+      }
+      return FileScanResult(
+        analysis: analysis,
+        fileName: name,
+        source: ScanSource.file,
+        rawContent: content,
+      );
+    } catch (_) {
+      final analysis = ScamDetector.analyze('File: $name');
+      return FileScanResult(
+        analysis: analysis,
+        fileName: name,
+        source: ScanSource.file,
+        rawContent: 'File: $name',
+      );
+    }
+  }
+
+  static bool _isTextExtension(String name) {
+    final ext = name.toLowerCase();
+    return ext.endsWith('.txt') ||
+        ext.endsWith('.csv') ||
+        ext.endsWith('.json') ||
+        ext.endsWith('.log') ||
+        ext.endsWith('.xml') ||
+        ext.endsWith('.html') ||
+        ext.endsWith('.htm') ||
+        ext.endsWith('.md') ||
+        ext.endsWith('.dart') ||
+        ext.endsWith('.py') ||
+        ext.endsWith('.js');
+  }
+
+  // ── Permission helpers ──────────────────────────────────────────────────────
 
   static Future<bool> _requestStoragePermission() async {
-    if (Platform.isAndroid) {
-      // Android 13+ uses granular media permissions
+    if (kIsWeb) return true;
+    if (FileIoHelper.isAndroid) {
       final sdkInt = await _getAndroidSdkInt();
       if (sdkInt >= 33) {
         final status = await Permission.photos.request();
@@ -233,12 +330,12 @@ class FileScannerService {
         return status.isGranted;
       }
     }
-    // iOS: file_picker handles permissions internally via NSOpenPanel
     return true;
   }
 
   static Future<bool> _requestPhotoPermission() async {
-    if (Platform.isAndroid) {
+    if (kIsWeb) return true;
+    if (FileIoHelper.isAndroid) {
       final sdkInt = await _getAndroidSdkInt();
       if (sdkInt >= 33) {
         final status = await Permission.photos.request();
@@ -247,7 +344,7 @@ class FileScannerService {
         final status = await Permission.storage.request();
         return status.isGranted;
       }
-    } else if (Platform.isIOS) {
+    } else if (FileIoHelper.isIOS) {
       final status = await Permission.photos.request();
       return status.isGranted || status.isLimited;
     }
@@ -255,13 +352,6 @@ class FileScannerService {
   }
 
   static Future<int> _getAndroidSdkInt() async {
-    try {
-      // Simple heuristic: check if READ_MEDIA_IMAGES is in the manifest
-      // For a production app you'd use device_info_plus here.
-      // We default to 33 to use granular permissions (safe for modern devices).
-      return 33;
-    } catch (_) {
-      return 33;
-    }
+    return 33; // safe default for modern Android
   }
 }

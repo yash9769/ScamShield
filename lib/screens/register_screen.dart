@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
+import '../widgets/premium_cta.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 
@@ -20,7 +22,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(message, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
@@ -57,7 +64,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account created successfully! Please sign in.'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text('Account created successfully! Please sign in.', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.safeEmerald,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
     Navigator.pop(context);
   }
@@ -66,7 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Security Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text('Create Security Profile', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18)),
       ),
       body: SafeArea(
         child: Center(
@@ -78,128 +90,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Reveal(
                   delay: Reveal.step(0),
                   child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.safeEmerald.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.safeEmerald.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.verified_user_rounded, color: AppColors.safeEmerald, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Your account is stored locally on this device only. '
+                                  'Password is hashed with PBKDF2-HMAC-SHA256 and never transmitted anywhere.',
+                                  style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 11, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.bookmark, color: AppColors.primary, size: 18),
-                                SizedBox(width: 8),
-                                Text('What You Get', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
-                              ],
+                        Reveal(
+                          delay: Reveal.step(1),
+                          child: TextField(
+                            controller: _nameController,
+                            style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 14),
+                            decoration: const InputDecoration(
+                              labelText: 'Full Name',
+                              prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.cobalt),
                             ),
-                            SizedBox(height: 8),
-                            Text(
-                              '• Personal scan history (fully encrypted)\n'
-                              '• Safe Vault to bookmark suspicious items\n'
-                              '• Your security profile persists across sessions',
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.5),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Reveal(
+                          delay: Reveal.step(2),
+                          child: TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 14),
+                            decoration: const InputDecoration(
+                              labelText: 'Email Address',
+                              prefixIcon: Icon(Icons.email_outlined, color: AppColors.cobalt),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
-                        ),
-                        child: const Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.verified_user, color: AppColors.success, size: 20),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Your account is stored locally on this device only. '
-                                'Password is hashed with PBKDF2-HMAC-SHA256 and never sent anywhere. '
-                                'There is no cloud sync or password recovery—memorise your password.',
-                                style: TextStyle(color: AppColors.textPrimary, fontSize: 11, height: 1.4),
+                        const SizedBox(height: 16),
+                        Reveal(
+                          delay: Reveal.step(3),
+                          child: TextField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            style: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary, fontSize: 14),
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.cobalt),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: AppColors.mutedText),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      Reveal(
-                        delay: Reveal.step(1),
-                        child: TextField(
-                        controller: _nameController,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: const InputDecoration(
-                          labelText: 'Full Name',
-                          prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
-                        ),
-                      ),
-                      ),
-                      const SizedBox(height: 16),
-                      Reveal(
-                        delay: Reveal.step(2),
-                        child: TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: const InputDecoration(
-                          labelText: 'Email Address',
-                          prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
-                        ),
-                      ),
-                      ),
-                      const SizedBox(height: 16),
-                      Reveal(
-                        delay: Reveal.step(3),
-                        child: TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
-                      ),
-                      ),
-                      const SizedBox(height: 24),
-                      Reveal(
-                        delay: Reveal.step(4),
-                        child: SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _register,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        const SizedBox(height: 24),
+                        Reveal(
+                          delay: Reveal.step(4),
+                          child: PremiumCTA(
+                            label: "CREATE ENCRYPTED PROFILE",
+                            onPressed: _isLoading ? null : _register,
                           ),
-                          child: _isLoading
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
-                              : const Text('CREATE ENCRYPTED PROFILE', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         ),
-                      ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 ),
               ],
             ),

@@ -1,9 +1,8 @@
-// lib/screens/learning_module_screen.dart
-// Interactive learning module screen: Learning Content First -> Knowledge Check Quiz.
-
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
+import '../widgets/premium_cta.dart';
 
 class QuizQuestion {
   final String question;
@@ -50,7 +49,6 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Quiz state
   int _currentQuestionIndex = 0;
   int? _selectedOptionIndex;
   int _score = 0;
@@ -69,7 +67,7 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
   }
 
   void _submitAnswer(int optionIndex) {
-    if (_selectedOptionIndex != null) return; // already answered this question
+    if (_selectedOptionIndex != null) return;
 
     final currentQ = widget.module.quizQuestions[_currentQuestionIndex];
     setState(() {
@@ -106,13 +104,14 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.module.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.module.title, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.cobalt,
+          labelColor: AppColors.cobalt,
+          unselectedLabelColor: AppColors.mutedText,
+          labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
             Tab(icon: Icon(Icons.menu_book_rounded), text: '1. Learn Concept'),
             Tab(icon: Icon(Icons.quiz_rounded), text: '2. Knowledge Check'),
@@ -140,91 +139,79 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
           Reveal(
             delay: Reveal.step(0),
             child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.surface],
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.border),
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(m.icon, color: AppColors.primary, size: 40),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(m.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(m.subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                    ],
+              child: Row(
+                children: [
+                  Icon(m.icon, color: AppColors.cobalt, size: 36),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(m.title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        const SizedBox(height: 4),
+                        Text(m.subtitle, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 12)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
           const SizedBox(height: 24),
           Reveal(
             delay: Reveal.step(1),
-            child: const Text('Key Defense Principles', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text('Key Defense Principles', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
           const SizedBox(height: 12),
           ...m.keyTakeaways.asMap().entries.map((entry) => Reveal(
                 delay: Reveal.step(entry.key + 2, baseMs: 80),
                 offsetY: 14,
                 child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.verified, color: AppColors.success, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(entry.value, style: const TextStyle(fontSize: 14, height: 1.5))),
-                  ],
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.verified_rounded, color: AppColors.safeEmerald, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(entry.value, style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.4, color: AppColors.textPrimary))),
+                    ],
+                  ),
                 ),
-              ),
               )),
           const SizedBox(height: 24),
           Reveal(
             delay: Reveal.step(6),
-            child: const Text('Detailed Intelligence Report', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text('Detailed Intelligence Report', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
           const SizedBox(height: 12),
           Reveal(
             delay: Reveal.step(7),
             child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Text(
+                m.fullLessonText,
+                style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 13, height: 1.6),
+              ),
             ),
-            child: Text(
-              m.fullLessonText,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.7),
-            ),
-          ),
           ),
           const SizedBox(height: 24),
           Reveal(
             delay: Reveal.step(8),
-            child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _tabController.animateTo(1);
-              },
-              icon: const Icon(Icons.arrow_forward, color: Colors.black),
-              label: const Text('PROCEED TO QUIZ →', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
+            child: PremiumCTA(
+              label: "PROCEED TO QUIZ →",
+              onPressed: () => _tabController.animateTo(1),
             ),
-          ),
           ),
         ],
       ),
@@ -248,19 +235,20 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
               const SizedBox(height: 16),
               Text(
                 passed ? 'Module Passed!' : 'Review & Retry',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
                 'You scored $_score / ${questions.length} ($percentage%)',
-                style: TextStyle(
-                  color: passed ? AppColors.success : AppColors.warning,
+                style: GoogleFonts.plusJakartaSans(
+                  color: passed ? AppColors.safeEmerald : AppColors.warning,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
+              PremiumCTA(
+                label: passed ? 'Complete & Return' : 'Retry Quiz',
                 onPressed: () {
                   if (passed) {
                     Navigator.pop(context);
@@ -268,15 +256,6 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                     _resetQuiz();
                   }
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(
-                  passed ? 'Complete & Return' : 'Retry Quiz',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                ),
               ),
             ],
           ),
@@ -296,9 +275,9 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             children: [
               Text(
                 'Question ${_currentQuestionIndex + 1} of ${questions.length}',
-                style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                style: GoogleFonts.plusJakartaSans(color: AppColors.mutedText, fontWeight: FontWeight.bold, fontSize: 12),
               ),
-              Text('Score: $_score', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              Text('Score: $_score', style: GoogleFonts.plusJakartaSans(color: AppColors.cobalt, fontWeight: FontWeight.bold, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
@@ -307,7 +286,7 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             child: LinearProgressIndicator(
               value: (_currentQuestionIndex + 1) / questions.length,
               backgroundColor: AppColors.surface,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.cobalt),
               minHeight: 6,
             ),
           ),
@@ -317,12 +296,12 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
             ),
             child: Text(
               currentQ.question,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
+              style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.bold, height: 1.4, color: AppColors.textPrimary),
             ),
           ),
           const SizedBox(height: 20),
@@ -330,28 +309,28 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             final isSelected = _selectedOptionIndex == i;
             final isCorrectOption = i == currentQ.correctIndex;
 
-            Color borderColor = Colors.transparent;
+            Color borderColor = AppColors.border;
             Color bgColor = AppColors.surface;
 
             if (_selectedOptionIndex != null) {
               if (isCorrectOption) {
-                borderColor = AppColors.success;
-                bgColor = AppColors.success.withValues(alpha: 0.1);
+                borderColor = AppColors.safeEmerald;
+                bgColor = AppColors.safeEmerald.withValues(alpha: 0.12);
               } else if (isSelected) {
                 borderColor = AppColors.danger;
-                bgColor = AppColors.danger.withValues(alpha: 0.1);
+                bgColor = AppColors.danger.withValues(alpha: 0.12);
               }
             }
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Pressable(
+              child: GestureDetector(
                 onTap: () => _submitAnswer(i),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: bgColor,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: borderColor),
                   ),
                   child: Row(
@@ -361,15 +340,15 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                         height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isSelected ? AppColors.primary : AppColors.background,
+                          color: isSelected ? AppColors.cobalt : AppColors.background,
                         ),
                         child: Center(
                           child: Text(
                             String.fromCharCode(65 + i),
-                            style: TextStyle(
-                              color: isSelected ? Colors.black : AppColors.textSecondary,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: isSelected ? Colors.white : AppColors.textSecondary,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -378,7 +357,7 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                       Expanded(
                         child: Text(
                           currentQ.options[i],
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
                         ),
                       ),
                     ],
@@ -393,41 +372,30 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _selectedOptionIndex == currentQ.correctIndex ? AppColors.success : AppColors.danger,
+                  color: _selectedOptionIndex == currentQ.correctIndex ? AppColors.safeEmerald : AppColors.danger,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _selectedOptionIndex == currentQ.correctIndex ? '✅ Correct!' : '❌ Incorrect',
-                    style: TextStyle(
+                    _selectedOptionIndex == currentQ.correctIndex ? '✓ Correct Decision' : '✕ Incorrect Analysis',
+                    style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.bold,
-                      color: _selectedOptionIndex == currentQ.correctIndex ? AppColors.success : AppColors.danger,
+                      color: _selectedOptionIndex == currentQ.correctIndex ? AppColors.safeEmerald : AppColors.danger,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(currentQ.explanation, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4)),
+                  Text(currentQ.explanation, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 13, height: 1.4)),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _nextQuestion,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(
-                  _currentQuestionIndex < questions.length - 1 ? 'NEXT QUESTION →' : 'SEE RESULTS →',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                ),
-              ),
+            PremiumCTA(
+              label: _currentQuestionIndex < questions.length - 1 ? 'NEXT QUESTION →' : 'SEE RESULTS →',
+              onPressed: _nextQuestion,
             ),
           ],
         ],

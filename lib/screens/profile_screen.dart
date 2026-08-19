@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
@@ -47,14 +48,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Edit Profile & Avatar', style: TextStyle(fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('Edit Profile & Avatar', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Choose Avatar:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text('Choose Avatar:', style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 12)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 12,
@@ -69,12 +70,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: isSel ? AppColors.primary : Colors.transparent, width: 3),
+                          border: Border.all(color: isSel ? AppColors.cobalt : Colors.transparent, width: 3),
                         ),
                         child: CircleAvatar(
                           radius: 24,
                           backgroundImage: NetworkImage(url),
-                    onBackgroundImageError: (_, _) {},
+                          onBackgroundImageError: (_, _) {},
                         ),
                       ),
                     );
@@ -83,23 +84,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
-                  decoration: InputDecoration(
+                  style: GoogleFonts.plusJakartaSans(fontSize: 14, color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
                     labelText: 'Full Name',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: titleController,
-                  decoration: InputDecoration(
+                  style: GoogleFonts.plusJakartaSans(fontSize: 14, color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
                     labelText: 'Security Title',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
               ],
@@ -108,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text('Cancel', style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -121,8 +116,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
                 if (ctx.mounted) Navigator.pop(ctx);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Save & Sync', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.cobalt),
+              child: Text('Save & Sync', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -135,16 +130,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Secure Sign Out?'),
-        content: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Secure Sign Out?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+        content: Text(
           'You will be returned to the sign-in screen. Your saved data stays on this device.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('Cancel', style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -158,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text('Sign Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Sign Out', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -171,103 +166,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
           children: [
-            Icon(Icons.shield_outlined, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('About ScamShield', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Icon(Icons.shield_outlined, color: AppColors.cobalt),
+            const SizedBox(width: 8),
+            Text('About ScamShield', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('ScamShield v2.1', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('ScamShield v2.1', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             const SizedBox(height: 10),
-            Text('Active Mode: ${caps.modeLabel}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            Text('Active Mode: ${caps.modeLabel}', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.cobalt)),
             const SizedBox(height: 10),
-            const Text('Features & Integrations:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text('Features & Integrations:', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             const SizedBox(height: 4),
             Text(
               '• Server AI Analysis (Gemini/Groq): ${caps.hasFullAi ? "Active" : "Unavailable"}\n'
-              '• Live Threat Intel (VirusTotal/SafeBrowsing/AbuseIPDB): ${caps.hasOsint ? "Active" : "Unavailable"}\n'
-              '• APK Pipeline (Androguard & YARA): ${caps.hasFullApkPipeline ? "Server Pipeline Active" : "Local Static Analysis Only"}\n'
-              '• Storage: PBKDF2 Auth & Hardware AES-256 Secure Vault',
-              style: const TextStyle(fontSize: 12, height: 1.5),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Privacy & Limitations Notice:\n'
-                      '• Account & Vault items are stored on-device only via hardware encryption. No cloud recovery exists.\n'
-                      '• When offline or API keys are missing, scans run local heuristic rules only.',
-                      style: TextStyle(fontSize: 11, color: AppColors.textPrimary, height: 1.35),
-                    ),
-                  ),
-                ],
-              ),
+              '• Live Threat Intel (VirusTotal/SafeBrowsing): ${caps.hasOsint ? "Active" : "Unavailable"}\n'
+              '• APK Pipeline: ${caps.hasFullApkPipeline ? "Active" : "Local Static Analysis"}\n'
+              '• Storage: PBKDF2 Auth & Hardware AES-256 Vault',
+              style: GoogleFonts.plusJakartaSans(fontSize: 12, height: 1.5, color: AppColors.textSecondary),
             ),
           ],
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Close', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLimitationsDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.gpp_maybe_outlined, color: AppColors.warning),
-            SizedBox(width: 8),
-            Text('System Limitations', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '1. Device-Local Account & Encrypted Vault:\n'
-                'Account credentials and vault notes are stored exclusively on this device (Keychain / EncryptedSharedPreferences). There is no remote account server or password recovery mechanism.\n\n'
-                '2. Heuristic Offline Fallback:\n'
-                'When backend AI (Gemini/Groq) or threat intelligence (VirusTotal, Safe Browsing, AbuseIPDB) is offline or API keys are missing, ScamShield evaluates content locally. Local rules flag suspicious patterns but cannot verify live domain reputation.\n\n'
-                '3. APK Static Analysis:\n'
-                'Local APK analysis evaluates permissions, certificates, DEX printable strings, and YARA signatures on-device. Deep decompilation and sandbox emulation require the full server pipeline.',
-                style: TextStyle(fontSize: 12, height: 1.45, color: AppColors.textPrimary),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Understood', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cobalt),
+            child: Text('Close', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -278,16 +208,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.shield, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('ScamShield Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
+        title: Text('ScamShield Profile', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Column(
           children: [
             Reveal(delay: Reveal.step(0), child: _buildProfileHeader()),
@@ -299,37 +223,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Reveal(
               delay: Reveal.step(3),
               child: _buildSettingsList([
-              ValueListenableBuilder<bool>(
-                valueListenable: SettingsService.threatAlerts,
-                builder: (ctx, enabled, _) => _buildSettingItem(
-                  Icons.notifications_active_outlined,
-                  'Threat Alerts',
-                  'Real-time scam notifications',
-                  hasSwitch: true,
-                  switchValue: enabled,
-                  onChanged: (v) => SettingsService.setThreatAlerts(v),
+                ValueListenableBuilder<bool>(
+                  valueListenable: SettingsService.threatAlerts,
+                  builder: (ctx, enabled, _) => _buildSettingItem(
+                    Icons.notifications_active_outlined,
+                    'Threat Alerts',
+                    'Real-time scam notifications',
+                    hasSwitch: true,
+                    switchValue: enabled,
+                    onChanged: (v) => SettingsService.setThreatAlerts(v),
+                  ),
                 ),
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: SettingsService.autoScanClipboard,
-                builder: (ctx, enabled, _) => _buildSettingItem(
-                  Icons.content_paste_search,
-                  'Clipboard Check',
-                  'Offer to scan copied links and messages',
-                  hasSwitch: true,
-                  switchValue: enabled,
-                  onChanged: (v) => SettingsService.setAutoScanClipboard(v),
+                ValueListenableBuilder<bool>(
+                  valueListenable: SettingsService.autoScanClipboard,
+                  builder: (ctx, enabled, _) => _buildSettingItem(
+                    Icons.content_paste_search_rounded,
+                    'Clipboard Check',
+                    'Offer to scan copied links and messages',
+                    hasSwitch: true,
+                    switchValue: enabled,
+                    onChanged: (v) => SettingsService.setAutoScanClipboard(v),
+                  ),
                 ),
-              ),
-              _buildSettingItem(
-                Icons.history,
-                'Scan History',
-                '${_stats?.totalScans ?? 0} record(s) in local SQLite database',
-                hasSwitch: false,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
-                    .then((_) => _loadStats()),
-              ),
-            ]),
+                _buildSettingItem(
+                  Icons.history_rounded,
+                  'Scan History',
+                  '${_stats?.totalScans ?? 0} record(s) in local database',
+                  hasSwitch: false,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
+                      .then((_) => _loadStats()),
+                ),
+              ]),
             ),
             const SizedBox(height: 28),
             Reveal(delay: Reveal.step(4), child: _buildSectionHeader('Account & System')),
@@ -337,30 +261,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Reveal(
               delay: Reveal.step(5),
               child: _buildSettingsList([
-              _buildSettingItem(
-                Icons.info_outline,
-                'About ScamShield',
-                'Version, AI & threat engines status',
-                hasSwitch: false,
-                onTap: _showAboutInfo,
-              ),
-              _buildSettingItem(
-                Icons.gpp_maybe_outlined,
-                'System Limitations & Privacy',
-                'On-device encryption, offline fallback & key boundaries',
-                hasSwitch: false,
-                onTap: _showLimitationsDialog,
-              ),
-              _buildSettingItem(
-                Icons.logout,
-                'Secure Sign Out',
-                'Return to authentication screen',
-                hasSwitch: false,
-                isDestructive: true,
-                onTap: _showSignOutDialog,
-              ),
-            ]),
+                _buildSettingItem(
+                  Icons.info_outline_rounded,
+                  'About ScamShield',
+                  'Version, AI & threat engine status',
+                  hasSwitch: false,
+                  onTap: _showAboutInfo,
+                ),
+                _buildSettingItem(
+                  Icons.logout_rounded,
+                  'Secure Sign Out',
+                  'Return to sign-in screen',
+                  hasSwitch: false,
+                  isDestructive: true,
+                  onTap: _showSignOutDialog,
+                ),
+              ]),
             ),
+            const SizedBox(height: 90),
           ],
         ),
       ),
@@ -380,15 +298,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2),
+                    border: Border.all(color: AppColors.cobalt, width: 2),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 16, spreadRadius: 2),
+                      BoxShadow(color: AppColors.cobalt.withValues(alpha: 0.25), blurRadius: 16, spreadRadius: 2),
                     ],
                   ),
                   child: CircleAvatar(
-                    radius: 50,
+                    radius: 46,
                     backgroundImage: NetworkImage(avatar),
-                          onBackgroundImageError: (_, _) {},
+                    onBackgroundImageError: (_, _) {},
                   ),
                 ),
               ),
@@ -397,8 +315,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 right: 4,
                 child: Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                  child: const Icon(Icons.edit, color: Colors.black, size: 14),
+                  decoration: const BoxDecoration(color: AppColors.cobalt, shape: BoxShape.circle),
+                  child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
                 ),
               ),
             ],
@@ -407,12 +325,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 14),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.nameNotifier,
-          builder: (ctx, name, _) => Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          builder: (ctx, name, _) => Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         ),
         const SizedBox(height: 4),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.titleNotifier,
-          builder: (ctx, title, _) => Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          builder: (ctx, title, _) => Text(title, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 13)),
         ),
       ],
     );
@@ -422,9 +340,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final total = _stats?.totalScans ?? 0;
     return Row(
       children: [
-        Expanded(child: _buildSecurityCard('TOTAL SCANS', '$total Executed', Icons.radar_rounded, total > 0 ? '$total LOGS' : '0 LOGS', AppColors.primary)),
+        Expanded(child: _buildSecurityCard('TOTAL SCANS', '$total Executed', Icons.radar_rounded, total > 0 ? '$total LOGS' : '0 LOGS', AppColors.cobalt)),
         const SizedBox(width: 12),
-        Expanded(child: _buildSecurityCard('ENCRYPTION', 'AES-256 KeyStore', Icons.lock_outline, 'LOCAL VAULT', AppColors.success)),
+        Expanded(child: _buildSecurityCard('ENCRYPTION', 'AES-256 KeyStore', Icons.lock_outline_rounded, 'LOCAL VAULT', AppColors.safeEmerald)),
       ],
     );
   }
@@ -434,8 +352,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,14 +368,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: badgeColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold)),
+                child: Text(badge, style: GoogleFonts.plusJakartaSans(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          Text(label, style: GoogleFonts.plusJakartaSans(color: AppColors.mutedText, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -468,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       alignment: Alignment.centerLeft,
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
+        style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.mutedText, letterSpacing: 1.2),
       ),
     );
   }
@@ -477,8 +395,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Material(
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),
@@ -500,20 +418,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (isDestructive ? AppColors.danger : AppColors.primary).withValues(alpha: 0.12),
+          color: (isDestructive ? AppColors.danger : AppColors.cobalt).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: isDestructive ? AppColors.danger : AppColors.primary, size: 20),
+        child: Icon(icon, color: isDestructive ? AppColors.danger : AppColors.cobalt, size: 20),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDestructive ? AppColors.danger : AppColors.textPrimary)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+      title: Text(title, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 14, color: isDestructive ? AppColors.danger : AppColors.textPrimary)),
+      subtitle: Text(subtitle, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontSize: 12)),
       trailing: hasSwitch
           ? Switch(
               value: switchValue,
               onChanged: onChanged,
-              activeThumbColor: AppColors.primary,
+              activeThumbColor: AppColors.cobalt,
             )
-          : const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+          : const Icon(Icons.chevron_right_rounded, color: AppColors.mutedText, size: 20),
     );
   }
 }

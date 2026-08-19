@@ -82,7 +82,7 @@ async def analyze_voice(
     logger.info(
         "Voice analysis request",
         extra={
-            "filename": file.filename,
+            "audio_filename": file.filename,
             "content_type": file.content_type,
             "size_bytes": len(audio_bytes),
         },

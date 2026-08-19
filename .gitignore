@@ -89,3 +89,4 @@ backend/reports/
 backend/scamshield_audit.db
 *.sqlite
 *.sqlite3
+*.db
