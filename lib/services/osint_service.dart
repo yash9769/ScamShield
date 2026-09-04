@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 /// Result of an OSINT threat-intelligence lookup (VirusTotal, Google Safe
-/// Browsing, AbuseIPDB, URLhaus, ...).
+/// Browsing, AbuseIPDB, Domain Intelligence, ...).
 ///
 /// [isMalicious] should only ever be `true` when a real provider positively
 /// flagged the indicator. When a lookup could not be completed (no network,
@@ -82,11 +82,11 @@ class OsintService {
   /// Check multiple URLs against Google Safe Browsing via the backend.
   ///
   /// If the backend is unreachable or has no Safe Browsing key configured, we
-  /// do NOT simply report every URL as "unavailable" — instead each URL is
-  /// screened against URLhaus, a keyless malware-URL database that is safe to
-  /// query directly from the client. That way a missing Safe Browsing key
-  /// degrades to a real secondary verdict rather than an empty "no URLs
-  /// checked" result.
+  /// do NOT simply report every URL as "unavailable" — instead each URL's
+  /// domain is screened via [checkDomainIntel] (Certificate Transparency +
+  /// RDAP registration age), which is free/keyless and always available.
+  /// That way a missing Safe Browsing key degrades to a real secondary
+  /// verdict rather than an empty "no URLs checked" result.
   static Future<List<OsintResult>> checkUrlsGoogleSafeBrowsing(List<String> urls) async {
     if (urls.isEmpty) return [];
     try {
@@ -100,7 +100,8 @@ class OsintService {
         final data = jsonDecode(response.body);
         final results = data['results'] as List<dynamic>? ?? [];
         // The backend echoes a `checked` flag per URL. When it is false the
-        // provider key is not configured server-side, so fall back to URLhaus.
+        // provider key is not configured server-side, so fall back to
+        // domain-intelligence below.
         final allUnchecked = results.isNotEmpty &&
             results.every((r) => r['checked'] == false);
         if (!allUnchecked && results.isNotEmpty) {
@@ -119,26 +120,9 @@ class OsintService {
         }
       }
     } catch (_) {
-      // Fall through to the keyless URLhaus fallback below.
+      // Fall through to the keyless domain-intelligence fallback below.
     }
-    return _urlhausFallback(urls);
-  }
-
-  /// Screen each URL against the keyless URLhaus database as a fallback when
-  /// Google Safe Browsing could not be reached or is not configured.
-  static Future<List<OsintResult>> _urlhausFallback(List<String> urls) async {
-    return Future.wait(urls.map((u) async {
-      final r = await checkUrlhaus(u);
-      if (!r.available) return r;
-      return OsintResult(
-        provider: 'URLhaus (fallback)',
-        isMalicious: r.isMalicious,
-        details: r.isMalicious
-            ? 'Listed in the URLhaus malware-URL database.'
-            : 'Not listed in URLhaus. Google Safe Browsing was unavailable, so '
-                'this is a secondary check, not a full clean bill of health.',
-      );
-    }));
+    return Future.wait(urls.map(checkDomainIntel));
   }
 
   /// Check an IP address against AbuseIPDB via the backend.
@@ -167,35 +151,52 @@ class OsintService {
     return _unavailable('AbuseIPDB');
   }
 
-  /// Check URL against URLhaus. No API key required, so this is safe to call
-  /// directly from the client.
-  static Future<OsintResult> checkUrlhaus(String urlToCheck) async {
+  /// Domain-trust check via the backend's /osint/domain endpoint
+  /// (Certificate Transparency logs + RDAP registration age — both free,
+  /// no API key, always available). [urlOrHost] may be a full URL or a bare
+  /// hostname.
+  ///
+  /// This replaces a previous direct-from-client call to
+  /// `urlhaus-api.abuse.ch`. That endpoint has since been put behind
+  /// abuse.ch's bot-verification gate (confirmed by a live request that
+  /// returned a "verify-ua" redirect instead of API JSON) and no longer
+  /// works for a plain server-to-server call; abuse.ch's *replacement* API
+  /// also now requires a registered Auth-Key. Rather than ship a call that
+  /// silently fails, or attempt to bypass the bot-detection (which we won't
+  /// do), this uses two sources that are genuinely keyless today.
+  static Future<OsintResult> checkDomainIntel(String urlOrHost) async {
+    final host = _extractHost(urlOrHost);
+    if (host == null) return _unavailable('Domain Intelligence');
     try {
-      final endpoint = Uri.parse('https://urlhaus-api.abuse.ch/v1/url/');
-      final response =
-          await http.post(endpoint, body: {'url': urlToCheck}).timeout(_timeout);
-
+      final endpoint = Uri.parse('$_backendBaseUrl/osint/domain/$host');
+      final response = await http.get(endpoint).timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final status = data['query_status'];
-        if (status == 'ok') {
-          return OsintResult(
-            provider: 'URLhaus',
-            isMalicious: true,
-            details: 'URL is listed in the URLhaus malware database.',
-          );
-        } else if (status == 'no_results') {
-          return OsintResult(
-            provider: 'URLhaus',
-            isMalicious: false,
-            details: 'No results found.',
-          );
-        }
+        final isNew = data['newly_registered_or_unproven'] == true;
+        final certNote = data['certificate_transparency']?['note'] as String? ?? '';
+        final rdapNote = data['rdap']?['note'] as String? ?? '';
+        return OsintResult(
+          provider: 'Domain Intelligence',
+          isMalicious: isNew,
+          details: isNew
+              ? 'Newly-registered or certificate-history-free domain: $certNote $rdapNote'.trim()
+              : 'Established domain: $certNote $rdapNote'.trim(),
+        );
       }
     } catch (_) {
       // Fall through
     }
-    return _unavailable('URLhaus');
+    return _unavailable('Domain Intelligence');
+  }
+
+  static String? _extractHost(String urlOrHost) {
+    try {
+      final withScheme = urlOrHost.contains('://') ? urlOrHost : 'http://$urlOrHost';
+      final host = Uri.parse(withScheme).host;
+      return host.isEmpty ? null : host;
+    } catch (_) {
+      return null;
+    }
   }
 
   static OsintResult _unavailable(String provider) {

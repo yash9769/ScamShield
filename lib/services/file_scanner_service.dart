@@ -88,7 +88,7 @@ class FileScannerService {
           // Check a few URLs to not overwhelm the free API
           final urlsToCheck = apkResult.urls.take(3).toList();
           if (urlsToCheck.isNotEmpty) {
-            osintFutures.add(OsintService.checkUrlhaus(urlsToCheck.first));
+            osintFutures.add(OsintService.checkDomainIntel(urlsToCheck.first));
           }
           final osintResults = await Future.wait(osintFutures);
           
