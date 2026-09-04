@@ -327,10 +327,14 @@ def test_missing_admin_key_raises_error():
     env.pop("ADMIN_API_KEY", None)
     env.pop("PYTEST_CURRENT_TEST", None)
     env.pop("CI", None)
-    # Run the main.py module import in a separate python process
+    # Run the main.py module import in a separate python process. cwd is
+    # this test file's own directory (server/) regardless of where pytest
+    # itself was invoked from — a hardcoded "server" cwd only works when the
+    # test runner's working directory is the repo root, which does not match
+    # the CI job (`working-directory: server`) or `cd server && pytest`.
     res = subprocess.run(
         ["python3", "-c", "import main"],
-        cwd="server",
+        cwd=os.path.dirname(os.path.abspath(__file__)),
         env=env,
         capture_output=True,
         text=True

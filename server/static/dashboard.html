@@ -175,16 +175,30 @@
     </div>
 
     <script>
+        // The admin key is read from ?key= once (for local convenience only)
+        // but is NEVER re-sent as a query parameter — query strings land in
+        // browser history, proxy access logs and Referer headers. It is only
+        // ever sent as the X-Admin-Key request header below. There is no
+        // hardcoded fallback key: without a key, the dashboard prompts for one.
         const urlParams = new URLSearchParams(window.location.search);
-        const adminKey = urlParams.get('key') || 'scamshield_admin_sec_key_2026';
+        let adminKey = urlParams.get('key');
+        if (urlParams.has('key')) {
+            // Strip the key out of the visible URL/history immediately.
+            urlParams.delete('key');
+            const clean = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+            window.history.replaceState({}, '', clean);
+        }
+        if (!adminKey) {
+            adminKey = window.prompt('Enter admin key to view the audit dashboard:') || '';
+        }
 
         async function loadDashboardData() {
             try {
                 const res = await fetch('/stats');
                 const data = await res.json();
                 document.getElementById('total-audits').innerText = data.total_audit_events || 0;
-                
-                const logsRes = await fetch(`/api/audit-logs?key=${encodeURIComponent(adminKey)}`, {
+
+                const logsRes = await fetch('/api/audit-logs', {
                     headers: { 'X-Admin-Key': adminKey }
                 });
                 if (logsRes.ok) {
