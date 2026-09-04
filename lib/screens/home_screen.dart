@@ -10,6 +10,7 @@ import 'history_screen.dart';
 import 'profile_screen.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
+import '../services/data_change_notifier.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +27,16 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadStats();
+    // See data_change_notifier.dart: this screen stays alive in
+    // MainNavigation's IndexedStack, so it needs an explicit signal to
+    // refresh after a scan/deletion made from another tab or screen.
+    DataChangeNotifier.version.addListener(_loadStats);
+  }
+
+  @override
+  void dispose() {
+    DataChangeNotifier.version.removeListener(_loadStats);
+    super.dispose();
   }
 
   Future<void> _loadStats() async {

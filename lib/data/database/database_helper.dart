@@ -7,7 +7,7 @@ import 'package:path/path.dart';
 /// Manages schema creation and version migrations.
 class DatabaseHelper {
   static const _dbName = 'scamshield.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   // Table names
   static const tableScanRecords = 'scan_records';
@@ -29,6 +29,13 @@ class DatabaseHelper {
   static const colDailyTipEnabled = 'daily_tip_enabled';
   static const colAutoDeleteDays = 'auto_delete_days';
   static const colOfflineModeAcknowledged = 'offline_mode_acknowledged';
+  // Added in schema v2 for DPDP consent-record keeping: which privacy-policy
+  // version the user agreed to and when, plus the separable, optional
+  // AI-processing consent (on by default — matches pre-existing behaviour;
+  // turning it off switches scans to the on-device heuristic engine only).
+  static const colConsentVersion = 'consent_version';
+  static const colConsentTimestamp = 'consent_timestamp';
+  static const colAiProcessingEnabled = 'ai_processing_enabled';
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -73,7 +80,10 @@ class DatabaseHelper {
         $colNotificationsEnabled INTEGER NOT NULL DEFAULT 1,
         $colDailyTipEnabled INTEGER NOT NULL DEFAULT 1,
         $colAutoDeleteDays INTEGER NOT NULL DEFAULT 0,
-        $colOfflineModeAcknowledged INTEGER NOT NULL DEFAULT 0
+        $colOfflineModeAcknowledged INTEGER NOT NULL DEFAULT 0,
+        $colConsentVersion TEXT NOT NULL DEFAULT '',
+        $colConsentTimestamp TEXT,
+        $colAiProcessingEnabled INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -85,11 +95,21 @@ class DatabaseHelper {
       colDailyTipEnabled: 1,
       colAutoDeleteDays: 0,
       colOfflineModeAcknowledged: 0,
+      colConsentVersion: '',
+      colConsentTimestamp: null,
+      colAiProcessingEnabled: 1,
     });
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Future migrations go here
+    if (oldVersion < 2) {
+      await db.execute(
+          'ALTER TABLE $tableUserPreferences ADD COLUMN $colConsentVersion TEXT NOT NULL DEFAULT \'\'');
+      await db.execute(
+          'ALTER TABLE $tableUserPreferences ADD COLUMN $colConsentTimestamp TEXT');
+      await db.execute(
+          'ALTER TABLE $tableUserPreferences ADD COLUMN $colAiProcessingEnabled INTEGER NOT NULL DEFAULT 1');
+    }
   }
 
   /// Closes the database connection. Useful for testing.

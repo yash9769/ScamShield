@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme.dart';
@@ -12,27 +13,58 @@ import 'services/user_profile_service.dart';
 import 'services/permission_service.dart';
 import 'services/settings_service.dart';
 import 'services/auth_service.dart';
+import 'services/consent_service.dart';
+import 'services/data_privacy_service.dart';
+import 'screens/consent_screen.dart';
+import 'data/repositories/scan_repository.dart';
+import 'data/repositories/preferences_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await UserProfileService.init();
   await SettingsService.init();
   final startLoggedIn = await AuthService.isLoggedIn();
+  final hasConsented = await ConsentService().hasGivenCurrentConsent();
   await PermissionService.requestAllPermissionsOnce();
-  runApp(ScamShieldApp(startLoggedIn: startLoggedIn));
+  // Best-effort, non-blocking: remove stale generated-report files from the
+  // OS temp directory (retention control — see DataPrivacyService).
+  unawaited(DataPrivacyService().cleanupStaleTempReports());
+  // Apply the user's configured scan-history retention period, if any
+  // (Settings > Privacy & Data > Data Retention). No-ops when unset (0).
+  unawaited(_applyScanHistoryRetention());
+  runApp(ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented));
 }
 
-class ScamShieldApp extends StatelessWidget {
-  final bool startLoggedIn;
+Future<void> _applyScanHistoryRetention() async {
+  try {
+    final prefs = await PreferencesRepository().load();
+    if (prefs.autoDeleteDays > 0) {
+      await ScanRepository().deleteOlderThan(prefs.autoDeleteDays);
+    }
+  } catch (_) {}
+}
 
-  const ScamShieldApp({super.key, this.startLoggedIn = false});
+class ScamShieldApp extends StatefulWidget {
+  final bool startLoggedIn;
+  final bool hasConsented;
+
+  const ScamShieldApp({super.key, this.startLoggedIn = false, this.hasConsented = false});
+
+  @override
+  State<ScamShieldApp> createState() => _ScamShieldAppState();
+}
+
+class _ScamShieldAppState extends State<ScamShieldApp> {
+  late bool _hasConsented = widget.hasConsented;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'ScamShield',
       theme: appTheme,
-      home: startLoggedIn ? const MainNavigation() : const LoginScreen(),
+      home: !_hasConsented
+          ? ConsentScreen(onConsented: () => setState(() => _hasConsented = true))
+          : (widget.startLoggedIn ? const MainNavigation() : const LoginScreen()),
       debugShowCheckedModeBanner: false,
     );
   }
