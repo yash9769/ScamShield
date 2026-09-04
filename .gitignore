@@ -67,6 +67,11 @@ Thumbs.db
 *.tmp
 *.temp
 
+# ── Local data stores (contain user-submitted personal data — DPDP) ──────────
+*.db
+*.sqlite
+*.sqlite3
+
 # Ignore generated test files and APKs
 *.apk
 *.json
