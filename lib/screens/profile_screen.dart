@@ -117,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: newTitle.isNotEmpty ? 'Intelligence Level: $newTitle' : null,
                   avatarUrl: selectedAvatar,
                 );
-                if (mounted) Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
               child: const Text('Save & Sync', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
