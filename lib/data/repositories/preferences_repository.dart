@@ -46,6 +46,22 @@ class PreferencesRepository {
     await save(current.copyWith(autoDeleteDays: days));
   }
 
+  /// Records that the user affirmatively agreed to [policyVersion] just now.
+  Future<void> grantConsent(String policyVersion) async {
+    final current = await load();
+    await save(current.copyWith(
+      hasConsented: true,
+      consentVersion: policyVersion,
+      consentTimestamp: DateTime.now().toIso8601String(),
+    ));
+  }
+
+  /// Convenience: toggle the optional AI-processing consent.
+  Future<void> setAiProcessingEnabled(bool value) async {
+    final current = await load();
+    await save(current.copyWith(aiProcessingEnabled: value));
+  }
+
   /// Resets all preferences to defaults.
   Future<void> resetToDefaults() async {
     await save(const UserPreferences());

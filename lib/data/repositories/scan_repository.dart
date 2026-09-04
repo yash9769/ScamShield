@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import '../database/database_helper.dart';
 import '../models/scan_record.dart';
 import '../cache/local_cache.dart';
+import '../../services/data_change_notifier.dart';
 
 /// Repository for all CRUD operations on [ScanRecord].
 /// All public methods are async and interact with SQLite via [DatabaseHelper].
@@ -13,11 +14,20 @@ class ScanRepository {
 
   static const _cacheKey = 'scan_history';
 
+  // Every screen constructs its own ScanRepository() rather than sharing a
+  // singleton, so a per-instance cache would let one instance's write (e.g.
+  // Settings > Privacy & Data > Delete My Data) leave another instance's
+  // already-loaded list (e.g. the History screen) stale and undeleted from
+  // the user's point of view. Defaulting to a shared, process-wide cache
+  // means any instance's invalidate() is visible to all of them. A caller
+  // can still inject its own private cache (e.g. for tests) via [cache].
+  static final LocalCache<List<ScanRecord>> _sharedCache = LocalCache();
+
   ScanRepository({
     DatabaseHelper? dbHelper,
     LocalCache<List<ScanRecord>>? cache,
   })  : _dbHelper = dbHelper ?? DatabaseHelper.instance,
-        _cache = cache ?? LocalCache();
+        _cache = cache ?? _sharedCache;
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -30,6 +40,7 @@ class ScanRepository {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     _cache.invalidate(_cacheKey);
+    DataChangeNotifier.notifyChanged();
     return id;
   }
 
@@ -95,6 +106,7 @@ class ScanRepository {
       whereArgs: [id],
     );
     _cache.invalidate(_cacheKey);
+    DataChangeNotifier.notifyChanged();
   }
 
   /// Deletes ALL scan records. Used for "Clear History" and "Delete All Data".
@@ -102,6 +114,7 @@ class ScanRepository {
     final db = await _dbHelper.database;
     await db.delete(DatabaseHelper.tableScanRecords);
     _cache.invalidate(_cacheKey);
+    DataChangeNotifier.notifyChanged();
   }
 
   /// Deletes records older than [days] days. Called by auto-delete job.
@@ -115,6 +128,7 @@ class ScanRepository {
       whereArgs: [cutoff],
     );
     _cache.invalidate(_cacheKey);
+    if (count > 0) DataChangeNotifier.notifyChanged();
     return count;
   }
 

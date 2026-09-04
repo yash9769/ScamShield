@@ -4,6 +4,7 @@ import '../widgets/scan_now_bottom_sheet.dart';
 import '../widgets/motion.dart';
 import '../data/models/scan_record.dart';
 import '../data/repositories/scan_repository.dart';
+import '../services/data_change_notifier.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -26,10 +27,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.initState();
     _loadHistory();
     _searchController.addListener(() => setState(() {}));
+    // MainNavigation keeps this screen alive in an IndexedStack, so a
+    // deletion made elsewhere (e.g. Settings > Privacy & Data) would
+    // otherwise leave this list showing already-deleted records until the
+    // user manually swipes/clears. See data_change_notifier.dart.
+    DataChangeNotifier.version.addListener(_loadHistory);
   }
 
   @override
   void dispose() {
+    DataChangeNotifier.version.removeListener(_loadHistory);
     _searchController.dispose();
     super.dispose();
   }

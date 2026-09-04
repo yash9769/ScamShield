@@ -208,6 +208,46 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
     }
   }
 
+  Future<void> _deleteAllNotes() async {
+    if (_notes.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete All Vault Items?', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'This permanently deletes all ${_notes.length} item(s) from your Safe Vault. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Delete All', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final backup = List<VaultNote>.from(_notes);
+    setState(() => _notes.clear());
+    final success = await _saveNotes();
+    if (!success) {
+      setState(() => _notes = backup);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,6 +260,12 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
             onPressed: () => setState(() => _isVisible = !_isVisible),
             tooltip: _isVisible ? 'Hide Content' : 'Show Content',
           ),
+          if (_notes.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.danger),
+              onPressed: _deleteAllNotes,
+              tooltip: 'Delete All Vault Items',
+            ),
           const SizedBox(width: 8),
         ],
       ),
@@ -263,10 +309,11 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Hardware Encrypted Storage', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text('Device Keystore Storage', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 2),
                 Text(
-                  '${_notes.length} item(s) protected with AES-256 local keystore.',
+                  '${_notes.length} item(s) stored via your device\'s secure keystore '
+                  '(Android Keystore / iOS Keychain). Never leaves this device.',
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),
               ],

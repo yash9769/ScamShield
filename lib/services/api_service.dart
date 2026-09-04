@@ -5,8 +5,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'scam_detector.dart';
+import 'consent_service.dart';
 
 class ApiService {
+  static final ConsentService _consentService = ConsentService();
   // The Android emulator reaches the host machine via 10.0.2.2, not 127.0.0.1
   // (which resolves to the emulator itself). Hardcoding the loopback address
   // meant every text analysis silently failed on Android and fell into the
@@ -18,7 +20,32 @@ class ApiService {
   }
 
   /// Calls the FastAPI backend to analyze the text using Gemini AI.
+  ///
+  /// Data-minimisation control (DPDP): if the user has turned off
+  /// AI-assisted analysis in Settings > Privacy & Data, this skips the
+  /// network call entirely rather than sending scan content to a
+  /// third-party AI provider. The caller's existing fallback path (matching
+  /// the "Analysis Unavailable" label) then runs the on-device heuristic
+  /// engine, so scanning keeps working with no other code changes needed.
   static Future<AnalysisResult> analyzeMessage(String text) async {
+    if (!await _consentService.isAiProcessingEnabled()) {
+      return const AnalysisResult(
+        classification: ScamClassification.safe,
+        riskScore: 0,
+        aiPowered: false,
+        reasons: [
+          DetectionReason(
+            label: 'Analysis Unavailable',
+            description:
+                'AI-assisted analysis is turned off in Settings > Privacy & Data. '
+                'Using the on-device engine instead.',
+            scoreContribution: 0,
+            iconCategory: IconCategory.suspicious,
+          )
+        ],
+        summary: 'AI-assisted analysis is disabled by your privacy settings.',
+      );
+    }
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/analyze'),

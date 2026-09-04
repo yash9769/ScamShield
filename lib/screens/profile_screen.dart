@@ -8,6 +8,8 @@ import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
 import 'login_screen.dart';
 import 'history_screen.dart';
+import 'privacy_settings_screen.dart';
+import '../services/data_change_notifier.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +27,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     SettingsService.init();
     _loadStats();
+    // See data_change_notifier.dart: this screen stays alive in
+    // MainNavigation's IndexedStack and needs an explicit signal to refresh
+    // after a scan/deletion made from another tab or screen.
+    DataChangeNotifier.version.addListener(_loadStats);
+  }
+
+  @override
+  void dispose() {
+    DataChangeNotifier.version.removeListener(_loadStats);
+    super.dispose();
   }
 
   Future<void> _loadStats() async {
@@ -267,6 +279,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Reveal(
               delay: Reveal.step(5),
               child: _buildSettingsList([
+              _buildSettingItem(
+                Icons.privacy_tip_outlined,
+                'Privacy & Data',
+                'Consent, retention, export & deletion',
+                hasSwitch: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacySettingsScreen())),
+              ),
               _buildSettingItem(
                 Icons.info_outline,
                 'About ScamShield',
