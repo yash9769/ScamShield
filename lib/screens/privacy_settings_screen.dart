@@ -160,7 +160,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   passwordController.text,
                 );
                 if (result == AuthResult.success) {
-                  Navigator.pop(ctx, true);
+                  if (ctx.mounted) Navigator.pop(ctx, true);
                 } else {
                   setDialogState(() => error = 'Incorrect password. Try again.');
                 }
