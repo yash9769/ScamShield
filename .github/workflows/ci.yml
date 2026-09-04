@@ -27,7 +27,7 @@ jobs:
 
       - name: Run tests
         working-directory: server
-        run: python -m pytest test_server.py -q
+        run: python -m pytest test_server.py test_dpdp_privacy.py test_domain_intel.py -q
 
       - name: Audit dependencies for known vulnerabilities
         run: |

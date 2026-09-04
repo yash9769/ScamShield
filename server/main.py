@@ -1,6 +1,7 @@
 # server/main.py — ScamShield API v3.0
 # Every feature the app promises is implemented here end-to-end with real keys.
 
+import asyncio
 import hashlib
 import io
 import ipaddress
@@ -12,9 +13,11 @@ import sqlite3
 import tempfile
 import zipfile
 from collections import OrderedDict
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import urlparse
 
 import httpx
 from dotenv import load_dotenv
@@ -37,10 +40,27 @@ XPOSEDORNOT_API_KEY      = os.getenv("XPOSEDORNOT_API_KEY", "")
 LOG_LEVEL                = os.getenv("LOG_LEVEL", "INFO")
 RATE_LIMIT_ENABLED       = os.getenv("RATE_LIMIT_ENABLED", "true").lower() != "false"
 ADMIN_API_KEY            = os.getenv("ADMIN_API_KEY", "")
+# Data retention for the audit-log table (DPDP data-minimisation control).
+# Unset/blank = no automatic cleanup (operator has not defined a retention
+# policy yet); this code does not invent a default period. See
+# DPDP_COMPLIANCE.md for the product decision this is pending on.
+AUDIT_LOG_RETENTION_DAYS = os.getenv("AUDIT_LOG_RETENTION_DAYS", "").strip()
 if not ADMIN_API_KEY:
     import sys
-    if "pytest" in sys.modules or os.getenv("PYTEST_CURRENT_TEST") or os.getenv("CI"):
+    # Only "pytest" actually being the importing process is accepted here —
+    # NOT a bare CI env var, which can be present on real staging/production
+    # hosts (many CI/CD platforms set CI=true at deploy time too) and would
+    # previously have silently activated a hardcoded, publicly-known admin
+    # key (server/main.py history; also hardcoded client-side in
+    # static/dashboard.html). A stray CI or PYTEST_CURRENT_TEST env var on a
+    # real deployment no longer bypasses the requirement below.
+    if "pytest" in sys.modules:
         ADMIN_API_KEY = "scamshield_admin_sec_key_2026"
+        logging.getLogger("scamshield").warning(
+            "ADMIN_API_KEY not set; using the hardcoded test-only fallback "
+            "because this process was imported under pytest. This fallback "
+            "MUST NOT be reachable outside test runs."
+        )
     else:
         raise ValueError("ADMIN_API_KEY environment variable is required and must not be empty.")
 
@@ -111,9 +131,43 @@ def log_audit_event(event_type: str, target: str, risk_score: int, risk_level: s
     except Exception as e:
         logger.warning(f"Audit log error: {e}")
 
+def cleanup_audit_logs() -> int:
+    """Deletes audit_logs rows older than AUDIT_LOG_RETENTION_DAYS.
+
+    No-op (returns 0) if no retention period has been configured — this
+    function does not invent a default period; see AUDIT_LOG_RETENTION_DAYS
+    above and DPDP_COMPLIANCE.md.
+    """
+    if not AUDIT_LOG_RETENTION_DAYS:
+        return 0
+    try:
+        days = int(AUDIT_LOG_RETENTION_DAYS)
+    except ValueError:
+        logger.warning(f"Ignoring invalid AUDIT_LOG_RETENTION_DAYS={AUDIT_LOG_RETENTION_DAYS!r}")
+        return 0
+    if days <= 0:
+        return 0
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute(
+            f"DELETE FROM audit_logs WHERE timestamp < datetime('now', '-{days} days')"
+        )
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+        if deleted:
+            logger.info(f"Audit log retention cleanup: removed {deleted} row(s) older than {days} days.")
+        return deleted
+    except Exception as e:
+        logger.warning(f"Audit log cleanup error: {e}")
+        return 0
+
 init_audit_db()
+cleanup_audit_logs()
 
 MAX_APK_SIZE    = 100 * 1024 * 1024
+MAX_BATCH_FILES = 20
 
 # ── Groq (preferred) / Gemini SDK ─────────────────────────────────────────────
 GROQ_AVAILABLE   = False
@@ -581,6 +635,102 @@ async def gsb_lookup_urls(urls: List[str]) -> List[dict]:
         logger.warning(f"GSB lookup error: {e}")
         return [{"url": u, "malicious": False, "note": "Safe Browsing lookup failed.", "checked": False} for u in urls]
 
+DOMAIN_RE = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))+$")
+
+async def crtsh_domain_check(domain: str) -> dict:
+    """Certificate Transparency lookup via crt.sh — free, no API key required.
+
+    A domain with zero issued certificates, or whose earliest certificate is
+    only days old, is a meaningful phishing/scam-infrastructure signal
+    (legitimate sites typically have a longer TLS certificate history).
+    """
+    try:
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as c:
+            r = await c.get(
+                "https://crt.sh/",
+                params={"q": domain, "output": "json"},
+                headers={"User-Agent": "ScamShield/3.0 (+https://github.com/)"},
+            )
+        if r.status_code != 200 or not r.text.strip():
+            return {"checked": False, "cert_count": 0, "first_seen_days_ago": None,
+                    "note": "Certificate Transparency lookup unavailable."}
+        try:
+            entries = r.json()
+        except ValueError:
+            entries = []
+        if not entries:
+            return {"checked": True, "cert_count": 0, "first_seen_days_ago": None,
+                    "note": "No TLS certificates found for this domain in Certificate Transparency logs — unusual for an established site."}
+        dates = []
+        for e in entries:
+            raw = e.get("not_before")
+            if not raw:
+                continue
+            try:
+                dates.append(datetime.fromisoformat(raw.replace("Z", "+00:00")))
+            except ValueError:
+                continue
+        first_seen_days = None
+        if dates:
+            earliest = min(dates)
+            now = datetime.now(earliest.tzinfo) if earliest.tzinfo else datetime.now()
+            first_seen_days = max(0, (now - earliest).days)
+        return {
+            "checked": True,
+            "cert_count": len(entries),
+            "first_seen_days_ago": first_seen_days,
+            "note": (f"{len(entries)} certificate(s) on record"
+                     + (f", oldest issued {first_seen_days} day(s) ago." if first_seen_days is not None else ".")),
+        }
+    except Exception as e:
+        logger.warning(f"crt.sh lookup error: {e}")
+        return {"checked": False, "cert_count": 0, "first_seen_days_ago": None,
+                "note": "Certificate Transparency lookup failed."}
+
+async def rdap_domain_age(domain: str) -> dict:
+    """Domain-registration-age lookup via the public RDAP protocol (WHOIS's
+    successor) — free, no API key required. rdap.org transparently routes
+    the query to the correct registry's RDAP server.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as c:
+            r = await c.get(f"https://rdap.org/domain/{domain}",
+                             headers={"Accept": "application/rdap+json"})
+        if r.status_code != 200:
+            return {"checked": False, "registered_days_ago": None,
+                    "note": "RDAP lookup unavailable for this domain/TLD."}
+        data = r.json()
+        registered_days_ago = None
+        for event in data.get("events", []) or []:
+            if event.get("eventAction") in ("registration", "last changed") and event.get("eventDate"):
+                try:
+                    when = datetime.fromisoformat(event["eventDate"].replace("Z", "+00:00"))
+                    now = datetime.now(when.tzinfo) if when.tzinfo else datetime.now()
+                    registered_days_ago = max(0, (now - when).days)
+                    if event.get("eventAction") == "registration":
+                        break
+                except ValueError:
+                    continue
+        return {
+            "checked": True,
+            "registered_days_ago": registered_days_ago,
+            "note": (f"Registered ~{registered_days_ago} day(s) ago." if registered_days_ago is not None
+                     else "Registration date not available from RDAP."),
+        }
+    except Exception as e:
+        logger.warning(f"RDAP lookup error: {e}")
+        return {"checked": False, "registered_days_ago": None, "note": "RDAP lookup failed."}
+
+async def domain_intel(domain: str) -> dict:
+    """Combines the two free, keyless domain-trust signals above."""
+    cert, rdap = await asyncio.gather(crtsh_domain_check(domain), rdap_domain_age(domain))
+    is_new_domain = (
+        (cert.get("first_seen_days_ago") is not None and cert["first_seen_days_ago"] < 30)
+        or (rdap.get("registered_days_ago") is not None and rdap["registered_days_ago"] < 30)
+        or cert.get("cert_count") == 0
+    )
+    return {"domain": domain, "certificate_transparency": cert, "rdap": rdap, "newly_registered_or_unproven": is_new_domain}
+
 async def abuseipdb_lookup(ip: str) -> dict:
     if not ABUSEIPDB_API_KEY:
         return {"abuseConfidenceScore": 0, "note": "AbuseIPDB not configured.", "checked": False}
@@ -813,6 +963,32 @@ async def analyze_apk_file(apk_path: str, file_size: int) -> dict:
             score += pts
             risk_breakdown.append({"factor": f"Safe Browsing: {len(gsb_flagged)} dangerous URL(s)", "points": pts, "category": "safe_browsing"})
 
+    # 8. Domain intelligence on embedded URLs — free, keyless (crt.sh + RDAP).
+    # Capped at 3 unique hostnames to bound scan latency.
+    domain_intel_results: List[dict] = []
+    if urls:
+        hostnames: List[str] = []
+        seen_hosts = set()
+        for u in urls[:10]:
+            try:
+                host = urlparse(u if "://" in u else f"http://{u}").hostname
+            except ValueError:
+                host = None
+            if host and host not in seen_hosts and DOMAIN_RE.fullmatch(host):
+                seen_hosts.add(host)
+                hostnames.append(host)
+            if len(hostnames) >= 3:
+                break
+        if hostnames:
+            domain_intel_results = list(await asyncio.gather(*(domain_intel(h) for h in hostnames)))
+            unproven = [d for d in domain_intel_results if d["newly_registered_or_unproven"]]
+            if unproven:
+                pts = min(len(unproven) * 10, 20)
+                names = ", ".join(d["domain"] for d in unproven)
+                risk_factors.append(f"Newly-registered or certificate-history-free domain(s): {names}.")
+                score += pts
+                risk_breakdown.append({"factor": f"Unproven domain(s): {names}", "points": pts, "category": "domain_intel"})
+
     score = max(0, min(100, score))
     level = ("CRITICAL" if score >= 75 else "HIGH" if score >= 50 else "MEDIUM" if score >= 30 else "LOW")
 
@@ -852,6 +1028,7 @@ async def analyze_apk_file(apk_path: str, file_size: int) -> dict:
         "osint": {
             "virustotal":    {**vt_result},
             "safe_browsing": {"results": gsb_results, "checked": bool(GOOGLE_SAFE_BROWSING_KEY)},
+            "domain_intel":  {"results": domain_intel_results, "checked": True},
         },
     }
     _cache_put(sha256, report)
@@ -866,6 +1043,7 @@ async def root():
         "virustotal":          bool(VIRUSTOTAL_API_KEY),
         "safe_browsing":       bool(GOOGLE_SAFE_BROWSING_KEY),
         "abuseipdb":           bool(ABUSEIPDB_API_KEY),
+        "domain_intel":        True,  # crt.sh + RDAP — always available, no API key
         "androguard":          ANDROGUARD_AVAILABLE,
         "yara":                YARA_AVAILABLE,
     }
@@ -1001,6 +1179,23 @@ async def osint_ip(request: Request, ip: str):
         raise HTTPException(400, "Invalid IP address.")
     return await abuseipdb_lookup(ip)
 
+@app.get("/osint/domain/{domain}")
+@limiter.limit("60/minute")
+async def osint_domain(request: Request, domain: str):
+    """Domain-trust check using two free, keyless sources: Certificate
+    Transparency logs (crt.sh) and RDAP registration data (rdap.org).
+    Unlike the other /osint/* routes, this never returns a "not configured"
+    placeholder — both sources are always available without an API key."""
+    domain = domain.strip().lower()
+    if not DOMAIN_RE.fullmatch(domain):
+        raise HTTPException(400, "Invalid domain format.")
+    try:
+        ipaddress.ip_address(domain)
+        raise HTTPException(400, "Expected a domain name, not an IP address — use /osint/ip/{ip} instead.")
+    except ValueError:
+        pass
+    return await domain_intel(domain)
+
 @app.get("/dashboard")
 async def get_dashboard(request: Request):
     await verify_admin_auth(request)
@@ -1012,7 +1207,8 @@ async def get_dashboard(request: Request):
 @app.get("/api/audit-logs")
 async def get_audit_logs(request: Request, limit: int = 50):
     await verify_admin_auth(request)
-    
+    cleanup_audit_logs()
+
     # Server-side limit validation & bounding (PHASE 4)
     if limit < 1:
         limit = 1
@@ -1040,12 +1236,38 @@ async def get_audit_logs(request: Request, limit: int = 50):
         logger.warning(f"Error fetching audit logs: {e}")
     return logs
 
+@app.delete("/api/audit-logs")
+async def delete_audit_logs(request: Request):
+    """Admin-only erasure of all stored audit-log rows (message excerpts,
+    filenames). Supports the right-to-erasure / data-minimisation controls
+    documented in DPDP_COMPLIANCE.md — there is no per-user scoping because
+    this table has never recorded any user/account identifier (see
+    DPDP_AUDIT.md §4)."""
+    await verify_admin_auth(request)
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute("DELETE FROM audit_logs")
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+        logger.info(f"Admin purge: removed {deleted} audit_logs row(s).")
+        return {"deleted": deleted}
+    except Exception as e:
+        logger.warning(f"Error deleting audit logs: {e}")
+        raise HTTPException(500, "Failed to delete audit logs.")
+
 @app.post("/scan-batch")
 @limiter.limit("10/minute")
 async def scan_batch(request: Request, files: List[UploadFile] = File(...)):
+    if len(files) > MAX_BATCH_FILES:
+        raise HTTPException(400, f"Too many files in one batch (max {MAX_BATCH_FILES}).")
     results = []
     for file in files:
         contents = await file.read()
+        if len(contents) > MAX_APK_SIZE:
+            results.append({"filename": file.filename, "status": "skipped", "reason": "File exceeds 100MB limit"})
+            continue
         if contents and zipfile.is_zipfile(io.BytesIO(contents)):
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".apk")
             try:
