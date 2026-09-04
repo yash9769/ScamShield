@@ -142,7 +142,7 @@ Look at the characters directly before `.com`, `.org`, or `.gov`. In `login.chas
 Financial scams trick victims into transferring money or surrendering bank credentials.
 
 1. Fake Bank Agent Calls:
-Caller ID spoofing makes the call look like it originates from your bank\'s official number. The caller claims your account is under attack and asks for your 2FA OTP to "block" the transaction.
+Caller ID spoofing makes the call look like it originates from your bank's official number. The caller claims your account is under attack and asks for your 2FA OTP to "block" the transaction.
 
 2. QR Code Payment Traps:
 Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. Scanning a QR code NEVER deposits money into your bank account.

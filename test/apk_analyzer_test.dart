@@ -1,10 +1,27 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scamshield/services/apk_analyzer_service.dart';
 import 'package:scamshield/services/scam_detector.dart';
 
 void main() {
-  group('APK Analyzer Engine Tests', () {
-    const apkDir = 'ScamShield_Test_APKs';
+  const apkDir = 'ScamShield_Test_APKs';
+
+  // These tests run against locally-generated sample APKs. That directory is
+  // deliberately excluded from version control (see .gitignore: `*.apk` and
+  // `ScamShield_Test_APKs/`), so the fixtures are never present on a fresh
+  // clone or in CI — which made every one of these tests fail on every CI
+  // run, for a missing-file reason that says nothing about the analyzer.
+  //
+  // Skipping (rather than failing) when the fixtures are absent keeps CI
+  // honest: the suite reports "skipped", not a false pass, and these still
+  // run in full for any developer who has generated the sample APKs locally.
+  final fixturesAvailable = Directory(apkDir).existsSync();
+
+  group('APK Analyzer Engine Tests', skip: fixturesAvailable
+          ? null
+          : 'Sample APKs not present ($apkDir/ is gitignored — generate them locally to run these).',
+      () {
 
     test('1_benign_debug.apk should be classified as safe with score 0-5', () async {
       final apkPath = '$apkDir/1_benign_debug.apk';

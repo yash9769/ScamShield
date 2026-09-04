@@ -412,8 +412,11 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     final scanMode = report['scan_mode'] as String? ?? 'local';
 
     Color levelColor = AppColors.success;
-    if (level == 'HIGH' || level == 'CRITICAL') levelColor = AppColors.danger;
-    else if (level == 'MEDIUM') levelColor = AppColors.warning;
+    if (level == 'HIGH' || level == 'CRITICAL') {
+      levelColor = AppColors.danger;
+    } else if (level == 'MEDIUM') {
+      levelColor = AppColors.warning;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,8 +583,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                                       color: AppColors.textPrimary))),
                         ],
                       ),
-                    ))
-                .toList(),
+                    )),
           ],
           const SizedBox(height: 8),
           Container(

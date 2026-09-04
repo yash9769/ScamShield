@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildStatCard('TOTAL SCANS', s == null ? '0' : '${s.totalScans}', Icons.radar_rounded, AppColors.primary),
         _buildStatCard('SCAMS CAUGHT', s == null ? '0' : '${s.scamCount}', Icons.warning_amber_rounded, AppColors.danger),
         _buildStatCard('SUSPICIOUS', s == null ? '0' : '${s.suspiciousCount}', Icons.help_outline_rounded, AppColors.warning),
-        _buildStatCard('AVG RISK SCORE', s == null ? '0' : '${s.averageRiskScore.toStringAsFixed(0)}', Icons.analytics_outlined, AppColors.success),
+        _buildStatCard('AVG RISK SCORE', s == null ? '0' : s.averageRiskScore.toStringAsFixed(0), Icons.analytics_outlined, AppColors.success),
       ],
     );
   }
