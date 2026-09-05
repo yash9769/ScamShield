@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/breach_service.dart';
+import '../services/breach_watch_service.dart';
 
 class BreachScreen extends StatefulWidget {
   final int initialIndex;
@@ -28,6 +29,8 @@ class _BreachScreenState extends State<BreachScreen>
   String _emailError = '';
   String _checkedEmail = '';
   String _checkStatus = 'idle';
+  bool _isWatched = false;
+  bool _togglingWatch = false;
 
   @override
   void initState() {
@@ -100,10 +103,12 @@ class _BreachScreenState extends State<BreachScreen>
 
     try {
       final result = await BreachService.checkEmailBreach(email);
+      final watched = await BreachWatchService.isWatched(email);
       if (mounted) {
         setState(() {
           _isCheckingEmail = false;
           _emailResult = result;
+          _isWatched = watched;
           _checkStatus = result.exposed ? 'success_exposed' : 'success_no_exposure';
         });
       }
@@ -127,6 +132,98 @@ class _BreachScreenState extends State<BreachScreen>
   String _formatCheckedAt(String? checkedAt) {
     if (checkedAt == null || checkedAt.length < 10) return 'recent';
     return checkedAt.substring(0, 10);
+  }
+
+  Future<void> _toggleWatch() async {
+    final result = _emailResult;
+    if (result == null || _togglingWatch) return;
+
+    setState(() => _togglingWatch = true);
+
+    String message;
+    if (_isWatched) {
+      await BreachWatchService.unwatch(_checkedEmail);
+      message = 'Stopped watching $_checkedEmail.';
+      if (mounted) setState(() => _isWatched = false);
+    } else {
+      // Seed with the count we just measured, so the existing exposures are
+      // the baseline and only genuinely new ones raise an alert later.
+      final added = await BreachWatchService.watch(_checkedEmail, result.breachCount);
+      message = added
+          ? 'Watching $_checkedEmail. We\'ll re-check when you open the app.'
+          : 'You can watch up to ${BreachWatchService.maxWatched} addresses. Remove one first.';
+      if (mounted) setState(() => _isWatched = added);
+    }
+
+    if (!mounted) return;
+    setState(() => _togglingWatch = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.surfaceLight,
+      ),
+    );
+  }
+
+  Widget _buildWatchToggle() {
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isWatched
+              ? AppColors.primary.withValues(alpha: 0.5)
+              : AppColors.surfaceLight.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _isWatched ? Icons.notifications_active : Icons.notifications_none,
+            color: _isWatched ? AppColors.primary : AppColors.textSecondary,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isWatched ? 'Watching this address' : 'Watch this address',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _isWatched
+                      ? 'You\'ll be alerted if it turns up in a new breach.'
+                      : 'A breach check only reflects today. Watch it and we\'ll re-check on app open.',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _togglingWatch
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                )
+              : Switch(
+                  value: _isWatched,
+                  activeThumbColor: AppColors.primary,
+                  onChanged: (_) => _toggleWatch(),
+                ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -341,6 +438,11 @@ class _BreachScreenState extends State<BreachScreen>
           ),
           const SizedBox(height: 20),
           if (_checkStatus != 'idle') Reveal(child: _buildEmailResultWidget()),
+          // Only offer the standing watch once a check actually succeeded —
+          // there's no baseline count to seed it with otherwise.
+          if (_emailResult != null &&
+              (_checkStatus == 'success_exposed' || _checkStatus == 'success_no_exposure'))
+            Reveal(child: _buildWatchToggle()),
           const SizedBox(height: 24),
           Reveal(delay: Reveal.step(2), child: _buildWhatToDoSection()),
         ],

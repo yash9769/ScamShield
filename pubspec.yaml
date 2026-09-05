@@ -34,7 +34,9 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
+  # google_fonts removed: the app-wide typeface (Inter) is now bundled locally
+  # under assets/fonts and declared in the `fonts:` section below, so text no
+  # longer depends on a runtime font download.
   http: ^1.6.0
   shared_preferences: ^2.5.5
   sqflite: ^2.4.2
@@ -56,6 +58,7 @@ dependencies:
   open_filex: ^4.5.3
   receive_sharing_intent: ^1.9.0
   mobile_scanner: ^7.4.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +91,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+  # (The Inter .ttf files are listed here as well as under `fonts:` below so
+  # ReportGeneratorService can load their raw bytes via rootBundle for PDF
+  # embedding, not just use them as a UI font family.)
   assets:
     - assets/icon.png
     - assets/fonts/Inter-Regular.ttf
@@ -95,6 +101,22 @@ flutter:
     - assets/fonts/Inter-SemiBold.ttf
     - assets/fonts/Inter-Bold.ttf
   #   - images/a_dot_ham.jpeg
+
+  # Inter is the app-wide UI typeface. It is the closest openly-licensed
+  # (SIL OFL) equivalent to Apple's San Francisco — SF Pro itself cannot be
+  # shipped in an Android app, since Apple licenses it only for developing on
+  # Apple platforms. See assets/fonts/OFL.txt.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

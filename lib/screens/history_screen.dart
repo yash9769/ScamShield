@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
 import '../theme.dart';
 import '../widgets/scan_now_bottom_sheet.dart';
 import '../widgets/motion.dart';
 import '../data/models/scan_record.dart';
 import '../data/repositories/scan_repository.dart';
 import '../services/data_change_notifier.dart';
+import '../services/report_generator_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -63,6 +65,161 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
       return true;
     }).toList();
+  }
+
+  /// Builds the complaint evidence pack for a saved scan and opens it, so the
+  /// user can attach it to a cybercrime.gov.in filing or a bank dispute.
+  Future<void> _exportComplaint(ScanRecord record) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Preparing complaint evidence…'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 1),
+      ),
+    );
+    try {
+      final file = await ReportGeneratorService.generateComplaintReport(record: record);
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not create the complaint PDF: $e'),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showRecordDetail(ScanRecord record) {
+    final badgeColor = record.classification.toLowerCase() == 'scam'
+        ? AppColors.danger
+        : record.classification.toLowerCase() == 'suspicious'
+            ? AppColors.warning
+            : AppColors.success;
+    final indicators = ReportGeneratorService.extractIndicators(record.inputText);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.62,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Text(
+                    record.classification.toUpperCase(),
+                    style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${record.riskScore}/100',
+                    style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${record.source ?? 'Unknown source'} · ${record.timestamp.toString().substring(0, 16)}',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+              const SizedBox(height: 16),
+              const Text('MESSAGE',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SelectableText(
+                  record.inputText,
+                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('SUMMARY',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              const SizedBox(height: 6),
+              Text(record.summary,
+                  style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary, height: 1.4)),
+              if (indicators.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('EXTRACTED INDICATORS',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+                const SizedBox(height: 6),
+                ...indicators.map((i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${i.type}: ',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          Expanded(
+                            child: SelectableText(
+                              i.value,
+                              style: const TextStyle(fontSize: 12, color: AppColors.warning),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+              ],
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    _exportComplaint(record);
+                  },
+                  icon: const Icon(Icons.gavel_outlined, size: 18, color: Colors.black),
+                  label: const Text('Export complaint evidence (PDF)',
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Creates a PDF with the message, timestamp and extracted links/numbers, '
+                'ready to attach to a cybercrime.gov.in complaint or a bank dispute.',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.35),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteRecord(ScanRecord record) async {
@@ -261,7 +418,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             decoration: BoxDecoration(color: AppColors.danger, borderRadius: BorderRadius.circular(18)),
             child: const Icon(Icons.delete, color: Colors.white),
           ),
-          child: Container(
+          child: InkWell(
+            onTap: () => _showRecordDetail(r),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -308,6 +468,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ],
             ),
+          ),
           ),
         ),
         );

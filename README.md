@@ -352,8 +352,42 @@ Authentication is **local-only and client-side**. ScamShield doesn't send creden
 ```
 
 - **Login Flow:** Users input credentials. `AuthService` reads the secure storage salt, computes the PBKDF2 hash of the input password, and executes a **length-constant compare** (`_constantTimeEquals`) to mitigate timing side-channels.
-- **Bypass Mode:** Users can click "CONTINUE AS GUEST" to bypass local registration. This allows them to run threat scans anonymously, though local secure storage features like the Safe Vault are not accessible or secured by individual password scopes.
+- **Bypass Mode:** Users can click "Continue without an account" to bypass local registration. This allows them to run threat scans anonymously, though local secure storage features like the Safe Vault are not accessible or secured by individual password scopes.
 - **Server Admin Auth:** Legacy dashboard routes in `/server` check for `Authorization: Bearer <ADMIN_API_KEY>` or header `X-Admin-Key`. Default key is `scamshield_admin_sec_key_2026`.
+
+### Google Sign-In (optional provider)
+
+Google can be used instead of a password. Because there is no ScamShield user
+backend, Google acts purely as an **identity provider for the local account**:
+the verified email/name/avatar are stored on-device by `AuthService` exactly as
+a password account is, and no ID token is transmitted anywhere.
+
+`AuthService.currentProvider()` records which route was used, because the two
+re-authenticate differently — deleting a Google account re-verifies through
+Google (and requires the returned address to match), since there is no password
+to re-enter.
+
+**This requires your own Google Cloud credentials and cannot ship pre-configured:**
+
+1. Google Cloud Console → APIs & Services → Credentials.
+2. Create an **Android** OAuth client: package name `com.example.scamshield`
+   (see `android/app/build.gradle.kts`) plus the SHA-1 of your signing key
+   (`cd android && ./gradlew signingReport`). Add the debug key too, or sign-in
+   works in release but fails in debug.
+3. Create a **Web application** OAuth client — its client ID is the
+   "server client ID" the Android SDK needs to return an ID token.
+4. Pass it at build time:
+
+   ```bash
+   flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
+   ```
+
+Until step 4 is done, `GoogleAuthService.isConfigured` is false and the auth
+screens hide the Google button rather than showing a control that always fails.
+
+> Before publishing, replace the placeholder mark in
+> `lib/widgets/google_sign_in_button.dart` with Google's official logo asset —
+> their Sign-In branding guidelines require it.
 
 ---
 

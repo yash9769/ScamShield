@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/consent_service.dart';
 import '../services/auth_service.dart';
+import '../services/google_auth_service.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/repositories/preferences_repository.dart';
 import '../services/data_privacy_service.dart';
@@ -105,14 +106,128 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   }
 
   Future<void> _confirmDeleteAccount() async {
+    // Deleting an account must be re-authenticated, but a Google-linked
+    // account has no password on this device — asking for one would lock
+    // those users out of erasing their own data, which is exactly the right
+    // they're entitled to. Each provider re-verifies its own way.
+    final provider = await AuthService.currentProvider();
+    if (!mounted) return;
+
+    final confirmed = provider == AuthProvider.google
+        ? await _confirmDeleteWithGoogle()
+        : await _confirmDeleteWithPassword();
+
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    await _dataPrivacyService.deleteAccountAndAllData();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  /// Re-verifies by signing in with Google again and requiring the returned
+  /// address to match the account on this device, so signing in with a
+  /// different Google account cannot delete someone else's data.
+  Future<bool?> _confirmDeleteWithGoogle() async {
+    final registeredEmail = await AuthService.registeredEmail();
+    if (!mounted) return false;
+    String? error;
+    bool verifying = false;
+
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+              SizedBox(width: 8),
+              Expanded(child: Text('Delete Account?')),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This permanently deletes your account, profile, scan history, Safe Vault '
+                  'and all local data on this device. This cannot be undone.\n\n'
+                  'Confirm with Google to continue as ${registeredEmail ?? 'your account'}.',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: verifying ? null : () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: verifying
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        verifying = true;
+                        error = null;
+                      });
+                      final result = await GoogleAuthService.signIn();
+                      if (!ctx.mounted) return;
+
+                      if (!result.isSuccess) {
+                        setDialogState(() {
+                          verifying = false;
+                          if (result.status != GoogleAuthStatus.cancelled) {
+                            error = result.message ?? 'Verification failed. Try again.';
+                          }
+                        });
+                        return;
+                      }
+                      if (result.email?.toLowerCase() != registeredEmail?.toLowerCase()) {
+                        setDialogState(() {
+                          verifying = false;
+                          error = 'That Google account does not match the account on this device.';
+                        });
+                        return;
+                      }
+                      Navigator.pop(ctx, true);
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+              child: verifying
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Verify & Delete',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _confirmDeleteWithPassword() async {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final registeredEmail = await AuthService.registeredEmail();
     emailController.text = registeredEmail ?? '';
     String? error;
 
-    if (!mounted) return;
-    final confirmed = await showDialog<bool>(
+    if (!mounted) return false;
+    return showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -172,17 +287,6 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           ],
         ),
       ),
-    );
-
-    if (confirmed != true || !mounted) return;
-    setState(() => _busy = true);
-    await _dataPrivacyService.deleteAccountAndAllData();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
     );
   }
 

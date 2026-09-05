@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 
+import '../data/models/scan_record.dart';
 import 'apk_analyzer_service.dart';
 import 'osint_service.dart';
 import 'scam_detector.dart';
@@ -55,6 +56,14 @@ class _RC {
 
   static PdfColor bgForLabel(String label) =>
       _isHigh(label) ? dangerBg : (_isMedium(label) ? warningBg : successBg);
+}
+
+/// An actionable artefact pulled out of a scam message (a link, phone number
+/// or UPI handle) — the part of a complaint an investigator can actually act on.
+class ScanIndicator {
+  final String type;
+  final String value;
+  const ScanIndicator(this.type, this.value);
 }
 
 /// A small label/value pair rendered as a table-like row.
@@ -385,6 +394,146 @@ class ReportGeneratorService {
     final file = File('${output.path}/ScamShield_AuditReport_${DateTime.now().millisecondsSinceEpoch}.pdf');
     await file.writeAsBytes(await pdf.save());
     return file.path;
+  }
+
+  /// Evidence pack for filing a cybercrime complaint about a scanned message.
+  ///
+  /// This is deliberately *not* the same document as the APK audit: a police
+  /// or bank complaint needs the message verbatim, when it arrived, how it
+  /// reached the victim, and the specific indicators (links, numbers, UPI
+  /// handles) an investigator can act on — not a static-analysis dump.
+  ///
+  /// ScamShield cannot file on the user's behalf (India's NCRP has no public
+  /// filing API), so the last section is the filing checklist and the report
+  /// is written to be attached to that filing.
+  static Future<File> generateComplaintReport({required ScanRecord record}) async {
+    final assets = await _ReportAssets.load();
+    final label = record.classification.toUpperCase();
+    final indicators = extractIndicators(record.inputText);
+
+    final pdf = pw.Document(
+      theme: assets.theme,
+      title: 'ScamShield Complaint Evidence',
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(36, 28, 36, 32),
+        footer: (context) => _footer(context),
+        build: (context) => [
+          _brandHeader(
+            assets: assets,
+            title: 'Cybercrime Complaint Evidence',
+            target: record.source ?? 'Reported message',
+            engineLabel: 'ScamShield scan record',
+          ),
+          pw.SizedBox(height: 22),
+
+          _sectionLabel('1. INCIDENT SUMMARY', assets),
+          _kvCard([
+            _KV('Received via', record.source ?? 'Not recorded'),
+            _KV('Scanned on', _formatTimestamp(record.timestamp)),
+            _KV('Assessment', '$label (${record.riskScore}/100)'),
+            _KV('Report generated', _formatTimestamp(DateTime.now())),
+          ]),
+          pw.SizedBox(height: 22),
+
+          _sectionLabel('2. ASSESSMENT', assets),
+          _verdictHero(label: label, score: record.riskScore, summary: record.summary),
+          pw.SizedBox(height: 22),
+
+          _sectionLabel('3. MESSAGE CONTENT (VERBATIM)', assets),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: _RC.rowAlt,
+              border: pw.Border.all(color: _RC.border, width: 0.75),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+            ),
+            child: pw.Text(
+              record.inputText.isEmpty ? '(no text captured)' : record.inputText,
+              style: pw.TextStyle(fontSize: 9.5, color: _RC.ink, lineSpacing: 2.5),
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          _emptyNote('Reproduced exactly as scanned. Do not open any link listed below.'),
+          pw.SizedBox(height: 22),
+
+          _sectionLabel('4. EXTRACTED INDICATORS', assets, accent: _RC.danger),
+          indicators.isEmpty
+              ? _emptyNote('No links, phone numbers or UPI handles were found in the message text.')
+              : _kvCard(indicators.map((i) => _KV(i.type, i.value)).toList()),
+          pw.SizedBox(height: 22),
+
+          _sectionLabel('5. HOW TO FILE THIS COMPLAINT', assets),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              _complaintStep(assets, '1',
+                  'Report online at cybercrime.gov.in (India\'s National Cyber Crime Reporting Portal), or call the cybercrime helpline 1930.'),
+              _complaintStep(assets, '2',
+                  'If money was transferred, call your bank immediately and request a transaction freeze — the first hours matter most.'),
+              _complaintStep(assets, '3',
+                  'Attach this PDF along with your own screenshots of the message and any payment receipts.'),
+              _complaintStep(assets, '4',
+                  'Keep the original message on your device until the complaint is registered; do not delete it.'),
+            ],
+          ),
+          pw.SizedBox(height: 18),
+
+          pw.Divider(color: _RC.border),
+          pw.Text(
+            'This document records an automated assessment produced by ScamShield on the date shown above. '
+            'It is supporting evidence for a complaint and is not a legal determination that an offence occurred.',
+            style: const pw.TextStyle(fontSize: 8, color: _RC.textFaint),
+          ),
+        ],
+      ),
+    );
+
+    final dir = await getTemporaryDirectory();
+    final file = File(
+      '${dir.path}/ScamShield_Complaint_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await file.writeAsBytes(await pdf.save());
+    return file;
+  }
+
+  static String _formatTimestamp(DateTime t) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
+  }
+
+  /// Pulls the actionable artefacts out of a scam message: links, Indian
+  /// mobile numbers and UPI handles. These are what an investigator or bank
+  /// can actually chase, so they get their own section rather than being left
+  /// buried in the message body.
+  static List<ScanIndicator> extractIndicators(String text) {
+    final found = <ScanIndicator>[];
+    final seen = <String>{};
+
+    void add(String type, String value) {
+      final key = '$type:${value.toLowerCase()}';
+      if (seen.add(key)) found.add(ScanIndicator(type, value));
+    }
+
+    for (final m in RegExp(r'https?://[^\s<>"]+', caseSensitive: false).allMatches(text)) {
+      add('Link', m.group(0)!);
+    }
+    for (final m in RegExp(r'\b[\w.\-]{2,}@[\w\-]{2,}\b').allMatches(text)) {
+      final value = m.group(0)!;
+      // An address with a dot in the domain is email; without one it is
+      // almost always a UPI handle (name@okhdfcbank, name@paytm).
+      final domain = value.split('@').last;
+      add(domain.contains('.') ? 'Email address' : 'UPI handle', value);
+    }
+    for (final m in RegExp(r'(?:\+91[\s-]?|\b0)?[6-9]\d{9}\b').allMatches(text)) {
+      add('Phone number', m.group(0)!.trim());
+    }
+
+    return found;
   }
 
   // ── Shared building blocks ────────────────────────────────────────────────
@@ -758,6 +907,32 @@ class ReportGeneratorService {
                     style: pw.TextStyle(font: assets.semiBold, fontSize: 10, color: _RC.forLabel(level))),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _complaintStep(_ReportAssets assets, String number, String text) {
+    return pw.Container(
+      width: double.infinity,
+      margin: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(
+            width: 18,
+            height: 18,
+            alignment: pw.Alignment.center,
+            margin: const pw.EdgeInsets.only(right: 10),
+            decoration: const pw.BoxDecoration(color: _RC.cyan, shape: pw.BoxShape.circle),
+            child: pw.Text(
+              number,
+              style: pw.TextStyle(font: assets.semiBold, fontSize: 9, color: PdfColors.white),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(text, style: pw.TextStyle(fontSize: 9.5, color: _RC.ink, lineSpacing: 2)),
           ),
         ],
       ),
