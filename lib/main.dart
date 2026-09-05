@@ -24,6 +24,8 @@ import 'services/call_screening_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/localization_service.dart';
 import 'services/simple_mode_service.dart';
+import 'services/home_widget_service.dart';
+import 'services/data_change_notifier.dart';
 import 'screens/simple_home_screen.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
@@ -60,6 +62,12 @@ void main() async {
   // Push notifications for family alerts. Fails soft and silently on any build
   // without a Firebase config, which is why it is safe to call unconditionally.
   unawaited(PushNotificationService.init());
+  // Keep the home-screen widget's status line current. Hooked to the app's
+  // one data-change signal rather than sprinkled through every write site, so
+  // scans, deletions and backup restores all keep it honest. Debounced, since
+  // a restore fires that signal once per record.
+  DataChangeNotifier.version.addListener(HomeWidgetService.refreshSoon);
+  unawaited(HomeWidgetService.refresh());
   runApp(ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented));
 }
 
@@ -137,10 +145,20 @@ class _MainNavigationState extends State<MainNavigation>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkClipboard();
+    _handleWidgetLaunch();
     ShareIntentService.init();
     ShareIntentService.pending.addListener(_onSharedContent);
     _checkWatchedBreaches();
     _syncIfSignedIn();
+  }
+
+  /// Sends the user straight to the Scan tab when they arrived by tapping the
+  /// home-screen widget — the entire point of the widget being one tap.
+  Future<void> _handleWidgetLaunch() async {
+    final action = await HomeWidgetService.consumeLaunchAction();
+    if (action == 'scan' && mounted) {
+      setState(() => _selectedIndex = 1);
+    }
   }
 
   /// Best-effort background sync. Self-rate-limits and no-ops when there is no
@@ -211,6 +229,10 @@ class _MainNavigationState extends State<MainNavigation>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // A widget tap on an already-running app arrives as a resume, not a
+      // fresh start, so this has to be checked here too. The native side
+      // clears the extra once read, so an ordinary resume finds nothing.
+      _handleWidgetLaunch();
       _checkClipboard();
       _checkWatchedBreaches();
       _syncIfSignedIn();
