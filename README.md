@@ -685,6 +685,7 @@ flutter run
 - **Safe Vault Storage Fallback:** If secure storage fails, data is written in plain JSON to `SharedPreferences` without encryption.
 - **Hardcoded Admin Key:** The legacy server has a hardcoded admin key: `ADMIN_API_KEY = "scamshield_admin_sec_key_2026"`.
 - **Manifest Typo:** The app's package label in `AndroidManifest.xml` is misspelled as `"SScamSShield"`.
+- **Real-Time SMS Protection and Google Play policy:** `RECEIVE_SMS`/`READ_SMS` are covered by Play Store's restricted "SMS and Call Log" permissions policy. Google generally only approves this for apps that are set as the **default SMS or Dialer handler**, or that qualify for a narrow declared-use exception. A scam-detection feature that is *not* the default SMS app is unlikely to be approved as-is, and Google requires an in-app disclosure plus a Play Console permissions declaration form before submission. Before shipping this feature: either (a) apply for the exception with a clear justification and required in-app disclosure, or (b) gate it as a Play Store-excluded build variant / sideload-only feature, or (c) replace it with Android's [SMS Retriever API](https://developers.google.com/identity/sms-retriever/overview), which reads OTP-style messages without the dangerous permission at all (but only messages containing the app's signing hash, so it cannot screen arbitrary incoming SMS). This is a real submission risk, not a hypothetical one — confirm your compliance path before release.
 
 ---
 

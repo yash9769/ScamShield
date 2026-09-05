@@ -23,6 +23,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'cloud_account_service.dart';
+import 'cloud_sync_service.dart';
 import 'google_auth_service.dart';
 
 enum AuthResult {
@@ -210,6 +212,11 @@ class AuthService {
     if (await currentProvider() == AuthProvider.google) {
       await GoogleAuthService.signOut();
     }
+    // The cloud session goes too. Leaving it behind on a shared or handed-on
+    // device would let the next person's sync pull the previous user's
+    // history back down.
+    await CloudAccountService.signOut();
+    await CloudSyncService.resetCursor();
     await _storage.delete(key: _sessionKey);
   }
 

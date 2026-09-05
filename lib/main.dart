@@ -17,6 +17,9 @@ import 'services/consent_service.dart';
 import 'services/data_privacy_service.dart';
 import 'services/share_intent_service.dart';
 import 'services/breach_watch_service.dart';
+import 'services/cloud_account_service.dart';
+import 'services/cloud_sync_service.dart';
+import 'services/sms_screening_service.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -34,6 +37,10 @@ void main() async {
   // Apply the user's configured scan-history retention period, if any
   // (Settings > Privacy & Data > Data Retention). No-ops when unset (0).
   unawaited(_applyScanHistoryRetention());
+  // Re-attaches the live SMS listener and drains anything queued while the
+  // app wasn't running — a no-op unless the user has explicitly turned this
+  // on in Profile > Real-Time SMS Protection.
+  unawaited(SmsScreeningService.initIfEnabled());
   runApp(ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented));
 }
 
@@ -101,6 +108,15 @@ class _MainNavigationState extends State<MainNavigation>
     ShareIntentService.init();
     ShareIntentService.pending.addListener(_onSharedContent);
     _checkWatchedBreaches();
+    _syncIfSignedIn();
+  }
+
+  /// Best-effort background sync. Self-rate-limits and no-ops when there is no
+  /// cloud session, so the app is never blocked on it.
+  Future<void> _syncIfSignedIn() async {
+    await CloudAccountService.refreshSignedInState();
+    if (!CloudAccountService.signedIn.value) return;
+    unawaited(CloudSyncService.sync());
   }
 
   /// Re-checks watched email addresses and surfaces anything that newly turned
@@ -162,6 +178,7 @@ class _MainNavigationState extends State<MainNavigation>
     if (state == AppLifecycleState.resumed) {
       _checkClipboard();
       _checkWatchedBreaches();
+      _syncIfSignedIn();
     }
   }
 

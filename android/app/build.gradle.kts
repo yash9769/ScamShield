@@ -24,8 +24,8 @@ android {
         applicationId = "com.example.scamshield"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // mobile_scanner (QR/barcode scanning) requires API 23+.
-        minSdk = maxOf(flutter.minSdkVersion, 23)
+        // mobile_scanner requires API 23+; flutter_local_notifications requires API 24+.
+        minSdk = maxOf(flutter.minSdkVersion, 24)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

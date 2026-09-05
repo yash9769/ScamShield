@@ -7,9 +7,12 @@ import '../services/scam_detector.dart';
 import '../services/api_service.dart';
 import '../services/share_intent_service.dart';
 import '../services/community_report_service.dart';
+import '../services/cloud_account_service.dart';
 import '../data/models/scan_record.dart';
+import '../services/upi_parser.dart';
 import '../data/repositories/scan_repository.dart';
 import 'qr_scan_screen.dart';
+import 'upi_verify_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -153,6 +156,8 @@ class _ScanScreenState extends State<ScanScreen>
       await _repo.saveScan(record);
     } catch (_) {}
 
+    _maybeAlertFamily(result);
+
     if (mounted) {
       setState(() {
         _result = result;
@@ -163,6 +168,23 @@ class _ScanScreenState extends State<ScanScreen>
       });
       _maybeCheckCommunityReputation(text);
     }
+  }
+
+  /// Relays a dangerous verdict to the user's family group, if they're in one.
+  ///
+  /// Fire-and-forget on purpose: a relative's phone being unreachable must
+  /// never delay or fail the scan the user is standing there waiting for. Only
+  /// the verdict and summary go out — never the message itself.
+  void _maybeAlertFamily(AnalysisResult result) {
+    final isDangerous = result.classification == ScamClassification.scam ||
+        (result.classification == ScamClassification.suspicious && result.riskScore >= 60);
+    if (!isDangerous) return;
+
+    CloudAccountService.raiseAlert(
+      classification: result.classification.name,
+      riskScore: result.riskScore,
+      summary: result.summary,
+    );
   }
 
   /// A URL/link is a stable enough indicator to crowdsource against — free
@@ -230,6 +252,20 @@ class _ScanScreenState extends State<ScanScreen>
       MaterialPageRoute(builder: (_) => const QrScanScreen()),
     );
     if (!mounted || decoded == null || decoded.isEmpty) return;
+
+    // A UPI payment QR gets the dedicated pre-payment check rather than being
+    // dropped into the text box: the payee handle is the thing that needs
+    // verifying, and it needs verifying *before* the payment app opens.
+    final upi = UpiParser.tryParse(decoded);
+    if (upi != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => UpiVerifyScreen(request: upi, rawPayload: decoded),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _activeTab = 1; // QR payloads are almost always a URL/UPI link
       _controller.text = decoded;

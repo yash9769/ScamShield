@@ -3,12 +3,15 @@ import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import '../services/settings_service.dart';
+import '../services/sms_screening_service.dart';
 import '../services/auth_service.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
 import 'login_screen.dart';
 import 'history_screen.dart';
 import 'privacy_settings_screen.dart';
+import 'family_screen.dart';
+import 'trends_screen.dart';
 import '../services/data_change_notifier.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -140,6 +143,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _onToggleSmsScreening(bool wantsOn) async {
+    if (!wantsOn) {
+      await SmsScreeningService.disable();
+      return;
+    }
+
+    // A sensitive permission deserves an explanation before the system
+    // prompt, not just after a denial.
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.sms_outlined, color: AppColors.primary),
+            SizedBox(width: 8),
+            Expanded(child: Text('Read incoming SMS?')),
+          ],
+        ),
+        content: const Text(
+          'ScamShield will screen each incoming text message for scam content the '
+          'moment it arrives, using the same engine as manual scans, and alert you '
+          'if one looks dangerous. Message text stays on this device and is never '
+          'sent anywhere except to the same AI analysis service manual scans use.\n\n'
+          'This does not make ScamShield your messaging app — it just watches '
+          'alongside it.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not now', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Allow', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+
+    final granted = await SmsScreeningService.requestPermissionAndEnable();
+    if (!mounted) return;
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('SMS permission was not granted, so real-time protection stays off.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.surfaceLight,
+        ),
+      );
+    }
+  }
+
   void _showSignOutDialog() {
     showDialog(
       context: context,
@@ -263,6 +323,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onChanged: (v) => SettingsService.setAutoScanClipboard(v),
                 ),
               ),
+              ValueListenableBuilder<bool>(
+                valueListenable: SmsScreeningService.isActive,
+                builder: (ctx, active, _) => _buildSettingItem(
+                  Icons.sms_outlined,
+                  'Real-Time SMS Protection',
+                  'Screen incoming texts for scams the moment they arrive',
+                  hasSwitch: true,
+                  switchValue: active,
+                  onChanged: _onToggleSmsScreening,
+                ),
+              ),
               _buildSettingItem(
                 Icons.history,
                 'Scan History',
@@ -279,6 +350,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Reveal(
               delay: Reveal.step(5),
               child: _buildSettingsList([
+              _buildSettingItem(
+                Icons.family_restroom,
+                'Family Protection',
+                'Get alerted when a relative scans something dangerous',
+                hasSwitch: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FamilyScreen())),
+              ),
+              _buildSettingItem(
+                Icons.trending_up,
+                'Scam Trends',
+                'What the community is reporting this week',
+                hasSwitch: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrendsScreen())),
+              ),
               _buildSettingItem(
                 Icons.privacy_tip_outlined,
                 'Privacy & Data',

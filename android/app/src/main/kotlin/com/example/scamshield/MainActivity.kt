@@ -4,14 +4,42 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import org.json.JSONArray
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.scamshield/security"
+    private val SMS_METHOD_CHANNEL = "com.example.scamshield/sms"
+    private val SMS_EVENT_CHANNEL = "com.example.scamshield/sms_stream"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Live messages: delivered here whenever the app process is alive,
+        // regardless of which screen is in front.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, SMS_EVENT_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    SmsScreeningBridge.attach(events)
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    SmsScreeningBridge.attach(null)
+                }
+            })
+
+        // Queued messages: anything that arrived while no engine was running
+        // to receive the live event above.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SMS_METHOD_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "drainQueuedMessages" -> result.success(drainQueuedSms())
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "checkDeviceIntegrity") {
                 val isRooted = checkRootMethod1() || checkRootMethod2()
@@ -70,5 +98,20 @@ class MainActivity : FlutterActivity() {
                 || android.os.Build.MANUFACTURER.contains("Genymotion")
                 || android.os.Build.BRAND.startsWith("generic") && android.os.Build.DEVICE.startsWith("generic")
                 || "google_sdk" == android.os.Build.PRODUCT)
+    }
+
+    /** Reads and clears whatever [SmsScreeningReceiver] queued while the app
+     * process was not running, returning it as a JSON array string. */
+    private fun drainQueuedSms(): String {
+        val prefs = getSharedPreferences(SmsScreeningReceiver.PREFS, Context.MODE_PRIVATE)
+        val pending = prefs.getString(SmsScreeningReceiver.KEY_PENDING, "[]") ?: "[]"
+        prefs.edit().remove(SmsScreeningReceiver.KEY_PENDING).apply()
+        return try {
+            // Round-trip through JSONArray to fail closed on corrupt prefs
+            // data rather than handing Dart a string it can't parse.
+            JSONArray(pending).toString()
+        } catch (e: Exception) {
+            "[]"
+        }
     }
 }
