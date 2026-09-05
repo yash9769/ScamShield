@@ -17,6 +17,7 @@ from app.utils.file_utils import temp_image_file, validate_image_file
 
 logger = get_logger(__name__)
 router = APIRouter()
+_settings = get_settings()
 
 
 @router.post(
@@ -36,7 +37,7 @@ router = APIRouter()
         503: {"description": "EasyOCR service unavailable"},
     },
 )
-@limiter.limit("10/minute")
+@limiter.limit(_settings.RATE_LIMIT_IMAGE)
 async def analyze_image(
     request: Request,
     file: UploadFile = File(..., description="Image or PDF file to scan for scam text"),

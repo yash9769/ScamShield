@@ -2,6 +2,7 @@
 // Production-grade file scanning service with real permission handling.
 
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -252,13 +253,16 @@ class FileScannerService {
     return true;
   }
 
+  static int? _cachedSdkInt;
+
   static Future<int> _getAndroidSdkInt() async {
+    if (_cachedSdkInt != null) return _cachedSdkInt!;
     try {
-      // Simple heuristic: check if READ_MEDIA_IMAGES is in the manifest
-      // For a production app you'd use device_info_plus here.
-      // We default to 33 to use granular permissions (safe for modern devices).
-      return 33;
+      final info = await DeviceInfoPlugin().androidInfo;
+      _cachedSdkInt = info.version.sdkInt;
+      return _cachedSdkInt!;
     } catch (_) {
+      // Fall back to granular permissions (safe default for modern devices).
       return 33;
     }
   }

@@ -1,12 +1,15 @@
 import yaml
 import os
 import logging
+from pathlib import Path
 from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_CONFIG_PATH = str(Path(__file__).resolve().parent.parent / "config" / "risk_weights.yaml")
+
 class RiskEngine:
-    def __init__(self, config_path: str = "/app/app/config/risk_weights.yaml"):
+    def __init__(self, config_path: str = _DEFAULT_CONFIG_PATH):
         self.weights = self._load_weights(config_path)
 
     def _load_weights(self, path: str) -> Dict[str, Any]:

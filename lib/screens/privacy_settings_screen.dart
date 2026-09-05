@@ -96,11 +96,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
     setState(() => _busy = true);
     await _dataPrivacyService.deleteAllScanAndVaultData();
+    if (!mounted) return;
     setState(() => _busy = false);
-    if (mounted) _showSnack('Your scan history, Safe Vault and reports have been deleted.');
+    _showSnack('Your scan history, Safe Vault and reports have been deleted.');
   }
 
   Future<void> _confirmDeleteAccount() async {
@@ -173,11 +174,11 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
     setState(() => _busy = true);
     await _dataPrivacyService.deleteAccountAndAllData();
-    setState(() => _busy = false);
     if (!mounted) return;
+    setState(() => _busy = false);
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),

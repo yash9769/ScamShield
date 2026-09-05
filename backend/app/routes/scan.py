@@ -47,7 +47,7 @@ MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB
 
 @router.post("/scan")
 async def upload_apk(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    if not file.filename.endswith('.apk'):
+    if not (file.filename or "").endswith('.apk'):
         raise HTTPException(status_code=400, detail="Only APK files are allowed.")
     
     # 1. Save File Securely
@@ -213,6 +213,18 @@ async def upload_apk(file: UploadFile = File(...), db: AsyncSession = Depends(ge
         await progress_svc.update_progress(report_id, "Completed", 100)
         return JSONResponse(content=analysis_data)
         
+    except HTTPException:
+        # Update DB status, then re-raise the original status code (e.g. 413)
+        # instead of masking it as a 500.
+        try:
+            result = await db.execute(select(Scan).where(Scan.id == report_id))
+            fail_scan = result.scalars().first()
+            if fail_scan:
+                fail_scan.status = "failed"
+                await db.commit()
+        except Exception:
+            pass
+        raise
     except Exception as e:
         logger.error(f"Error processing upload: {e}")
         # Update DB status
@@ -222,12 +234,22 @@ async def upload_apk(file: UploadFile = File(...), db: AsyncSession = Depends(ge
             if fail_scan:
                 fail_scan.status = "failed"
                 await db.commit()
-        except:
+        except Exception:
             pass
         raise HTTPException(status_code=500, detail=str(e))
 
+_REPORT_ID_RE = re.compile(r"^[0-9a-fA-F-]{36}$")
+
+
+def _validate_report_id(report_id: str) -> None:
+    """Reject anything that isn't a plain UUID before it's used to build a filesystem path."""
+    if not _REPORT_ID_RE.match(report_id):
+        raise HTTPException(status_code=400, detail="Invalid report id")
+
+
 @router.get("/scan/{report_id}")
 async def get_report(report_id: str, db: AsyncSession = Depends(get_db)):
+    _validate_report_id(report_id)
     # Serve JSON from file or DB
     json_path = os.path.join("/app/reports", f"{report_id}.json")
     if os.path.exists(json_path):
@@ -238,6 +260,7 @@ async def get_report(report_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.delete("/scan/{report_id}")
 async def delete_report(report_id: str, db: AsyncSession = Depends(get_db)):
+    _validate_report_id(report_id)
     result = await db.execute(select(Scan).where(Scan.id == report_id))
     scan = result.scalars().first()
     if not scan:

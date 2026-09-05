@@ -17,6 +17,7 @@ from app.utils.file_utils import temp_audio_file, validate_audio_file
 
 logger = get_logger(__name__)
 router = APIRouter()
+_settings = get_settings()
 
 
 @router.post(
@@ -36,7 +37,7 @@ router = APIRouter()
         503: {"description": "Whisper service unavailable"},
     },
 )
-@limiter.limit("10/minute")
+@limiter.limit(_settings.RATE_LIMIT_VOICE)
 async def analyze_voice(
     request: Request,
     file: UploadFile = File(..., description="Audio file to transcribe and analyse"),

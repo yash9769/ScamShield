@@ -99,6 +99,7 @@ class _ScanScreenState extends State<ScanScreen>
 
   Future<void> _pasteFromClipboard() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
     if (data?.text != null && data!.text!.isNotEmpty) {
       _controller.text = data.text!;
       _controller.selection = TextSelection.fromPosition(

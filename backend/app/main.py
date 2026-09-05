@@ -72,11 +72,15 @@ def create_app() -> FastAPI:
 
     # ── Middleware ────────────────────────────────────────────────────────────
 
-    # CORS — restrict in production via ALLOWED_ORIGINS env var
+    # CORS — restrict in production via ALLOWED_ORIGINS env var.
+    # Wildcard origins ("*") combined with allow_credentials=True lets
+    # CORSMiddleware reflect back any Origin header with credentials allowed,
+    # so credentials are only enabled when an explicit origin list is configured.
+    wildcard_origins = "*" in settings.ALLOWED_ORIGINS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
-        allow_credentials=True,
+        allow_credentials=not wildcard_origins,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
         max_age=600,

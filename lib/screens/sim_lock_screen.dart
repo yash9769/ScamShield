@@ -229,11 +229,11 @@ class _SimLockScreenState extends State<SimLockScreen> {
     return SizedBox(
       height: 52,
       child: ElevatedButton.icon(
-        onPressed: () {
+        onPressed: () async {
           try {
-            AppSettings.openAppSettings(type: AppSettingsType.security);
+            await AppSettings.openAppSettings(type: AppSettingsType.security);
           } catch (_) {
-            AppSettings.openAppSettings();
+            await AppSettings.openAppSettings();
           }
         },
         icon: const Icon(Icons.settings, color: Colors.black),

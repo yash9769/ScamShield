@@ -27,7 +27,7 @@ class OSINTService:
 
     async def _get_cache(self, indicator: str) -> Optional[Dict[str, Any]]:
         result = await self.db.execute(
-            select(CachedOSINT).where(CachedOSINT.indicator == indicator)
+            select(CachedOSINT).where(CachedOSINT.ioc_value == indicator)
         )
         cached = result.scalars().first()
         if cached:
@@ -43,8 +43,8 @@ class OSINTService:
     async def _set_cache(self, indicator: str, i_type: str, data: Dict[str, Any]):
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.OSINT_CACHE_TTL)
         cached = CachedOSINT(
-            indicator=indicator,
-            type=i_type,
+            ioc_value=indicator,
+            ioc_type=i_type,
             data=data,
             expires_at=expires_at
         )

@@ -155,6 +155,11 @@ class AIEngine:
             },
         )
 
+        # Sort by impact before capping so the highest-signal reasons (e.g. a
+        # malicious-URL warning appended above) always survive the truncation,
+        # instead of a naive front-slice dropping them if the list is already full.
+        reasons = sorted(reasons, key=lambda r: r.scoreContribution, reverse=True)
+
         return AnalysisResult(
             classification=classification,
             riskScore=final_score_int,

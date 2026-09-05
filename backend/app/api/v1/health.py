@@ -27,9 +27,28 @@ _START_TIME = time.monotonic()
     "/health",
     summary="Health Check",
     tags=["System"],
+    response_model=HealthResponse,
 )
-async def health_check(request: Request) -> dict:
-    return {"status": "ok"}
+async def health_check(request: Request) -> HealthResponse:
+    settings = get_settings()
+    redis_status = await _check_redis(settings.REDIS_URL)
+
+    api_status = {
+        "gemini": {"available": gemini_service.available},
+        "whisper": {"available": voice_service.available},
+        "easyocr": {"available": ocr_service.available},
+        "redis": redis_status,
+    }
+
+    critical_services_up = redis_status.get("available", False)
+    status = "healthy" if critical_services_up else "degraded"
+
+    return HealthResponse(
+        status=status,
+        version=settings.VERSION,
+        uptime_seconds=time.monotonic() - _START_TIME,
+        api_status=api_status,
+    )
 
 
 async def _check_redis(redis_url: str) -> dict:
