@@ -15,6 +15,7 @@ import 'family_screen.dart';
 import 'trends_screen.dart';
 import 'language_screen.dart';
 import '../services/localization_service.dart';
+import '../services/simple_mode_service.dart';
 import '../services/data_change_notifier.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -288,6 +289,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _onToggleSimpleMode(bool wantsOn) async {
+    if (!wantsOn) {
+      await SimpleModeService.setEnabled(false);
+      return;
+    }
+
+    // Worth explaining before switching: this replaces the whole interface,
+    // and someone turning it on for a parent should know what that parent will
+    // actually see.
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.accessibility_new, color: AppColors.primary),
+            SizedBox(width: 8),
+            Expanded(child: Text('Turn on Simple Mode?')),
+          ],
+        ),
+        content: const Text(
+          'The app becomes a single screen: paste a message, press one button, '
+          'and get a large, plain-language answer that says what to do — no '
+          'tabs, no risk scores, no jargon.\n\n'
+          'Scanning works exactly the same underneath. You can switch back at '
+          'any time from a link at the bottom of that screen.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not now', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Turn on', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true) return;
+    await SimpleModeService.setEnabled(true);
+  }
+
   void _showSignOutDialog() {
     showDialog(
       context: context,
@@ -452,6 +499,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Reveal(
               delay: Reveal.step(5),
               child: _buildSettingsList([
+              ValueListenableBuilder<bool>(
+                valueListenable: SimpleModeService.enabled,
+                builder: (ctx, simple, _) => _buildSettingItem(
+                  Icons.accessibility_new,
+                  'Simple Mode',
+                  'One big button, plain-language warnings, no jargon',
+                  hasSwitch: true,
+                  switchValue: simple,
+                  onChanged: _onToggleSimpleMode,
+                ),
+              ),
               _buildSettingItem(
                 Icons.language,
                 LocalizationService.tr('language_title'),
