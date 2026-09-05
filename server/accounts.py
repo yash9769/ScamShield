@@ -153,6 +153,24 @@ def init_accounts_db() -> None:
                     PRIMARY KEY (family_id, user_id)
                 );
 
+                CREATE TABLE IF NOT EXISTS push_tokens (
+                    token       TEXT PRIMARY KEY,
+                    user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    platform    TEXT NOT NULL DEFAULT 'android',
+                    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_push_user ON push_tokens(user_id);
+
+                CREATE TABLE IF NOT EXISTS learning_progress (
+                    user_id        TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    total_points   INTEGER NOT NULL DEFAULT 0,
+                    streak_days    INTEGER NOT NULL DEFAULT 0,
+                    badges_earned  INTEGER NOT NULL DEFAULT 0,
+                    quizzes_passed INTEGER NOT NULL DEFAULT 0,
+                    articles_read  INTEGER NOT NULL DEFAULT 0,
+                    updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
                 CREATE TABLE IF NOT EXISTS family_alerts (
                     id             TEXT PRIMARY KEY,
                     family_id      TEXT NOT NULL REFERENCES families(id) ON DELETE CASCADE,
@@ -382,6 +400,34 @@ class FamilyAlertRequest(BaseModel):
     classification: str = Field(..., max_length=20)
     risk_score: int = 0
     summary: str = Field(default="", max_length=500)
+
+
+class PushTokenRequest(BaseModel):
+    token: str = Field(..., min_length=10, max_length=512)
+    platform: str = Field(default="android", max_length=16)
+
+
+class LearningProgressRequest(BaseModel):
+    total_points: int = Field(default=0, ge=0, le=1_000_000)
+    streak_days: int = Field(default=0, ge=0, le=10_000)
+    badges_earned: int = Field(default=0, ge=0, le=1000)
+    quizzes_passed: int = Field(default=0, ge=0, le=100_000)
+    articles_read: int = Field(default=0, ge=0, le=100_000)
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    display_name: str
+    total_points: int
+    streak_days: int
+    badges_earned: int
+    is_you: bool = False
+
+
+class LeaderboardResponse(BaseModel):
+    scope: str
+    entries: List[LeaderboardEntry] = Field(default_factory=list)
+    your_rank: Optional[int] = None
 
 
 class TrendItem(BaseModel):
@@ -783,6 +829,19 @@ async def raise_family_alert(body: FamilyAlertRequest, user: CurrentUser = Depen
            VALUES (?, ?, ?, ?, ?, ?)""",
         (alert_id, fam["id"], user.id, body.classification, body.risk_score, body.summary),
     )
+
+    # Wake the family's other devices. Awaited rather than fire-and-forget so a
+    # slow provider can't outlive the request scope, but it swallows its own
+    # errors: the alert row above is the source of truth, and the app picks it
+    # up on next open whether or not the push landed.
+    who = user.display_name or "A family member"
+    await _dispatch_family_push(
+        fam["id"],
+        user.id,
+        title=f"{who} may have been targeted",
+        body_text=f"{body.classification} · risk {body.risk_score}/100. Tap to review.",
+    )
+
     return FamilyAlertOut(
         id=alert_id,
         from_display=user.display_name or user.email,
@@ -791,6 +850,210 @@ async def raise_family_alert(body: FamilyAlertRequest, user: CurrentUser = Depen
         summary=body.summary,
         acknowledged=False,
     )
+
+
+# ── Push notifications ────────────────────────────────────────────────────────
+
+@router.post("/push/register")
+async def register_push_token(body: PushTokenRequest, user: CurrentUser = Depends(require_user)):
+    """Registers this device's FCM token so family alerts can reach it.
+
+    Keyed on the token itself, so a token that moves between accounts (a
+    handed-on phone) is reassigned rather than duplicated — otherwise the
+    previous owner would keep receiving the new owner's alerts.
+    """
+    await _aquery(
+        """INSERT INTO push_tokens (token, user_id, platform, updated_at)
+           VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(token) DO UPDATE SET
+               user_id    = excluded.user_id,
+               platform   = excluded.platform,
+               updated_at = CURRENT_TIMESTAMP""",
+        (body.token, user.id, body.platform),
+    )
+    return {"registered": True}
+
+
+@router.delete("/push/register")
+async def unregister_push_token(body: PushTokenRequest, user: CurrentUser = Depends(require_user)):
+    await _aquery(
+        "DELETE FROM push_tokens WHERE token = ? AND user_id = ?", (body.token, user.id)
+    )
+    return {"unregistered": True}
+
+
+async def _dispatch_family_push(
+    family_id: str,
+    sender_user_id: str,
+    title: str,
+    body_text: str,
+) -> int:
+    """Best-effort FCM fan-out to a family's other devices.
+
+    Returns the number of tokens attempted. Never raises: a push provider
+    being unreachable must not fail the alert itself, which is already
+    durably stored and will be seen next time the app opens.
+
+    Sending requires FCM_SERVICE_ACCOUNT_FILE to point at a Firebase service
+    account JSON. Without it this is a no-op — the legacy FCM server-key API
+    was shut down in 2024, so there is no keyless path any more.
+    """
+    rows = await _aquery(
+        """SELECT p.token FROM push_tokens p
+           JOIN family_members m ON m.user_id = p.user_id
+           WHERE m.family_id = ? AND p.user_id != ?""",
+        (family_id, sender_user_id),
+        fetch="all",
+    ) or []
+    tokens = [r["token"] for r in rows]
+    if not tokens:
+        return 0
+
+    service_account_file = os.getenv("FCM_SERVICE_ACCOUNT_FILE", "")
+    if not service_account_file:
+        logger.info(
+            "Family push skipped for %d device(s): FCM_SERVICE_ACCOUNT_FILE not set.",
+            len(tokens),
+        )
+        return 0
+
+    try:
+        access_token, project_id = await asyncio.to_thread(
+            _fcm_access_token, service_account_file
+        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for token in tokens:
+                await client.post(
+                    f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    json={
+                        "message": {
+                            "token": token,
+                            "notification": {"title": title, "body": body_text},
+                            "android": {"priority": "high"},
+                            "data": {"type": "family_alert", "family_id": family_id},
+                        }
+                    },
+                )
+    except Exception as e:
+        logger.warning(f"Family push dispatch failed: {e}")
+
+    return len(tokens)
+
+
+def _fcm_access_token(service_account_file: str) -> tuple[str, str]:
+    """Mints a short-lived FCM access token from a service account JSON.
+
+    Imported lazily so the whole accounts module doesn't require google-auth
+    just to run without push configured.
+    """
+    from google.oauth2 import service_account  # type: ignore
+    from google.auth.transport.requests import Request  # type: ignore
+
+    credentials = service_account.Credentials.from_service_account_file(
+        service_account_file,
+        scopes=["https://www.googleapis.com/auth/firebase.messaging"],
+    )
+    credentials.refresh(Request())
+    return credentials.token, credentials.project_id
+
+
+# ── Learning progress & leaderboard ──────────────────────────────────────────
+
+@router.post("/learning/progress")
+async def sync_learning_progress(
+    body: LearningProgressRequest, user: CurrentUser = Depends(require_user)
+):
+    """Mirrors the device's local learning progress so it can be ranked.
+
+    The device stays the source of truth — this is a one-way push of an
+    already-computed summary, not a second progress engine that could
+    disagree with what the user sees in the Learn tab.
+    """
+    await _aquery(
+        """INSERT INTO learning_progress
+               (user_id, total_points, streak_days, badges_earned, quizzes_passed,
+                articles_read, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(user_id) DO UPDATE SET
+               total_points   = excluded.total_points,
+               streak_days    = excluded.streak_days,
+               badges_earned  = excluded.badges_earned,
+               quizzes_passed = excluded.quizzes_passed,
+               articles_read  = excluded.articles_read,
+               updated_at     = CURRENT_TIMESTAMP""",
+        (
+            user.id, body.total_points, body.streak_days, body.badges_earned,
+            body.quizzes_passed, body.articles_read,
+        ),
+    )
+    return {"synced": True}
+
+
+@router.get("/learning/leaderboard", response_model=LeaderboardResponse)
+async def learning_leaderboard(
+    scope: str = "family", user: CurrentUser = Depends(require_user)
+):
+    """Ranks learners by points, within the caller's family or globally.
+
+    Family scope may show an email as a fallback label — those people already
+    know each other. Global scope never does: it falls back to a generic
+    label instead, because a leaderboard is not a reason to expose a
+    stranger's email address to everyone with an account.
+    """
+    if scope not in ("family", "global"):
+        raise HTTPException(400, "scope must be 'family' or 'global'.")
+
+    if scope == "family":
+        fam = await _family_for_user(user.id)
+        if fam is None:
+            return LeaderboardResponse(scope=scope, entries=[], your_rank=None)
+        rows = await _aquery(
+            """SELECT u.id, u.email, u.display_name, p.total_points, p.streak_days,
+                      p.badges_earned
+               FROM learning_progress p
+               JOIN users u ON u.id = p.user_id
+               JOIN family_members m ON m.user_id = p.user_id
+               WHERE m.family_id = ?
+               ORDER BY p.total_points DESC, p.streak_days DESC
+               LIMIT 50""",
+            (fam["id"],),
+            fetch="all",
+        ) or []
+    else:
+        rows = await _aquery(
+            """SELECT u.id, u.email, u.display_name, p.total_points, p.streak_days,
+                      p.badges_earned
+               FROM learning_progress p
+               JOIN users u ON u.id = p.user_id
+               ORDER BY p.total_points DESC, p.streak_days DESC
+               LIMIT 50""",
+            (),
+            fetch="all",
+        ) or []
+
+    entries: List[LeaderboardEntry] = []
+    your_rank: Optional[int] = None
+    for index, row in enumerate(rows, start=1):
+        is_you = row["id"] == user.id
+        if is_you:
+            your_rank = index
+        if scope == "family":
+            label = row["display_name"] or row["email"]
+        else:
+            label = row["display_name"] or "ScamShield user"
+        entries.append(
+            LeaderboardEntry(
+                rank=index,
+                display_name=label,
+                total_points=row["total_points"],
+                streak_days=row["streak_days"],
+                badges_earned=row["badges_earned"],
+                is_you=is_you,
+            )
+        )
+
+    return LeaderboardResponse(scope=scope, entries=entries, your_rank=your_rank)
 
 
 @router.post("/family/alert/{alert_id}/ack")
