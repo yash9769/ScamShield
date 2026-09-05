@@ -67,6 +67,10 @@ dependencies:
   # conditional Gradle plugin.
   firebase_core: ^4.14.0
   firebase_messaging: ^16.6.0
+  # AES-256-GCM + PBKDF2 for encrypted local backups. The `crypto` package
+  # above only hashes; this is the symmetric encryption Flutter has no
+  # built-in equivalent for. Pure Dart with no platform setup required.
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:
