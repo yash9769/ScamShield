@@ -13,6 +13,8 @@ import 'history_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'family_screen.dart';
 import 'trends_screen.dart';
+import 'language_screen.dart';
+import '../services/localization_service.dart';
 import '../services/data_change_notifier.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -450,6 +452,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Reveal(
               delay: Reveal.step(5),
               child: _buildSettingsList([
+              _buildSettingItem(
+                Icons.language,
+                LocalizationService.tr('language_title'),
+                LocalizationService.current.nativeName,
+                hasSwitch: false,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen()))
+                    .then((_) => setState(() {})),
+              ),
               _buildSettingItem(
                 Icons.family_restroom,
                 'Family Protection',

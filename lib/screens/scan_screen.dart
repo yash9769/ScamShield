@@ -9,6 +9,7 @@ import '../services/share_intent_service.dart';
 import '../services/community_report_service.dart';
 import '../services/cloud_account_service.dart';
 import '../services/verdict_feedback_service.dart';
+import '../services/localization_service.dart';
 import '../data/models/scan_record.dart';
 import '../services/upi_parser.dart';
 import '../data/repositories/scan_repository.dart';
@@ -138,7 +139,7 @@ class _ScanScreenState extends State<ScanScreen>
   Future<void> _analyze({String? source}) async {
     final text = _controller.text.trim();
     if (text.isEmpty) {
-      _showSnackBar('Please enter some text or link to analyze.', isError: true);
+      _showSnackBar(LocalizationService.tr('scan_empty_input'), isError: true);
       return;
     }
 
@@ -307,14 +308,14 @@ class _ScanScreenState extends State<ScanScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Threat Scanner', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text(LocalizationService.tr('scan_title'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         centerTitle: false,
         actions: [
           if (_result != null || _controller.text.isNotEmpty)
             TextButton.icon(
               onPressed: _clearAll,
               icon: const Icon(Icons.refresh, color: AppColors.primary, size: 16),
-              label: const Text('CLEAR', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+              label: Text(LocalizationService.tr('scan_clear'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
             ),
           const SizedBox(width: 8),
         ],
@@ -609,7 +610,9 @@ class _ScanScreenState extends State<ScanScreen>
                     Row(
                       children: [
                         Text(
-                          r.classification.name.toUpperCase(),
+                          // Translated, not `r.classification.name` upcased:
+                          // this is the one line the user has to understand.
+                          LocalizationService.tr('verdict_${r.classification.name}'),
                           style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1),
                         ),
                         const SizedBox(width: 8),
@@ -622,19 +625,19 @@ class _ScanScreenState extends State<ScanScreen>
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text('Risk Score: ${r.riskScore}/100', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text('${LocalizationService.tr('scan_risk_score')}: ${r.riskScore}/100', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const Text('SECURITY SUMMARY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+          Text(LocalizationService.tr('scan_summary'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
           const SizedBox(height: 6),
           Text(r.summary, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textPrimary)),
           if (r.reasons.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text('DETECTED RISK FACTORS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+            Text(LocalizationService.tr('scan_factors'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
             const SizedBox(height: 10),
             ...r.reasons.asMap().entries.map((entry) => Reveal(
               delay: Reveal.step(entry.key, baseMs: 120),
@@ -716,9 +719,7 @@ class _ScanScreenState extends State<ScanScreen>
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    _feedbackGiven == VerdictAgreement.correct
-                        ? 'Thanks — that confirms the call was right.'
-                        : 'Thanks. Corrections like this are what improve the detection.',
+                    LocalizationService.tr('feedback_thanks'),
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
                   ),
                 ),
@@ -727,21 +728,21 @@ class _ScanScreenState extends State<ScanScreen>
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'WAS THIS RIGHT?',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
+                Text(
+                  LocalizationService.tr('feedback_prompt'),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Only the verdict and a fingerprint of the text are sent — never the message itself.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                Text(
+                  LocalizationService.tr('feedback_privacy'),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: _feedbackButton(
-                        label: 'Correct',
+                        label: LocalizationService.tr('feedback_correct'),
                         icon: Icons.thumb_up_outlined,
                         color: AppColors.success,
                         agreement: VerdictAgreement.correct,
@@ -756,13 +757,13 @@ class _ScanScreenState extends State<ScanScreen>
                       // the user work out which one applies.
                       child: flagged
                           ? _feedbackButton(
-                              label: "It's legitimate",
+                              label: LocalizationService.tr('feedback_legit'),
                               icon: Icons.verified_outlined,
                               color: AppColors.warning,
                               agreement: VerdictAgreement.falsePositive,
                             )
                           : _feedbackButton(
-                              label: 'It was a scam',
+                              label: LocalizationService.tr('feedback_was_scam'),
                               icon: Icons.report_gmailerrorred_outlined,
                               color: AppColors.danger,
                               agreement: VerdictAgreement.missed,
