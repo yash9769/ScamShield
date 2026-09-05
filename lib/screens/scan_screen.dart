@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/share_intent_service.dart';
 import '../services/community_report_service.dart';
 import '../services/cloud_account_service.dart';
+import '../services/verdict_feedback_service.dart';
 import '../data/models/scan_record.dart';
 import '../services/upi_parser.dart';
 import '../data/repositories/scan_repository.dart';
@@ -38,6 +39,13 @@ class _ScanScreenState extends State<ScanScreen>
   ReputationResult? _reputation;
   bool _reportSubmitting = false;
   bool _reportSubmitted = false;
+
+  // Verdict feedback — "was this right?". Held per result rather than
+  // persisted: the point is to catch the user's reaction while the verdict is
+  // still in front of them.
+  String? _analyzedText;
+  VerdictAgreement? _feedbackGiven;
+  bool _feedbackSending = false;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -119,6 +127,10 @@ class _ScanScreenState extends State<ScanScreen>
         _reportableUrl = null;
         _reputation = null;
         _reportSubmitted = false;
+        // The OCR'd text isn't surfaced here, so there is nothing stable to
+        // hash — feedback is offered on text and link scans only.
+        _analyzedText = null;
+        _feedbackGiven = null;
       });
     }
   }
@@ -165,6 +177,8 @@ class _ScanScreenState extends State<ScanScreen>
         _reportableUrl = null;
         _reputation = null;
         _reportSubmitted = false;
+        _analyzedText = text;
+        _feedbackGiven = null;
       });
       _maybeCheckCommunityReputation(text);
     }
@@ -231,6 +245,8 @@ class _ScanScreenState extends State<ScanScreen>
       _reportableUrl = null;
       _reputation = null;
       _reportSubmitted = false;
+      _analyzedText = null;
+      _feedbackGiven = null;
     });
   }
 
@@ -316,6 +332,10 @@ class _ScanScreenState extends State<ScanScreen>
             const SizedBox(height: 20),
             if (_isAnalyzing) _buildAnalyzingWidget(),
             if (_result != null && !_isAnalyzing) Reveal(child: _buildResultCard()),
+            if (_result != null && !_isAnalyzing && _analyzedText != null) ...[
+              const SizedBox(height: 12),
+              Reveal(child: _buildFeedbackSection()),
+            ],
             if (_result != null && !_isAnalyzing && _reportableUrl != null) ...[
               const SizedBox(height: 12),
               Reveal(child: _buildCommunitySection()),
@@ -645,6 +665,134 @@ class _ScanScreenState extends State<ScanScreen>
             ))),
           ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _submitFeedback(VerdictAgreement agreement) async {
+    final text = _analyzedText;
+    final result = _result;
+    if (text == null || result == null || _feedbackSending) return;
+
+    setState(() => _feedbackSending = true);
+    final ok = await VerdictFeedbackService.submit(
+      text: text,
+      classification: result.classification.name,
+      riskScore: result.riskScore,
+      agreement: agreement,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _feedbackSending = false;
+      // Only claim it landed if it actually did — a thank-you for something
+      // that never left the device is worse than an error.
+      _feedbackGiven = ok ? agreement : null;
+    });
+    if (!ok) {
+      _showSnackBar("Couldn't send that just now. Your scan is unaffected.", isError: true);
+    }
+  }
+
+  /// "Was this right?" — the one thing the detection pipeline cannot work out
+  /// on its own. A false positive on a real bank SMS is invisible to us unless
+  /// the person who received it says so.
+  Widget _buildFeedbackSection() {
+    final r = _result!;
+    final flagged = r.classification != ScamClassification.safe;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+      ),
+      child: _feedbackGiven != null
+          ? Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _feedbackGiven == VerdictAgreement.correct
+                        ? 'Thanks — that confirms the call was right.'
+                        : 'Thanks. Corrections like this are what improve the detection.',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'WAS THIS RIGHT?',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Only the verdict and a fingerprint of the text are sent — never the message itself.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _feedbackButton(
+                        label: 'Correct',
+                        icon: Icons.thumb_up_outlined,
+                        color: AppColors.success,
+                        agreement: VerdictAgreement.correct,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      // The useful wrong answer differs by verdict: on a
+                      // flagged message the mistake worth reporting is "this
+                      // is actually fine", and on a safe one it is "this was
+                      // actually a scam". Offering both every time just makes
+                      // the user work out which one applies.
+                      child: flagged
+                          ? _feedbackButton(
+                              label: "It's legitimate",
+                              icon: Icons.verified_outlined,
+                              color: AppColors.warning,
+                              agreement: VerdictAgreement.falsePositive,
+                            )
+                          : _feedbackButton(
+                              label: 'It was a scam',
+                              icon: Icons.report_gmailerrorred_outlined,
+                              color: AppColors.danger,
+                              agreement: VerdictAgreement.missed,
+                            ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _feedbackButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VerdictAgreement agreement,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: _feedbackSending ? null : () => _submitFeedback(agreement),
+      icon: Icon(icon, size: 16, color: color),
+      label: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        side: BorderSide(color: color.withValues(alpha: 0.4)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

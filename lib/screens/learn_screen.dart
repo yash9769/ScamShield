@@ -3,6 +3,7 @@ import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import 'learning_module_screen.dart';
+import 'leaderboard_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -228,6 +229,8 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Reveal(delay: Reveal.step(0), child: _buildVigilanceScore()),
+            const SizedBox(height: 12),
+            Reveal(delay: Reveal.step(1), child: _buildLeaderboardLink()),
             const SizedBox(height: 28),
             Reveal(
               delay: Reveal.step(1),
@@ -308,6 +311,50 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
           const SizedBox(height: 4),
           const Text('Complete scenarios to level up your threat awareness rating.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLeaderboardLink() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.emoji_events_outlined, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Leaderboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  SizedBox(height: 2),
+                  Text(
+                    'See how your streak stacks up against your family and everyone else',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5, height: 1.35),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+          ],
+        ),
       ),
     );
   }
