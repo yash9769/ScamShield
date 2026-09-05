@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/scam_detector.dart';
 import '../services/api_service.dart';
+import '../services/share_intent_service.dart';
+import '../services/community_report_service.dart';
 import '../data/models/scan_record.dart';
 import '../data/repositories/scan_repository.dart';
+import 'qr_scan_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -25,6 +29,13 @@ class _ScanScreenState extends State<ScanScreen>
 
   int _activeTab = 0; // 0 = Message/Text, 1 = Link/URL
 
+  // Community reporting — only meaningful for a URL, so this is populated
+  // from the Link/URL tab and cleared whenever the input changes.
+  String? _reportableUrl;
+  ReputationResult? _reputation;
+  bool _reportSubmitting = false;
+  bool _reportSubmitted = false;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -39,17 +50,77 @@ class _ScanScreenState extends State<ScanScreen>
     _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    ShareIntentService.pending.addListener(_onSharedContent);
+    // Handle content shared before this screen instance existed (e.g. a
+    // cold-start share landed while MainNavigation was still building).
+    // Deferred to after the first frame so it's safe to call setState.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onSharedContent());
   }
 
   @override
   void dispose() {
+    ShareIntentService.pending.removeListener(_onSharedContent);
     _controller.dispose();
     _focusNode.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
-  Future<void> _analyze() async {
+  void _onSharedContent() {
+    final request = ShareIntentService.pending.value;
+    if (request == null) return;
+    ShareIntentService.consume();
+
+    switch (request.kind) {
+      case SharedScanKind.text:
+        final isLink = request.value.startsWith('http://') || request.value.startsWith('https://');
+        setState(() {
+          _activeTab = isLink ? 1 : 0;
+          _controller.text = request.value;
+          _controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: _controller.text.length),
+          );
+        });
+        _analyze(source: 'Shared');
+        break;
+      case SharedScanKind.image:
+        setState(() => _activeTab = 3);
+        _analyzeSharedImage(request.value);
+        break;
+    }
+  }
+
+  Future<void> _analyzeSharedImage(String path) async {
+    setState(() {
+      _isAnalyzing = true;
+      _result = null;
+    });
+
+    final result = await ApiService.analyzeImage(File(path));
+
+    try {
+      final record = ScanRecord.fromAnalysisResult(
+        inputText: 'Shared image: $path',
+        result: result,
+        source: 'Shared Image',
+      );
+      await _repo.saveScan(record);
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _result = result;
+        _isAnalyzing = false;
+        // A shared image has no reportable URL of its own — clear any
+        // leftover community-report state from a previous text/link scan.
+        _reportableUrl = null;
+        _reputation = null;
+        _reportSubmitted = false;
+      });
+    }
+  }
+
+  Future<void> _analyze({String? source}) async {
     final text = _controller.text.trim();
     if (text.isEmpty) {
       _showSnackBar('Please enter some text or link to analyze.', isError: true);
@@ -73,11 +144,11 @@ class _ScanScreenState extends State<ScanScreen>
     }
 
     try {
-      final source = _activeTab == 1 ? 'Link' : 'Manual';
+      final resolvedSource = source ?? (_activeTab == 1 ? 'Link' : 'Manual');
       final record = ScanRecord.fromAnalysisResult(
         inputText: text,
         result: result,
-        source: source,
+        source: resolvedSource,
       );
       await _repo.saveScan(record);
     } catch (_) {}
@@ -86,14 +157,58 @@ class _ScanScreenState extends State<ScanScreen>
       setState(() {
         _result = result;
         _isAnalyzing = false;
+        _reportableUrl = null;
+        _reputation = null;
+        _reportSubmitted = false;
       });
+      _maybeCheckCommunityReputation(text);
     }
+  }
+
+  /// A URL/link is a stable enough indicator to crowdsource against — free
+  /// text isn't (two people rarely type the exact same scam message), so
+  /// community reporting is scoped to the Link/URL tab.
+  void _maybeCheckCommunityReputation(String text) {
+    final looksLikeUrl = _activeTab == 1 || text.startsWith('http://') || text.startsWith('https://');
+    if (!looksLikeUrl) return;
+
+    final url = text;
+    setState(() => _reportableUrl = url);
+    CommunityReportService.checkReputation(type: IndicatorType.url, value: url).then((result) {
+      if (mounted && _reportableUrl == url) {
+        setState(() => _reputation = result);
+      }
+    });
+  }
+
+  Future<void> _reportCurrentUrlAsScam() async {
+    final url = _reportableUrl;
+    if (url == null || _reportSubmitting) return;
+
+    setState(() => _reportSubmitting = true);
+    final ok = await CommunityReportService.reportIndicator(
+      type: IndicatorType.url,
+      value: url,
+      category: _result?.classification.name,
+    );
+    if (!mounted) return;
+    setState(() {
+      _reportSubmitting = false;
+      _reportSubmitted = ok;
+    });
+    _showSnackBar(
+      ok ? 'Thanks — reported to help protect other users.' : 'Could not submit the report. Check your connection.',
+      isError: !ok,
+    );
   }
 
   void _clearAll() {
     setState(() {
       _controller.clear();
       _result = null;
+      _reportableUrl = null;
+      _reputation = null;
+      _reportSubmitted = false;
     });
   }
 
@@ -108,6 +223,21 @@ class _ScanScreenState extends State<ScanScreen>
     } else {
       _showSnackBar('Clipboard is empty.', isError: false);
     }
+  }
+
+  Future<void> _scanQrCode() async {
+    final decoded = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScanScreen()),
+    );
+    if (!mounted || decoded == null || decoded.isEmpty) return;
+    setState(() {
+      _activeTab = 1; // QR payloads are almost always a URL/UPI link
+      _controller.text = decoded;
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: _controller.text.length),
+      );
+    });
+    _analyze();
   }
 
   void _showSnackBar(String message, {required bool isError}) {
@@ -150,6 +280,10 @@ class _ScanScreenState extends State<ScanScreen>
             const SizedBox(height: 20),
             if (_isAnalyzing) _buildAnalyzingWidget(),
             if (_result != null && !_isAnalyzing) Reveal(child: _buildResultCard()),
+            if (_result != null && !_isAnalyzing && _reportableUrl != null) ...[
+              const SizedBox(height: 12),
+              Reveal(child: _buildCommunitySection()),
+            ],
             if (_result == null && !_isAnalyzing)
               Reveal(delay: Reveal.step(3), child: _buildSamplePrompts()),
           ],
@@ -241,19 +375,38 @@ class _ScanScreenState extends State<ScanScreen>
                             : 'SCREENSHOT OCR / EXTRACTED TEXT',
                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
               ),
-              InkWell(
-                onTap: _pasteFromClipboard,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.content_paste, color: AppColors.primary, size: 14),
-                      SizedBox(width: 4),
-                      Text('PASTE', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                    ],
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InkWell(
+                    onTap: _scanQrCode,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.qr_code_scanner, color: AppColors.primary, size: 14),
+                          SizedBox(width: 4),
+                          Text('SCAN QR', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  InkWell(
+                    onTap: _pasteFromClipboard,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.content_paste, color: AppColors.primary, size: 14),
+                          SizedBox(width: 4),
+                          Text('PASTE', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -455,6 +608,68 @@ class _ScanScreenState extends State<ScanScreen>
               ),
             ))),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunitySection() {
+    final reputation = _reputation;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.groups_outlined, color: AppColors.textSecondary, size: 16),
+              SizedBox(width: 8),
+              Text('COMMUNITY REPORTS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (reputation == null)
+            const Text('Checking community reports...', style: TextStyle(color: AppColors.textSecondary, fontSize: 12))
+          else if (!reputation.checked)
+            const Text('Could not reach the community database right now.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12))
+          else if (reputation.reported)
+            Text(
+              'Flagged by ${reputation.reportCount} user(s) as a scam${reputation.category != null ? " (${reputation.category})" : ""}.',
+              style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.bold),
+            )
+          else if (reputation.reportCount > 0)
+            Text(
+              'Reported ${reputation.reportCount} time(s) — not yet enough reports to confirm.',
+              style: const TextStyle(color: AppColors.warning, fontSize: 12),
+            )
+          else
+            const Text('No prior reports for this link.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: (_reportSubmitting || _reportSubmitted) ? null : _reportCurrentUrlAsScam,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.danger),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              icon: Icon(
+                _reportSubmitted ? Icons.check_circle_outline : Icons.flag_outlined,
+                color: AppColors.danger,
+                size: 16,
+              ),
+              label: Text(
+                _reportSubmitted ? 'REPORTED — THANK YOU' : 'REPORT THIS LINK AS A SCAM',
+                style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+          ),
         ],
       ),
     );
