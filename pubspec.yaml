@@ -90,6 +90,10 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/icon.png
+    - assets/fonts/Inter-Regular.ttf
+    - assets/fonts/Inter-Medium.ttf
+    - assets/fonts/Inter-SemiBold.ttf
+    - assets/fonts/Inter-Bold.ttf
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
