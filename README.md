@@ -497,6 +497,36 @@ These variables are defined in the backend environment (`backend/.env` or docker
 > [!WARNING]
 > **Exposed Key Warning:** The legacy server file `server/main.py` contains a default hardcoded admin auth credential: `ADMIN_API_KEY = "scamshield_admin_sec_key_2026"`. Do not deploy the legacy server with this key unchanged.
 
+### Accounts server (`server/accounts.py`)
+
+| Variable | Purpose | Required? | Notes |
+|---|---|---|---|
+| **`SESSION_SECRET_KEY`** | Signs session tokens | **Yes in production** | Without it an ephemeral key is generated per process, so every session is invalidated on restart. |
+| **`GOOGLE_SERVER_CLIENT_ID`** | Web OAuth client ID the app's Google ID tokens are issued for | Only for Google sign-in | The audience check against this value is what stops `POST /account/google` accepting any email a caller types. |
+| **`FCM_SERVICE_ACCOUNT_FILE`** | Path to a Firebase service-account JSON | No | Enables push delivery of family alerts. Unset = alerts are still recorded and still shown, just not pushed. |
+
+### Enabling push notifications for family alerts (optional)
+
+Push is off by default on both sides and each side fails soft, so you can set up
+one, both, or neither:
+
+1. **App side.** Create a Firebase project, register the Android app under the
+   applicationId in `android/app/build.gradle.kts`, and drop the generated
+   `google-services.json` into `android/app/`. That is the whole setup: the
+   Gradle plugin is applied only when that file exists (see the comment in
+   `android/app/build.gradle.kts`), so a clone without it builds and runs
+   normally and `PushNotificationService` reports itself unavailable.
+2. **Server side.** Generate a service-account key for the same Firebase
+   project and point `FCM_SERVICE_ACCOUNT_FILE` at it. Note that the legacy
+   FCM server-key API was shut down in 2024, so there is no keyless path —
+   `_dispatch_family_push()` mints an OAuth2 token from this file and calls the
+   FCM HTTP v1 API. Also install `google-auth`; it is imported lazily, so the
+   module runs fine without it when push is unconfigured.
+
+Push never carries the scanned content — only the verdict, the risk score and
+who raised it. The alert row on the server remains the source of truth; a push
+that fails to send is logged and dropped rather than failing the alert.
+
 ---
 
 ## 14. Security Audit
