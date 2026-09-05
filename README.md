@@ -59,10 +59,27 @@ Features are grouped by category. Status values: ✅ implemented, 🟡 partially
 | **Educational "Cyber Threat Academy"** | Spot-the-scam quiz + 3 learning modules + vigilance score. | ✅ |
 | **SIM/Device guard screen** | Device info, root-status via platform channel, opens OS settings. | 🟡 (root check is best-effort; no actual SIM-lock toggle in app) |
 
+### Protection suite (always-on and reach features)
+| Feature | Description | Status |
+|---|---|---|
+| **Real-time SMS screening** | Screens each incoming text as it arrives, using the same engine as manual scans. Opt-in. | ✅ — but see the Play policy note in §24 before shipping |
+| **Scam call screening** | Warns while a known scam number is still ringing. Uses Android 10's `ROLE_CALL_SCREENING`, declares no call-log permission, and **never blocks a call**. Silencing the ringer is a separate opt-in for the device's own local list only. | ✅ (Android 10+) |
+| **Home-screen widget** | One tap from a suspicious message to a scan, with a live status line. Push-refreshed, never polled. | ✅ |
+| **Family push notifications** | Wakes a relative's phone when someone in their family group scans something dangerous. | 🟡 (needs `google-services.json` + `FCM_SERVICE_ACCOUNT_FILE` — see §13; alerts still record and display without it) |
+| **Simple Mode** | Replaces the whole interface with one screen, one action and a verdict written as an instruction rather than a score. For the users scams work best on. | ✅ |
+| **Encrypted backup & restore** | AES-256-GCM + PBKDF2 (210k iterations), authenticated header, merge-on-restore. No account or server needed. | ✅ |
+| **Verdict feedback loop** | "Was this right?" on every scan result. Anonymous; sends a hash of the text, never the text. | ✅ |
+| **Learning leaderboard** | Ranks learners by points, global or within a family. Progress sync is one-way by design. | ✅ (needs an account) |
+| **Localization** | English, Hindi, Marathi, Bengali, Tamil, Telugu. Covers navigation, the scan flow and all verdict labels. | 🟡 (Learn articles and AI-written scan summaries remain English; the picker says so. Non-English strings need a native review pass) |
+
 ### Backend features
 | Feature | Description | Status |
 |---|---|---|
 | **Unified analysis engine** (`ai_engine`) | Gemini/Groq + heuristic + OSINT → weighted score. | ✅ (backend) |
+| **Accounts, sync, family groups** (`server/accounts.py`) | itsdangerous sessions, scrypt passwords, Google ID-token verification, two-way scan sync, family alert relay. | ✅ |
+| **Push token registry + FCM fan-out** | `POST/DELETE /push/register`; best-effort dispatch on `POST /family/alert`. | 🟡 (no-op without `FCM_SERVICE_ACCOUNT_FILE`) |
+| **Learning progress + leaderboard** | `POST /learning/progress`, `GET /learning/leaderboard`. Global scope never falls back to an email address. | ✅ |
+| **Verdict feedback + accuracy** | `POST /feedback/verdict`, `GET /feedback/accuracy`. Content-free: rejects anything that is not a hex SHA-256. | ✅ |
 | **Heuristic scam engine** | Keyword/regex scam detector (always available fallback). | ✅ |
 | **Rate limiting** (slowapi) | Per-endpoint limits. | ✅ |
 | **Security headers + request-ID logging middleware** | `middleware/`. | ✅ |
