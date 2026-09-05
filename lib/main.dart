@@ -20,6 +20,7 @@ import 'services/breach_watch_service.dart';
 import 'services/cloud_account_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/sms_screening_service.dart';
+import 'services/call_screening_service.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -41,6 +42,10 @@ void main() async {
   // app wasn't running — a no-op unless the user has explicitly turned this
   // on in Profile > Real-Time SMS Protection.
   unawaited(SmsScreeningService.initIfEnabled());
+  // Same shape: no-op unless the user granted the call-screening role, and it
+  // turns itself off cleanly if that role was since taken away. Also refreshes
+  // the native side's known-bad number list from local scan history.
+  unawaited(CallScreeningService.initIfEnabled());
   runApp(ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented));
 }
 

@@ -4,6 +4,7 @@ import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import '../services/settings_service.dart';
 import '../services/sms_screening_service.dart';
+import '../services/call_screening_service.dart';
 import '../services/auth_service.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
@@ -25,11 +26,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ScanRepository _repo = ScanRepository();
   ScanStatistics? _stats;
 
+  /// Android 10+ with the role API present. Resolved once, because it cannot
+  /// change while the app is running.
+  bool _callScreeningSupported = false;
+
   @override
   void initState() {
     super.initState();
     SettingsService.init();
     _loadStats();
+    _resolveCallScreeningSupport();
     // See data_change_notifier.dart: this screen stays alive in
     // MainNavigation's IndexedStack and needs an explicit signal to refresh
     // after a scan/deletion made from another tab or screen.
@@ -200,6 +206,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _resolveCallScreeningSupport() async {
+    final supported = await CallScreeningService.isSupported();
+    if (mounted) setState(() => _callScreeningSupported = supported);
+  }
+
+  Future<void> _onToggleCallScreening(bool wantsOn) async {
+    if (!wantsOn) {
+      await CallScreeningService.disable();
+      if (!mounted) return;
+      // Switching the feature off stops the screening, but Android still lists
+      // ScamShield as the call-screening app until the user says otherwise.
+      // Saying so — and offering the way there — is more honest than letting
+      // them think the off switch removed it.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Call screening stopped. Android still lists ScamShield '
+              'as your screening app until you change it in system settings.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.surfaceLight,
+          duration: const Duration(seconds: 7),
+          action: SnackBarAction(
+            label: 'SETTINGS',
+            textColor: AppColors.primary,
+            onPressed: CallScreeningService.openSystemRoleSettings,
+          ),
+        ),
+      );
+      return;
+    }
+
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.phone_in_talk_outlined, color: AppColors.primary),
+            SizedBox(width: 8),
+            Expanded(child: Text('Screen incoming calls?')),
+          ],
+        ),
+        content: const Text(
+          'Android will ask you to make ScamShield your call screening app. When a '
+          'number you or the community have already flagged calls you, ScamShield '
+          'warns you while it is still ringing.\n\n'
+          'It never blocks or rejects a call. A wrongly blocked call could be a '
+          'hospital or your bank, so the call always comes through and the warning '
+          'is yours to act on.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not now', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Continue', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+
+    final granted = await CallScreeningService.requestRoleAndEnable();
+    if (!mounted) return;
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ScamShield was not made your call screening app, so call '
+              'screening stays off.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.surfaceLight,
+        ),
+      );
+    }
+  }
+
   void _showSignOutDialog() {
     showDialog(
       context: context,
@@ -334,6 +420,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onChanged: _onToggleSmsScreening,
                 ),
               ),
+              // Hidden rather than shown-and-disabled below Android 10: a
+              // control that can never be switched on is just a dead end.
+              if (_callScreeningSupported)
+                ValueListenableBuilder<bool>(
+                  valueListenable: CallScreeningService.isActive,
+                  builder: (ctx, active, _) => _buildSettingItem(
+                    Icons.phone_in_talk_outlined,
+                    'Scam Call Screening',
+                    'Warn before you answer a number known for scams',
+                    hasSwitch: true,
+                    switchValue: active,
+                    onChanged: _onToggleCallScreening,
+                  ),
+                ),
               _buildSettingItem(
                 Icons.history,
                 'Scan History',

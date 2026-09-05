@@ -36,6 +36,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/scan_record.dart';
 import '../data/repositories/scan_repository.dart';
 import 'api_service.dart';
+import 'call_screening_service.dart';
 import 'cloud_account_service.dart';
 import 'scam_detector.dart';
 
@@ -177,6 +178,9 @@ class SmsScreeningService {
     if (!isDangerous) return;
 
     await _notifyDanger(sender: sender, result: result);
+    // A number that just sent a scam text is exactly the number worth warning
+    // about if it then calls — this is what feeds call screening's local list.
+    unawaited(CallScreeningService.refreshBlocklist());
     // Same family-alert relay the manual scan flow uses — best-effort, and a
     // failure here must never be surfaced as an SMS-screening failure.
     unawaited(CloudAccountService.raiseAlert(
