@@ -146,7 +146,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
             children: [
               Icon(Icons.phone_android, color: AppColors.primary, size: 18),
               SizedBox(width: 8),
-              Text('DEVICE HARDWARE INTELLIGENCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              Text('Device status', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
             ],
           ),
           const SizedBox(height: 12),
@@ -210,7 +210,7 @@ class _SimLockScreenState extends State<SimLockScreen> {
             children: [
               Icon(Icons.verified_user_outlined, color: AppColors.success, size: 18),
               SizedBox(width: 8),
-              Text('RECOMMENDED HARDWARE ACTIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              Text('What you can do', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
             ],
           ),
           SizedBox(height: 10),

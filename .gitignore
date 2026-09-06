@@ -84,3 +84,7 @@ ScamShield_Test_APKs/
 test_apks_source/
 com.sh
 commit.sh
+
+# Intermediate file produced by design/build_pdf.py
+design/.scamshield_ui.embedded.html
+design/.preview.html

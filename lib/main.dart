@@ -297,64 +297,59 @@ class _MainNavigationState extends State<MainNavigation>
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          // A hairline instead of a drop shadow. The bar needs to be separated
+          // from the content, which a 1px rule does; it does not need to look
+          // like it is floating above it.
+          border: Border(top: BorderSide(color: AppColors.surfaceLight)),
         ),
         child: SafeArea(
+          top: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: BottomNavigationBar(
               currentIndex: _selectedIndex,
-              onTap: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
+              onTap: (index) => setState(() => _selectedIndex = index),
               backgroundColor: Colors.transparent,
               elevation: 0,
               type: BottomNavigationBarType.fixed,
               selectedFontSize: 11,
-              unselectedFontSize: 10,
+              unselectedFontSize: 11,
               selectedItemColor: AppColors.primary,
               unselectedItemColor: AppColors.textSecondary,
-              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
+              // Sentence case. These were "HOME", "SCAN", "BREACH", "HISTORY",
+              // "LEARN", "PROFILE" — six shouted words along the bottom of
+              // every screen in the app.
               items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.shield_outlined),
-                  activeIcon: Icon(Icons.shield, color: AppColors.primary),
+                  icon: const Icon(Icons.home_outlined),
+                  activeIcon: const Icon(Icons.home_rounded),
                   label: LocalizationService.tr('nav_home'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.qr_code_scanner),
-                  activeIcon: Icon(Icons.center_focus_strong, color: AppColors.primary),
+                  icon: const Icon(Icons.search_rounded),
+                  activeIcon: const Icon(Icons.search_rounded),
                   label: LocalizationService.tr('nav_scan'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.mark_email_unread_outlined),
-                  activeIcon: Icon(Icons.mark_email_unread, color: AppColors.primary),
+                  icon: const Icon(Icons.mark_email_unread_outlined),
+                  activeIcon: const Icon(Icons.mark_email_unread_rounded),
                   label: LocalizationService.tr('nav_breach'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.history_outlined),
-                  activeIcon: Icon(Icons.history, color: AppColors.primary),
+                  icon: const Icon(Icons.history_rounded),
+                  activeIcon: const Icon(Icons.history_rounded),
                   label: LocalizationService.tr('nav_history'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.menu_book_outlined),
-                  activeIcon: Icon(Icons.menu_book, color: AppColors.primary),
+                  icon: const Icon(Icons.school_outlined),
+                  activeIcon: const Icon(Icons.school_rounded),
                   label: LocalizationService.tr('nav_learn'),
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person, color: AppColors.primary),
+                  icon: const Icon(Icons.person_outline_rounded),
+                  activeIcon: const Icon(Icons.person_rounded),
                   label: LocalizationService.tr('nav_profile'),
                 ),
               ],

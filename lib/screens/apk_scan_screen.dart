@@ -340,7 +340,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textSecondary,
-                        letterSpacing: 1)),
+                        letterSpacing: 0)),
                 const SizedBox(height: 2),
                 Text(
                   _fileName ?? 'application.apk',
@@ -1015,7 +1015,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textSecondary,
-                letterSpacing: 1)),
+                letterSpacing: 0)),
       ],
     );
   }
