@@ -233,9 +233,10 @@ class TestAccountDeletion:
         me = client.get("/account/me", headers=headers)
         assert me.status_code == 401  # can't even ask, which is the point
 
-    def test_delete_cascades_family_membership_when_owner(self, client):
-        """Deleting the owner's account must not leave a family group frozen
-        with a live invite code and no accountable owner."""
+    def test_delete_transfers_ownership_rather_than_destroying_the_family(self, client):
+        """Deleting the owner's account is that person's own erasure right —
+        it must not silently destroy a group two other people are still in
+        and still relying on."""
         owner = _register(client, "fam-owner@example.com")
         member = _register(client, "fam-member@example.com")
         code = client.post("/family/create", headers=owner, json={"name": "Fam"}).json()["invite_code"]
@@ -243,9 +244,25 @@ class TestAccountDeletion:
 
         client.delete("/account", headers=owner)
 
-        # The family (and the other member's membership in it) is gone too —
-        # an owner's deletion can't leave the group in limbo.
-        assert client.get("/family", headers=member).json()["id"] is None
+        fam = client.get("/family", headers=member).json()
+        assert fam["id"] is not None
+        assert fam["name"] == "Fam"
+        assert len(fam["members"]) == 1
+        assert fam["members"][0]["is_you"] is True
+
+    def test_delete_dissolves_the_family_when_owner_is_the_sole_member(self, client):
+        owner = _register(client, "fam-solo-owner@example.com")
+        client.post("/family/create", headers=owner, json={"name": "Solo Fam"})
+
+        # No successor exists, so this matches leave_family()'s identical
+        # "last member out" rule rather than leaving an orphaned group with a
+        # live invite code and nobody in it.
+        client.delete("/account", headers=owner)
+
+        code_row = accounts._query(
+            "SELECT COUNT(*) AS n FROM families WHERE name = ?", ("Solo Fam",), fetch="one"
+        )
+        assert code_row["n"] == 0
 
     def test_delete_does_not_affect_other_users(self, client):
         a = _register(client, "delete-a@example.com")

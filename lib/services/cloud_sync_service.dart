@@ -75,6 +75,11 @@ class CloudSyncService {
     return id;
   }
 
+  /// The server rejects any single request carrying more than this many scans
+  /// outright (`MAX_SYNC_BATCH` in server/accounts.py) — see the chunking
+  /// below.
+  static const int _maxBatch = 200;
+
   /// Runs a two-way sync. Safe to call often — it self-rate-limits and returns
   /// [SyncOutcome.skipped] when there's no cloud session.
   static Future<SyncOutcome> sync({bool force = false}) async {
@@ -92,64 +97,108 @@ class CloudSyncService {
       final localById = <String, ScanRecord>{
         for (final r in localRecords) cloudIdFor(r): r,
       };
-
-      final payload = localById.entries
-          .map((e) => {
-                'id': e.key,
-                'input_text': e.value.inputText,
-                'classification': e.value.classification,
-                'risk_score': e.value.riskScore,
-                'summary': e.value.summary,
-                'source': e.value.source,
-                'scanned_at': e.value.timestamp.toIso8601String(),
-                'deleted': false,
-              })
-          .toList();
+      final entries = localById.entries.toList();
 
       final since = prefs.getDouble(_sinceKey) ?? 0.0;
-      final result = await CloudAccountService.syncScans(
-        scans: payload,
-        since: since,
-        deviceId: await _deviceId(),
-        deviceName: 'Android device',
-      );
+      final deviceId = await _deviceId();
 
-      if (result == null) {
-        return const SyncOutcome(
-          ran: false,
-          message: 'Could not reach the sync service. Your scans are still saved on this device.',
-        );
-      }
-
+      // Every local scan is sent on every sync (there's no local record yet
+      // of which ones the server has already accepted), which is why this
+      // has to go up in chunks at all: an account with more than
+      // `_maxBatch` scans would otherwise send one oversized request the
+      // server always rejects, and syncing would fail — permanently, since
+      // nothing here ever shrinks the payload — for every account past that
+      // size. Sending the same already-synced rows again each time is
+      // wasted bandwidth rather than a correctness problem: the server's
+      // `ON CONFLICT ... DO UPDATE` upserts them idempotently.
+      var pushed = 0;
       var pulled = 0;
-      final remoteScans = (result['scans'] as List?) ?? [];
-      for (final raw in remoteScans) {
-        final scan = raw as Map<String, dynamic>;
-        final id = scan['id'] as String? ?? '';
-        if (id.isEmpty) continue;
-        if (scan['deleted'] == true) continue; // tombstone: nothing to insert
-        if (localById.containsKey(id)) continue; // already here
+      double? serverTime;
+      var reachedServer = false;
+      var allChunksSucceeded = true;
 
-        final scannedAt = DateTime.tryParse(scan['scanned_at'] as String? ?? '');
-        await _repo.saveScan(ScanRecord(
-          inputText: scan['input_text'] as String? ?? '',
-          classification: scan['classification'] as String? ?? 'safe',
-          riskScore: (scan['risk_score'] as num?)?.toInt() ?? 0,
-          summary: scan['summary'] as String? ?? '',
-          timestamp: scannedAt ?? DateTime.now(),
-          source: scan['source'] as String?,
-        ));
-        pulled++;
+      for (var i = 0; i < entries.length || i == 0; i += _maxBatch) {
+        final end = (i + _maxBatch < entries.length) ? i + _maxBatch : entries.length;
+        final chunk = entries.sublist(i, end);
+        final payload = chunk
+            .map((e) => {
+                  'id': e.key,
+                  'input_text': e.value.inputText,
+                  'classification': e.value.classification,
+                  'risk_score': e.value.riskScore,
+                  'summary': e.value.summary,
+                  'source': e.value.source,
+                  'scanned_at': e.value.timestamp.toIso8601String(),
+                  'deleted': false,
+                })
+            .toList();
+
+        // Only the first request carries the real cursor and is the one
+        // whose response is read for what changed server-side; later chunks
+        // are pure pushes, so a far-future `since` (same trick pushTombstones
+        // uses) keeps the server from handing back a pull result nothing
+        // here would look at twice.
+        final result = await CloudAccountService.syncScans(
+          scans: payload,
+          since: i == 0 ? since : 9999999999.0,
+          deviceId: deviceId,
+          deviceName: 'Android device',
+        );
+
+        if (result == null) {
+          allChunksSucceeded = false;
+          if (!reachedServer) {
+            return const SyncOutcome(
+              ran: false,
+              message: 'Could not reach the sync service. Your scans are still saved on this device.',
+            );
+          }
+          // Later chunk failed after earlier ones already landed — stop here
+          // rather than lose track of the response already in hand; whatever
+          // didn't get pushed this time goes up on the next sync.
+          break;
+        }
+        reachedServer = true;
+        pushed += (result['accepted'] as num?)?.toInt() ?? 0;
+
+        if (i == 0) {
+          final remoteScans = (result['scans'] as List?) ?? [];
+          for (final raw in remoteScans) {
+            final scan = raw as Map<String, dynamic>;
+            final id = scan['id'] as String? ?? '';
+            if (id.isEmpty) continue;
+            if (scan['deleted'] == true) continue; // tombstone: nothing to insert
+            if (localById.containsKey(id)) continue; // already here
+
+            final scannedAt = DateTime.tryParse(scan['scanned_at'] as String? ?? '');
+            await _repo.saveScan(ScanRecord(
+              inputText: scan['input_text'] as String? ?? '',
+              classification: scan['classification'] as String? ?? 'safe',
+              riskScore: (scan['risk_score'] as num?)?.toInt() ?? 0,
+              summary: scan['summary'] as String? ?? '',
+              timestamp: scannedAt ?? DateTime.now(),
+              source: scan['source'] as String?,
+            ));
+            pulled++;
+          }
+          serverTime = (result['server_time'] as num?)?.toDouble();
+        }
       }
 
-      final serverTime = (result['server_time'] as num?)?.toDouble();
+      // The pull cursor only reflects what was already pulled (from the
+      // first, always-attempted chunk), so it advances regardless of
+      // whether a later push chunk failed — that failure is about data still
+      // waiting to go up, not about anything already read down.
       if (serverTime != null) await prefs.setDouble(_sinceKey, serverTime);
       await prefs.setInt(_lastRunKey, DateTime.now().millisecondsSinceEpoch);
 
       return SyncOutcome(
         ran: true,
-        pushed: (result['accepted'] as num?)?.toInt() ?? 0,
+        pushed: pushed,
         pulled: pulled,
+        message: allChunksSucceeded
+            ? null
+            : 'Only part of your scan history synced this time — the rest will go up next time.',
       );
     } catch (e) {
       debugPrint('CloudSyncService.sync failed: $e');

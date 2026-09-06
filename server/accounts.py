@@ -577,10 +577,41 @@ async def whoami(user: CurrentUser = Depends(require_user)):
 async def delete_account(user: CurrentUser = Depends(require_user)):
     """Erases the account and everything hanging off it (DPDP erasure right).
 
-    Foreign keys cascade, so devices, synced scans, family memberships and
-    alerts go with it.
+    Foreign keys cascade for everything that is only ever this user's own —
+    devices, synced scans, this user's own family membership, and the alerts
+    they personally raised.
+
+    A family this user *owns* needs handling first, before that cascade can
+    run: `owner_user_id` used to be deleted alongside the user, which took
+    the whole family (and, via family_id cascading further, every other
+    member's own membership and alert history) down with it — one person
+    exercising their own right to erase their own data was silently
+    destroying two other people's family group. Ownership carries no
+    privilege anywhere else in this module (nothing is owner-gated), so
+    there is no reason for it to be that destructive: if another member is
+    still in the group, ownership passes to them and the group carries on;
+    only when this user was the last one in it does the group actually go
+    away, matching leave_family()'s identical "last member out" rule.
     """
-    await _aquery("DELETE FROM families WHERE owner_user_id = ?", (user.id,))
+    owned = await _aquery(
+        "SELECT id FROM families WHERE owner_user_id = ?", (user.id,), fetch="one"
+    )
+    if owned is not None:
+        successor = await _aquery(
+            """SELECT user_id FROM family_members
+               WHERE family_id = ? AND user_id != ?
+               ORDER BY joined_at ASC LIMIT 1""",
+            (owned["id"], user.id),
+            fetch="one",
+        )
+        if successor is not None:
+            await _aquery(
+                "UPDATE families SET owner_user_id = ? WHERE id = ?",
+                (successor["user_id"], owned["id"]),
+            )
+        else:
+            await _aquery("DELETE FROM families WHERE id = ?", (owned["id"],))
+
     await _aquery("DELETE FROM users WHERE id = ?", (user.id,))
     return {"deleted": True}
 
