@@ -109,6 +109,163 @@ class TestAccounts:
         assert resp.status_code in (401, 503)
 
 
+# ── Account export (DPDP right to access) ──────────────────────────────────────
+
+class TestAccountExport:
+    def test_export_requires_auth(self, client):
+        assert client.get("/account/export").status_code == 401
+
+    def test_export_contains_profile_and_is_empty_otherwise_for_a_fresh_account(self, client):
+        headers = _register(client, "fresh@example.com")
+        resp = client.get("/account/export", headers=headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["profile"]["email"] == "fresh@example.com"
+        assert body["devices"] == []
+        assert body["syncedScans"] == []
+        assert body["pushTokens"]["count"] == 0
+        assert body["learningProgress"] is None
+        assert body["family"] is None
+
+    def test_export_includes_full_synced_scan_content(self, client):
+        """The local "My Data" export includes full scan text; the server-held
+        copy must not be a quietly-smaller version of the same right."""
+        headers = _register(client, "sync-export@example.com")
+        client.post(
+            "/sync/scans",
+            headers=headers,
+            json={
+                "device_id": "dev-1",
+                "since": 0,
+                "scans": [{
+                    "id": "scan-1", "input_text": "Your OTP is 445566, share it now",
+                    "classification": "scam", "risk_score": 91, "summary": "Fake OTP request",
+                }],
+            },
+        )
+        body = client.get("/account/export", headers=headers).json()
+        assert len(body["syncedScans"]) == 1
+        assert body["syncedScans"][0]["input_text"] == "Your OTP is 445566, share it now"
+
+    def test_export_omits_tombstoned_scans(self, client):
+        headers = _register(client, "tombstone-export@example.com")
+        client.post(
+            "/sync/scans", headers=headers,
+            json={"since": 0, "scans": [{"id": "s1", "input_text": "gone", "deleted": True}]},
+        )
+        body = client.get("/account/export", headers=headers).json()
+        assert body["syncedScans"] == []
+
+    def test_export_push_tokens_are_summarised_not_raw(self, client):
+        """A push token is a live device credential, not content about the
+        user — the export must never hand back the token string itself."""
+        headers = _register(client, "push-export@example.com")
+        client.post("/push/register", headers=headers,
+                    json={"token": "fcm-token-export-secret-0001", "platform": "android"})
+        resp = client.get("/account/export", headers=headers)
+        body = resp.json()
+        assert body["pushTokens"]["count"] == 1
+        assert body["pushTokens"]["platforms"] == ["android"]
+        assert "fcm-token-export-secret-0001" not in resp.text
+
+    def test_export_includes_learning_progress(self, client):
+        headers = _register(client, "learner-export@example.com")
+        client.post("/learning/progress", headers=headers, json={"total_points": 120, "streak_days": 3})
+        body = client.get("/account/export", headers=headers).json()
+        assert body["learningProgress"]["total_points"] == 120
+
+    def test_export_includes_own_family_membership(self, client):
+        headers = _register(client, "family-export@example.com")
+        client.post("/family/create", headers=headers, json={"name": "Fam"})
+        body = client.get("/account/export", headers=headers).json()
+        assert body["family"] is not None
+        assert body["family"]["name"] == "Fam"
+
+    def test_export_is_isolated_between_users(self, client):
+        a = _register(client, "export-a@example.com")
+        b = _register(client, "export-b@example.com")
+        client.post("/sync/scans", headers=a, json={"since": 0, "scans": [
+            {"id": "a1", "input_text": "a's private scan"}]})
+        resp_b = client.get("/account/export", headers=b)
+        assert resp_b.json()["syncedScans"] == []
+        assert "a's private scan" not in resp_b.text
+
+
+# ── Account deletion (DPDP right to erasure) ────────────────────────────────────
+
+class TestAccountDeletion:
+    def test_delete_requires_auth(self, client):
+        assert client.delete("/account").status_code == 401
+
+    def test_delete_removes_the_account(self, client):
+        headers = _register(client, "goner@example.com")
+        assert client.delete("/account", headers=headers).status_code == 200
+        # The session is now for a user row that no longer exists.
+        assert client.get("/account/me", headers=headers).status_code == 401
+        assert client.post("/account/login",
+                           json={"email": "goner@example.com", "password": "hunter2pass"}).status_code == 401
+
+    def test_delete_cascades_synced_scans(self, client):
+        headers = _register(client, "cascade-scans@example.com")
+        client.post("/sync/scans", headers=headers, json={"since": 0, "scans": [
+            {"id": "cs1", "input_text": "will be erased"}]})
+        rows = accounts._query(
+            "SELECT COUNT(*) AS n FROM synced_scans WHERE input_text = ?",
+            ("will be erased",), fetch="one",
+        )
+        assert rows["n"] == 1
+        client.delete("/account", headers=headers)
+        rows = accounts._query(
+            "SELECT COUNT(*) AS n FROM synced_scans WHERE input_text = ?",
+            ("will be erased",), fetch="one",
+        )
+        assert rows["n"] == 0
+
+    def test_delete_cascades_push_tokens_and_learning_progress(self, client):
+        headers = _register(client, "cascade-misc@example.com")
+        client.post("/push/register", headers=headers, json={"token": "fcm-token-cascade-0001"})
+        client.post("/learning/progress", headers=headers, json={"total_points": 50})
+        client.delete("/account", headers=headers)
+        assert accounts._query(
+            "SELECT COUNT(*) AS n FROM push_tokens WHERE token = ?",
+            ("fcm-token-cascade-0001",), fetch="one",
+        )["n"] == 0
+        me = client.get("/account/me", headers=headers)
+        assert me.status_code == 401  # can't even ask, which is the point
+
+    def test_delete_cascades_family_membership_when_owner(self, client):
+        """Deleting the owner's account must not leave a family group frozen
+        with a live invite code and no accountable owner."""
+        owner = _register(client, "fam-owner@example.com")
+        member = _register(client, "fam-member@example.com")
+        code = client.post("/family/create", headers=owner, json={"name": "Fam"}).json()["invite_code"]
+        client.post("/family/join", headers=member, json={"invite_code": code})
+
+        client.delete("/account", headers=owner)
+
+        # The family (and the other member's membership in it) is gone too —
+        # an owner's deletion can't leave the group in limbo.
+        assert client.get("/family", headers=member).json()["id"] is None
+
+    def test_delete_does_not_affect_other_users(self, client):
+        a = _register(client, "delete-a@example.com")
+        b = _register(client, "delete-b@example.com")
+        client.delete("/account", headers=a)
+        assert client.get("/account/me", headers=b).status_code == 200
+
+    def test_deleting_a_non_owner_member_only_removes_their_own_data(self, client):
+        owner = _register(client, "fam-owner2@example.com")
+        member = _register(client, "fam-member2@example.com")
+        code = client.post("/family/create", headers=owner, json={"name": "Fam"}).json()["invite_code"]
+        client.post("/family/join", headers=member, json={"invite_code": code})
+
+        client.delete("/account", headers=member)
+
+        fam = client.get("/family", headers=owner).json()
+        assert fam["id"] is not None
+        assert len(fam["members"]) == 1
+
+
 # ── Sync ──────────────────────────────────────────────────────────────────────
 
 class TestSync:

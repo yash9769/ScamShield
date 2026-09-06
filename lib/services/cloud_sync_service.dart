@@ -166,4 +166,62 @@ class CloudSyncService {
     await prefs.remove(_sinceKey);
     await prefs.remove(_lastRunKey);
   }
+
+  /// The server-side counterpart of every place [records] can be deleted:
+  /// the History screen (single delete, "Reset All"), configured retention
+  /// cleanup, and Settings > Privacy & Data > Delete My Data.
+  ///
+  /// [sync] only ever pushes rows as `deleted: false` — it has no concept of
+  /// a local deletion at all. Left as-is, that means deleting a scan on the
+  /// device does not delete the copy this account already pushed to the
+  /// server on an earlier sync: the server row sits there untouched, and
+  /// worse, a full re-pull (a new device signing in, or [resetCursor] being
+  /// called) hands it straight back down — a "deleted" scan that quietly
+  /// reappears is not a sync bug, it is an erasure that didn't happen. This
+  /// closes that gap by pushing an explicit tombstone for exactly the records
+  /// being removed, at the moment they're removed, rather than leaving the
+  /// server to infer a deletion it has no way to observe.
+  ///
+  /// Best-effort and silent: a signed-out user or an unreachable server must
+  /// never turn a local deletion — which has already fully succeeded — into
+  /// something that looks like it failed. If this doesn't get through, the
+  /// row is stale on the server until the next successful call, not silently
+  /// lost track of forever; nothing here is the only copy of the tombstone
+  /// intent, since it's derived fresh from local state every time it runs.
+  static Future<void> pushTombstones(List<ScanRecord> records) async {
+    if (records.isEmpty) return;
+    if (!CloudAccountService.signedIn.value) return;
+
+    // Chunked to respect the server's MAX_SYNC_BATCH (200) — "Delete My
+    // Data" / "Reset All" can hand this hundreds of records at once.
+    const chunkSize = 200;
+    for (var i = 0; i < records.length; i += chunkSize) {
+      final chunk = records.sublist(i, i + chunkSize > records.length ? records.length : i + chunkSize);
+      final payload = chunk
+          .map((r) => {
+                'id': cloudIdFor(r),
+                'input_text': '',
+                'classification': r.classification,
+                'risk_score': 0,
+                'summary': '',
+                'source': r.source,
+                'scanned_at': r.timestamp.toIso8601String(),
+                'deleted': true,
+              })
+          .toList();
+      try {
+        // A far-future `since` means "nothing has changed since then" to the
+        // server, so the response comes back empty — this call only pushes,
+        // it was never going to do anything with a pull result anyway, and a
+        // real `since` here would otherwise hand back the account's entire
+        // history for no reason.
+        await CloudAccountService.syncScans(
+          scans: payload,
+          since: 9999999999.0,
+        );
+      } catch (e) {
+        debugPrint('CloudSyncService.pushTombstones failed for one batch: $e');
+      }
+    }
+  }
 }

@@ -1,9 +1,30 @@
 # ScamShield — DPDP Compliance Status
 
-**Date:** 2026-09-04
+**Date:** 2026-09-04 (original); addendum added 2026-09-06.
 **Basis:** `DPDP_AUDIT.md` (Phase 1 findings) and the technical controls implemented afterward (Phase 2). This document does not, and cannot, claim legal certification. It states what was built, what was not, and what remains a product or legal decision.
 
 **Do not read this as "ScamShield is DPDP compliant."** No qualified legal/compliance review has occurred. This is an engineering status report against the technical controls a DPDP-aligned product typically needs.
+
+---
+
+## Addendum — 2026-09-06: the protection suite
+
+Everything above this line describes the app as it stood on 2026-09-04. Since then, eight features shipped that materially changed what personal data ScamShield processes — most importantly, `server/accounts.py`: a real server-side account system that did not exist when the sections below were written. Full detail, including what was found and what was fixed, is in `DPDP_PROTECTION_SUITE_REPORT.md`. Summary:
+
+- **What's new that processes personal data:** a server-side account (email/password or Google identity), cross-device scan sync (full scan text now has a server-side copy for signed-in users), family protection (verdict/risk/summary shared with family members, never the message), push notifications (a device token registered with Google Firebase Cloud Messaging), scam call screening (a locally-held phone-number list, plus an off-by-default online lookup), a learning leaderboard (points/streak, shown with an email or display name to family, only a display name or none to everyone else), anonymous verdict feedback (a one-way hash only, no account, no message content), and encrypted local backup (a file the user creates and holds themselves — never transmitted by the app).
+- **Gaps found and closed:** the account-deletion flow never touched the server account at all (fixed — `DELETE /account` is now called and its result reported to the user); the "My Data" export never included anything server-held (fixed — new `GET /account/export`); local scan deletion never told the server, so a deleted-but-previously-synced scan could reappear on a future full resync (fixed — deletions now push tombstones); the in-app Privacy Policy and `THIRD_PARTY_DATA_PROCESSORS.md` predated all eight features (fixed — both rewritten, policy version bumped to 1.1.0 so existing users are re-prompted); the cloud-account sign-up sheet disclosed almost nothing about what it does (fixed — added explicit in-context disclosure with a Privacy Policy link); "Delete My Data"/"Delete Account" didn't reset learning progress or turn off active SMS/call monitoring (fixed); **both server SQLite databases (`server_accounts.db`, `server_audit.db`) were tracked in git with no `.gitignore` rule at all**, despite this document previously implying that was fixed (`.gitignore` corrected and both files untracked going forward — see `DPDP_PROTECTION_SUITE_REPORT.md` §4 for what this does and does not cover: it does not rewrite git history, which still holds old commits' snapshots, and that decision is left to whoever owns the branch).
+- **Still open, same status as before:** every item in "Requires Product Decision" and "Requires Legal Review" below is unchanged and still open — this pass closed technical/engineering gaps, not the legal and product questions that were already flagged as needing a human decision. One addition to "Requires Legal Review": cross-border transfer implications of Google Firebase Cloud Messaging, added for family-alert push notifications, have not been reviewed — same open status as Groq/Gemini/VirusTotal/etc. below.
+
+| Control (2026-09-06) | Where | Evidence |
+|---|---|---|
+| Server-side account export (right to access, now covering the account system) | `GET /account/export` in `server/accounts.py` | Tested: `server/test_accounts.py::TestAccountExport` (9 tests — content included, tombstones excluded, push tokens summarised not raw, isolation between users) |
+| Server-side account deletion, now actually reachable from the client | `CloudAccountService.deleteAccount()`, wired into `DataPrivacyService.deleteAccountAndAllData()` | Tested server-side: `TestAccountDeletion` (7 tests — cascades to synced scans/push tokens/learning progress, family membership, doesn't affect other users). Client always clears the local cloud session even if the server call fails, and the failure is reported to the user rather than silently swallowed |
+| "My Data" export now includes server-held data | `DataPrivacyService.exportUserData()` calls `CloudAccountService.exportAccountData()` when signed in | Explicit `error` field in the export if the server can't be reached, instead of a silently thinner export |
+| Local scan deletion now propagates to the cloud copy | `CloudSyncService.pushTombstones()`, called from History screen delete/clear-all, retention cleanup, and Delete My Data | Closes a real bug: previously, deleting a scan that had ever been synced left the server's copy untouched, and a full resync (new device, or a cursor reset) could hand it right back down — "deleted" data reappearing |
+| Delete My Data / Delete Account now also reset learning progress and screening features | `DataPrivacyService.deleteAllScanAndVaultData()` resets `ProgressService` and pushes the reset to the leaderboard if signed in; `deleteAccountAndAllData()` additionally disables SMS and call screening | Previously these were left running/unreset under a "deleted" identity |
+| Privacy Policy rewritten to cover all eight new features; policy version bumped | `lib/screens/privacy_policy_screen.dart`, `ConsentService.currentPolicyVersion` → `1.1.0` | Existing users are re-prompted for essential consent on next launch, per the existing versioning mechanism |
+| Cloud-sync sign-up now discloses what it does, in context | `lib/screens/family_screen.dart` `_showCloudAuthSheet()` | Previously said only that it "links your phones together"; now states plainly that full scan text uploads and family members see verdict/risk/summary, with a link to the full policy |
+| `THIRD_PARTY_DATA_PROCESSORS.md` updated | Added Firebase Cloud Messaging row; corrected the now-outdated "no account server" framing with a dated note rather than editing the original audit | — |
 
 ---
 

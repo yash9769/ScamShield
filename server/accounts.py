@@ -585,6 +585,80 @@ async def delete_account(user: CurrentUser = Depends(require_user)):
     return {"deleted": True}
 
 
+@router.get("/account/export")
+async def export_account(user: CurrentUser = Depends(require_user)):
+    """Everything this server holds about the caller (DPDP right to access).
+
+    Deliberately symmetric with what /account/* and /sync/* actually store —
+    no summarising, no omission of scan content. The client's local "My Data"
+    export already includes full scan text for the on-device copy, so leaving
+    the server-held copy out here would make the export quietly incomplete
+    for anyone who has ever used cross-device sync.
+
+    Two things are intentionally *not* the raw stored value:
+      - push tokens: an FCM token is a live device credential (whoever holds
+        it can address that device), not content about the user, so it's
+        reported as a count/platform/date rather than the token string.
+      - other family members' rows: their own email/scan data is not this
+        user's personal data to export, even though the same information is
+        already visible to them in the app's live Family screen — that
+        visibility is family-alert delivery, not this endpoint's job.
+    """
+    profile = await _aquery(
+        "SELECT id, email, display_name, auth_provider, created_at, last_seen_at "
+        "FROM users WHERE id = ?",
+        (user.id,),
+        fetch="one",
+    )
+
+    device_rows = await _aquery(
+        "SELECT id, device_name, platform, created_at, last_sync_at "
+        "FROM devices WHERE user_id = ? ORDER BY created_at ASC",
+        (user.id,),
+        fetch="all",
+    ) or []
+
+    scan_rows = await _aquery(
+        """SELECT id, input_text, classification, risk_score, summary, source,
+                  scanned_at, updated_at, deleted
+           FROM synced_scans WHERE user_id = ? ORDER BY updated_at ASC""",
+        (user.id,),
+        fetch="all",
+    ) or []
+
+    push_row = await _aquery(
+        "SELECT COUNT(*) AS n, GROUP_CONCAT(DISTINCT platform) AS platforms, "
+        "MAX(updated_at) AS last_registered FROM push_tokens WHERE user_id = ?",
+        (user.id,),
+        fetch="one",
+    )
+
+    learning_row = await _aquery(
+        """SELECT total_points, streak_days, badges_earned, quizzes_passed,
+                  articles_read, updated_at
+           FROM learning_progress WHERE user_id = ?""",
+        (user.id,),
+        fetch="one",
+    )
+
+    fam = await _family_for_user(user.id)
+    family_out = (await _build_family_out(user, fam["id"], fam["role"])) if fam else None
+
+    return {
+        "exportedAt": datetime.now(timezone.utc).isoformat(),
+        "profile": dict(profile) if profile else None,
+        "devices": [dict(r) for r in device_rows],
+        "syncedScans": [dict(r) for r in scan_rows if not r["deleted"]],
+        "pushTokens": {
+            "count": (push_row["n"] if push_row else 0) or 0,
+            "platforms": (push_row["platforms"].split(",") if push_row and push_row["platforms"] else []),
+            "lastRegistered": push_row["last_registered"] if push_row else None,
+        },
+        "learningProgress": dict(learning_row) if learning_row else None,
+        "family": family_out.model_dump() if family_out else None,
+    }
+
+
 # ── Cross-device sync ─────────────────────────────────────────────────────────
 
 @router.post("/sync/scans", response_model=SyncResponse)

@@ -67,6 +67,16 @@ Thumbs.db
 *.tmp
 *.temp
 
+# ── Local data stores (personal data — never belongs in version control) ───────
+# server_accounts.db (emails, password hashes, synced scan text, family data)
+# and server_audit.db (audit-log excerpts) are runtime state, not source, and
+# both were previously tracked despite DPDP_COMPLIANCE.md claiming otherwise —
+# see DPDP_PROTECTION_SUITE_REPORT.md. `git rm --cached` was run once to
+# untrack the existing copies; this rule stops it from happening again.
+*.db
+*.sqlite
+*.sqlite3
+
 # Ignore generated test files and APKs
 *.apk
 *.json

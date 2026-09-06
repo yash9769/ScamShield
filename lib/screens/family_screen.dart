@@ -19,6 +19,7 @@ import '../widgets/motion.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_account_service.dart';
 import '../services/cloud_sync_service.dart';
+import 'privacy_policy_screen.dart';
 
 class FamilyScreen extends StatefulWidget {
   const FamilyScreen({super.key});
@@ -560,6 +561,53 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 'This is separate from the passcode on this device — it\'s what '
                 'links your phones together and carries family alerts.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+              ),
+              const SizedBox(height: 10),
+              // The one place in the app where scan content stops being
+              // device-local. Worth saying plainly, in the moment, rather
+              // than leaving it to a Privacy Policy the user has to go
+              // looking for.
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.cloud_upload_outlined, color: AppColors.warning, size: 16),
+                        const SizedBox(width: 6),
+                        Text('What this changes',
+                            style: TextStyle(color: AppColors.warning, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Once signed in, the full text of scans made on this device is uploaded '
+                      'to keep your history in sync across phones. If you join or create a '
+                      'family group, the people in it will see the verdict, risk score and a '
+                      'short summary of anything dangerous you scan — never the message itself.\n\n'
+                      'You can delete this account and everything synced to it at any time from '
+                      'Settings > Privacy & Data > Delete Account.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5, height: 1.4),
+                    ),
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen(showAcceptedVersion: false)),
+                      ),
+                      child: const Text(
+                        'Read the full Privacy Policy',
+                        style: TextStyle(color: AppColors.primary, fontSize: 11.5, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 18),
               TextField(

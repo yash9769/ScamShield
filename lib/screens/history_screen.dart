@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import '../theme.dart';
@@ -7,6 +9,7 @@ import '../data/models/scan_record.dart';
 import '../data/repositories/scan_repository.dart';
 import '../services/data_change_notifier.dart';
 import '../services/report_generator_service.dart';
+import '../services/cloud_sync_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -225,6 +228,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _deleteRecord(ScanRecord record) async {
     if (record.id == null) return;
     await _repo.deleteById(record.id!);
+    // If this scan was ever pushed to the server via cross-device sync, it
+    // is still sitting there untouched — a plain local delete never tells
+    // the server anything changed. A no-op when signed out or unsynced.
+    unawaited(CloudSyncService.pushTombstones([record]));
     await _loadHistory();
   }
 
@@ -259,7 +266,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     );
     if (confirmed == true) {
+      // Captured before clearing: once the rows are gone locally, there is
+      // nothing left to compute their cloud ids from.
+      final toTombstone = _allRecords;
       await _repo.clearAll();
+      unawaited(CloudSyncService.pushTombstones(toTombstone));
       await _loadHistory();
     }
   }
