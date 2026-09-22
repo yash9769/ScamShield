@@ -15,6 +15,7 @@ from app.services.ai_engine import ai_engine
 
 logger = get_logger(__name__)
 router = APIRouter()
+settings = get_settings()
 
 
 @router.post(
@@ -33,7 +34,7 @@ router = APIRouter()
         429: {"description": "Rate limit exceeded"},
     },
 )
-@limiter.limit("60/minute")
+@limiter.limit(settings.RATE_LIMIT_ANALYZE)
 async def analyze_text(
     request: Request,
     body: TextAnalysisRequest,

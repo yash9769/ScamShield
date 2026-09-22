@@ -124,6 +124,11 @@ class _BreachScreenState extends State<BreachScreen>
     }
   }
 
+  String _formatCheckedAt(String? checkedAt) {
+    if (checkedAt == null || checkedAt.length < 10) return 'recent';
+    return checkedAt.substring(0, 10);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -616,7 +621,7 @@ class _BreachScreenState extends State<BreachScreen>
             ),
             const SizedBox(height: 14),
             Text(
-              'Last checked: ${_emailResult?.checkedAt.substring(0, 10) ?? 'recent'}',
+              'Last checked: ${_formatCheckedAt(_emailResult?.checkedAt)}',
               style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
             ),
             const SizedBox(height: 8),

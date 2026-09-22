@@ -3,6 +3,7 @@
 
 import asyncio
 import hashlib
+import hmac
 import io
 import ipaddress
 import json
@@ -78,7 +79,7 @@ async def verify_admin_auth(request: Request):
     elif api_key_header:
         token = api_key_header.strip()
 
-    if not token or token != ADMIN_API_KEY:
+    if not token or not hmac.compare_digest(token, ADMIN_API_KEY):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized: Admin authentication required via 'Authorization: Bearer <token>' or 'X-Admin-Key' header."
@@ -405,7 +406,8 @@ async def analyze_with_gemini(text: str) -> Optional[AnalysisResult]:
         return None
     for model in GEMINI_MODELS:
         try:
-            resp = gemini_client.models.generate_content(
+            resp = await asyncio.to_thread(
+                gemini_client.models.generate_content,
                 model=model,
                 contents=f"Analyse this for scam indicators:\n\n{text}",
                 config=genai_types.GenerateContentConfig(
@@ -727,7 +729,7 @@ async def domain_intel(domain: str) -> dict:
     is_new_domain = (
         (cert.get("first_seen_days_ago") is not None and cert["first_seen_days_ago"] < 30)
         or (rdap.get("registered_days_ago") is not None and rdap["registered_days_ago"] < 30)
-        or cert.get("cert_count") == 0
+        or (cert.get("checked") and cert.get("cert_count") == 0)
     )
     return {"domain": domain, "certificate_transparency": cert, "rdap": rdap, "newly_registered_or_unproven": is_new_domain}
 
@@ -1085,7 +1087,7 @@ async def analyze_voice(request: Request, file: UploadFile = File(...)):
             audio_summary = f"WAV Audio file: {duration:.2f}s duration, {framerate}Hz, {channels} ch."
     except Exception:
         printable = "".join(chr(b) for b in contents if 32 <= b <= 126)
-        urls = [m.group() for m in URL_REGEX.finditer(printable)]
+        urls = [m.group() for m in URL_RE.finditer(printable)]
         if urls:
             audio_summary = f"Audio container analysis ({len(contents)} bytes). Embedded URLs: {' '.join(urls)}"
         else:
@@ -1115,7 +1117,7 @@ async def analyze_image(request: Request, file: UploadFile = File(...)):
         if not extracted_text:
             info_str = f"Image metadata: format={image.format}, mode={image.mode}, size={image.size}"
             printable = "".join(chr(b) for b in contents if 32 <= b <= 126)
-            urls = [m.group() for m in URL_REGEX.finditer(printable)]
+            urls = [m.group() for m in URL_RE.finditer(printable)]
             if urls:
                 extracted_text = f"{info_str}. Extracted URLs from image binary: {' '.join(urls)}"
             else:
@@ -1264,6 +1266,9 @@ async def scan_batch(request: Request, files: List[UploadFile] = File(...)):
         raise HTTPException(400, f"Too many files in one batch (max {MAX_BATCH_FILES}).")
     results = []
     for file in files:
+        if not (file.filename or "").lower().endswith(".apk"):
+            results.append({"filename": file.filename, "status": "skipped", "reason": "Not a .apk file"})
+            continue
         contents = await file.read()
         if len(contents) > MAX_APK_SIZE:
             results.append({"filename": file.filename, "status": "skipped", "reason": "File exceeds 100MB limit"})
@@ -1371,13 +1376,13 @@ async def check_email_breach(request: Request, email: str):
         for b in breach_details:
             if not isinstance(b, dict):
                 continue
-            raw_date = b.get("xposed_date", "unknown")
+            raw_date = b.get("xposed_date") or "unknown"
             if len(raw_date) == 4 and raw_date.isdigit():
                 formatted_date = f"{raw_date}-01-01"
             else:
                 formatted_date = raw_date
 
-            data_classes_str = b.get("xposed_data", "")
+            data_classes_str = b.get("xposed_data") or ""
             data_classes = [d.strip() for d in data_classes_str.split(";") if d.strip()]
 
             normalized_breaches.append(Breach(

@@ -58,9 +58,12 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         try {
           final risk = report['risk'] ?? {};
           final riskScore = (risk['score'] as int?) ?? 0;
-          final classification = riskScore >= 50
+          // Derive classification from the same 'level' the report displays,
+          // so the saved history record can never disagree with the on-screen verdict.
+          final level = (risk['level'] as String?) ?? 'LOW';
+          final classification = (level == 'CRITICAL' || level == 'HIGH')
               ? 'scam'
-              : riskScore >= 25
+              : level == 'MEDIUM'
                   ? 'suspicious'
                   : 'safe';
           final summary =

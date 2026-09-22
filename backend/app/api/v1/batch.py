@@ -18,6 +18,7 @@ from app.utils.text_utils import truncate
 
 logger = get_logger(__name__)
 router = APIRouter()
+_settings = get_settings()
 
 
 async def _analyze_one(index: int, text: str) -> BatchItemResult:
@@ -61,7 +62,7 @@ async def _analyze_one(index: int, text: str) -> BatchItemResult:
         429: {"description": "Rate limit exceeded"},
     },
 )
-@limiter.limit("20/minute")
+@limiter.limit(_settings.RATE_LIMIT_BATCH)
 async def analyze_batch(
     request: Request,
     body: BatchAnalysisRequest,

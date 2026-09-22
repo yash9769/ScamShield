@@ -37,6 +37,17 @@ class Settings(BaseSettings):
         description="List of allowed CORS origins",
     )
 
+    # ── Networking ───────────────────────────────────────────────────────────
+    TRUST_PROXY_HEADERS: bool = Field(
+        default=False,
+        description=(
+            "Trust the client-supplied X-Forwarded-For header for rate limiting. "
+            "Only enable this when the app sits behind a reverse proxy that "
+            "overwrites/sanitizes this header, otherwise clients can trivially "
+            "spoof their IP to bypass rate limits."
+        ),
+    )
+
     # ── AI / Gemini ───────────────────────────────────────────────────────────
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API key")
     GEMINI_MODELS: List[str] = Field(

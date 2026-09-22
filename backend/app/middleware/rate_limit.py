@@ -17,10 +17,16 @@ logger = get_logger(__name__)
 
 
 def _get_client_ip(request: Request) -> str:
-    """Extract real client IP, respecting X-Forwarded-For from reverse proxies."""
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+    """Extract real client IP.
+
+    X-Forwarded-For is only trusted when TRUST_PROXY_HEADERS is enabled — it's a
+    client-supplied header, and trusting it unconditionally lets any caller spoof
+    a fresh IP on every request to bypass rate limits.
+    """
+    if get_settings().TRUST_PROXY_HEADERS:
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            return forwarded_for.split(",")[0].strip()
     return get_remote_address(request)
 
 
