@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -167,6 +167,56 @@ def cleanup_audit_logs() -> int:
 init_audit_db()
 cleanup_audit_logs()
 
+# ── Community scam reporting ─────────────────────────────────────────────────
+# A lightweight crowdsourced reputation signal: users can flag a phone
+# number/URL/domain as a scam, and other users can check whether it's been
+# reported before engaging with it (answering a call, opening a link, paying
+# a UPI handle from a QR code). Deliberately NOT wired into the automated
+# risk-scoring pipeline — a single anonymous report is trivial to fabricate,
+# so REPORT_THRESHOLD_FOR_SIGNAL gates when a report is surfaced as a real
+# signal rather than acted on after just one submission.
+REPORT_THRESHOLD_FOR_SIGNAL = 3
+
+def init_scam_reports_db():
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS scam_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                indicator_type TEXT NOT NULL,
+                indicator_value TEXT NOT NULL,
+                category TEXT,
+                report_count INTEGER NOT NULL DEFAULT 0,
+                first_reported DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_reported DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(indicator_type, indicator_value)
+            )
+        """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Scam reports DB init error: {e}")
+
+init_scam_reports_db()
+
+def _normalize_indicator(indicator_type: str, value: str) -> str:
+    """Normalizes a reported indicator so the same number/URL always maps to
+    one row regardless of formatting (dashes/spaces/country-code prefix in a
+    phone number, casing in a domain/URL)."""
+    value = value.strip()
+    if indicator_type == "phone":
+        digits = re.sub(r"\D", "", value)
+        # Collapse +91XXXXXXXXXX / 91XXXXXXXXXX / 0XXXXXXXXXX down to the bare
+        # 10-digit number, so the same real-world number reported with a
+        # different prefix still lands on the same reputation record.
+        if len(digits) == 12 and digits.startswith("91"):
+            digits = digits[2:]
+        elif len(digits) == 11 and digits.startswith("0"):
+            digits = digits[1:]
+        return digits
+    return value.lower()
+
 MAX_APK_SIZE    = 100 * 1024 * 1024
 MAX_BATCH_FILES = 20
 
@@ -307,6 +357,39 @@ class BreachResponse(BaseModel):
     breaches: List[Breach]
     source: str = "XposedOrNot"
     checkedAt: str
+
+class ScamReportType(str, Enum):
+    phone  = "phone"
+    url    = "url"
+    domain = "domain"
+
+class ScamReportRequest(BaseModel):
+    indicator_type: ScamReportType
+    indicator_value: str = Field(..., min_length=3, max_length=500)
+    category: Optional[str] = Field(default=None, max_length=100)
+
+    @field_validator("indicator_value")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("indicator_value must not be blank")
+        return v
+
+class ScamReportResponse(BaseModel):
+    indicator_type: str
+    indicator_value: str
+    report_count: int
+    category: Optional[str] = None
+
+class ReputationResponse(BaseModel):
+    indicator_type: str
+    indicator_value: str
+    reported: bool
+    report_count: int
+    category: Optional[str] = None
+    first_reported: Optional[str] = None
+    last_reported: Optional[str] = None
 
 # ── Gemini prompt ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """You are ScamShield, an elite cybersecurity AI specialising in scam, phishing, and fraud detection.
@@ -1197,6 +1280,94 @@ async def osint_domain(request: Request, domain: str):
     except ValueError:
         pass
     return await domain_intel(domain)
+
+@app.post("/report", response_model=ScamReportResponse)
+@limiter.limit("5/minute")
+async def report_scam_indicator(request: Request, body: ScamReportRequest):
+    """Lets a user flag a phone number/URL/domain as a scam. Anti-abuse note:
+    this only records the report — see REPORT_THRESHOLD_FOR_SIGNAL and
+    GET /reputation for how (and when) reports actually surface as a signal,
+    so a handful of malicious reports can't tank a legitimate number/site."""
+    normalized = _normalize_indicator(body.indicator_type.value, body.indicator_value)
+    if not normalized:
+        raise HTTPException(400, "indicator_value is empty after normalization.")
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT report_count, category FROM scam_reports WHERE indicator_type = ? AND indicator_value = ?",
+            (body.indicator_type.value, normalized),
+        )
+        row = cur.fetchone()
+        if row:
+            new_count = row[0] + 1
+            category = body.category or row[1]
+            cur.execute(
+                """UPDATE scam_reports SET report_count = ?, category = ?, last_reported = CURRENT_TIMESTAMP
+                   WHERE indicator_type = ? AND indicator_value = ?""",
+                (new_count, category, body.indicator_type.value, normalized),
+            )
+        else:
+            new_count = 1
+            category = body.category
+            cur.execute(
+                """INSERT INTO scam_reports (indicator_type, indicator_value, category, report_count)
+                   VALUES (?, ?, ?, 1)""",
+                (body.indicator_type.value, normalized, category),
+            )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Scam report write error: {e}")
+        raise HTTPException(500, "Failed to record report.")
+
+    return ScamReportResponse(
+        indicator_type=body.indicator_type.value,
+        indicator_value=normalized,
+        report_count=new_count,
+        category=category,
+    )
+
+@app.get("/reputation/{indicator_type}/{indicator_value}", response_model=ReputationResponse)
+@limiter.limit("60/minute")
+async def get_indicator_reputation(request: Request, indicator_type: ScamReportType, indicator_value: str):
+    """Checks whether a number/URL/domain has been community-reported as a
+    scam. `reported` only turns true once REPORT_THRESHOLD_FOR_SIGNAL
+    independent reports exist — report_count is still returned below that
+    so callers can see raw counts if they want them."""
+    normalized = _normalize_indicator(indicator_type.value, indicator_value)
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT report_count, category, first_reported, last_reported FROM scam_reports
+               WHERE indicator_type = ? AND indicator_value = ?""",
+            (indicator_type.value, normalized),
+        )
+        row = cur.fetchone()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Reputation lookup error: {e}")
+        raise HTTPException(503, "Reputation lookup temporarily unavailable.")
+
+    if not row:
+        return ReputationResponse(
+            indicator_type=indicator_type.value,
+            indicator_value=normalized,
+            reported=False,
+            report_count=0,
+        )
+
+    return ReputationResponse(
+        indicator_type=indicator_type.value,
+        indicator_value=normalized,
+        reported=row[0] >= REPORT_THRESHOLD_FOR_SIGNAL,
+        report_count=row[0],
+        category=row[1],
+        first_reported=row[2],
+        last_reported=row[3],
+    )
 
 @app.get("/dashboard")
 async def get_dashboard(request: Request):

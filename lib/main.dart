@@ -15,6 +15,7 @@ import 'services/settings_service.dart';
 import 'services/auth_service.dart';
 import 'services/consent_service.dart';
 import 'services/data_privacy_service.dart';
+import 'services/share_intent_service.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -96,12 +97,24 @@ class _MainNavigationState extends State<MainNavigation>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkClipboard();
+    ShareIntentService.init();
+    ShareIntentService.pending.addListener(_onSharedContent);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ShareIntentService.pending.removeListener(_onSharedContent);
     super.dispose();
+  }
+
+  void _onSharedContent() {
+    // ScanScreen (kept alive in the IndexedStack below) listens to the same
+    // notifier to actually consume the content; this just brings the Scan
+    // tab into view so the user sees the result land.
+    if (ShareIntentService.pending.value != null && mounted) {
+      setState(() => _selectedIndex = 1);
+    }
   }
 
   @override
