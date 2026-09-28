@@ -27,8 +27,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(MaterialApp), findsOneWidget);
-    expect(find.text('SIGN IN TO SHIELD'), findsOneWidget);
-    expect(find.text('CONTINUE AS GUEST'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Continue without an account'), findsOneWidget);
   });
 
   testWidgets('ScamShieldApp shows the consent gate before consent is given',

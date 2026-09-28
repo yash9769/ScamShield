@@ -16,6 +16,7 @@ import 'services/auth_service.dart';
 import 'services/consent_service.dart';
 import 'services/data_privacy_service.dart';
 import 'services/share_intent_service.dart';
+import 'services/breach_watch_service.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -99,6 +100,45 @@ class _MainNavigationState extends State<MainNavigation>
     _checkClipboard();
     ShareIntentService.init();
     ShareIntentService.pending.addListener(_onSharedContent);
+    _checkWatchedBreaches();
+  }
+
+  /// Re-checks watched email addresses and surfaces anything that newly turned
+  /// up in a breach. The service rate-limits itself, so calling this on every
+  /// app open and resume is cheap.
+  Future<void> _checkWatchedBreaches() async {
+    final alerts = await BreachWatchService.checkForNewBreaches();
+    if (!mounted || alerts.isEmpty) return;
+
+    final first = alerts.first;
+    final more = alerts.length - 1;
+    final headline = alerts.length == 1
+        ? '${first.email} appeared in ${first.newExposures} new breach(es)'
+        : '${alerts.length} watched addresses appeared in new breaches';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.surfaceLight,
+        duration: const Duration(seconds: 8),
+        content: Row(
+          children: [
+            const Icon(Icons.mark_email_unread, color: AppColors.warning, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                more > 0 ? '$headline (+$more more)' : headline,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'REVIEW',
+          textColor: AppColors.primary,
+          onPressed: () => setState(() => _selectedIndex = 2),
+        ),
+      ),
+    );
   }
 
   @override
@@ -121,6 +161,7 @@ class _MainNavigationState extends State<MainNavigation>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkClipboard();
+      _checkWatchedBreaches();
     }
   }
 
