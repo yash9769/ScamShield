@@ -205,6 +205,10 @@ def _normalize_indicator(indicator_type: str, value: str) -> str:
     one row regardless of formatting (dashes/spaces/country-code prefix in a
     phone number, casing in a domain/URL)."""
     value = value.strip()
+    if indicator_type == "upi":
+        # UPI handles are case-insensitive and frequently pasted with stray
+        # spaces from a QR payload.
+        return value.lower().replace(" ", "")
     if indicator_type == "phone":
         digits = re.sub(r"\D", "", value)
         # Collapse +91XXXXXXXXXX / 91XXXXXXXXXX / 0XXXXXXXXXX down to the bare
@@ -271,9 +275,18 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    # DELETE is needed by the account-erasure endpoint in accounts.py.
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# ── Accounts, cross-device sync and family protection ─────────────────────────
+# Kept in its own module: it is the only stateful, authenticated surface in an
+# otherwise stateless analysis API, and it owns its own database.
+from accounts import init_accounts_db, router as accounts_router  # noqa: E402
+
+init_accounts_db()
+app.include_router(accounts_router)
 
 # ── Pydantic models ────────────────────────────────────────────────────────────
 class ScamClassification(str, Enum):
@@ -362,6 +375,9 @@ class ScamReportType(str, Enum):
     phone  = "phone"
     url    = "url"
     domain = "domain"
+    # A UPI payee handle (name@bank). Reported and looked up at the moment of
+    # payment, which is the highest-stakes point in an Indian payment scam.
+    upi    = "upi"
 
 class ScamReportRequest(BaseModel):
     indicator_type: ScamReportType
@@ -1368,6 +1384,46 @@ async def get_indicator_reputation(request: Request, indicator_type: ScamReportT
         first_reported=row[2],
         last_reported=row[3],
     )
+
+@app.get("/trends")
+@limiter.limit("60/minute")
+async def scam_trends(request: Request, days: int = 7):
+    """What is being reported lately, aggregated by scam category.
+
+    Built from community reports rather than a curated feed, so it reflects
+    what users are actually hitting this week. Only aggregate counts are
+    returned — never the reported indicators themselves, which would turn a
+    "what's going around" feed into a directory of live scam numbers.
+    """
+    days = max(1, min(days, 90))
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute(
+            f"""SELECT COALESCE(NULLIF(TRIM(category), ''), 'Uncategorised') AS category,
+                       SUM(report_count) AS reports,
+                       COUNT(*)          AS distinct_indicators
+                FROM scam_reports
+                WHERE last_reported >= datetime('now', '-{days} days')
+                GROUP BY 1
+                ORDER BY reports DESC
+                LIMIT 20"""
+        )
+        rows = cur.fetchall()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Trend query error: {e}")
+        raise HTTPException(503, "Trend data is temporarily unavailable.")
+
+    trends = [
+        {"category": r[0], "reports": int(r[1] or 0), "distinct_indicators": int(r[2] or 0)}
+        for r in rows
+    ]
+    return {
+        "window_days": days,
+        "total_reports": sum(t["reports"] for t in trends),
+        "trends": trends,
+    }
 
 @app.get("/dashboard")
 async def get_dashboard(request: Request):
