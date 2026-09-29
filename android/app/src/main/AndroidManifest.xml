@@ -7,6 +7,12 @@
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Real-time SMS scam screening (Settings > Real-Time Protection). This is
+         an optional, explicitly opt-in feature — RECEIVE_SMS only lets
+         ScamShield observe incoming messages alongside the user's normal SMS
+         app, it does not make ScamShield a messaging app or intercept/block
+         anything. See SmsScreeningReceiver.kt. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
 
     <application
         android:label="SScamSShield"
@@ -47,6 +53,20 @@
                 <data android:mimeType="image/*"/>
             </intent-filter>
         </activity>
+
+        <!-- Real-time SMS scam screening. exported=true is required for the
+             system to deliver the SMS_RECEIVED broadcast to this receiver;
+             it does not expose any app functionality to other apps beyond
+             that one system broadcast. -->
+        <receiver
+            android:name=".SmsScreeningReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

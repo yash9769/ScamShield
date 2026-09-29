@@ -14,13 +14,14 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-enum IndicatorType { phone, url, domain }
+enum IndicatorType { phone, url, domain, upi }
 
 extension on IndicatorType {
   String get value => switch (this) {
         IndicatorType.phone => 'phone',
         IndicatorType.url => 'url',
         IndicatorType.domain => 'domain',
+        IndicatorType.upi => 'upi',
       };
 }
 
