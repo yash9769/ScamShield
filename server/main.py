@@ -193,6 +193,26 @@ def init_scam_reports_db():
                 UNIQUE(indicator_type, indicator_value)
             )
         """)
+        # Verdict feedback: "was this call right?" answers from the scan result
+        # screen. Deliberately anonymous and content-free — a SHA-256 of the
+        # analysed text is stored instead of the text, which is enough to
+        # collapse duplicate votes on the same message without the server ever
+        # holding someone's SMS.
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS verdict_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content_hash TEXT NOT NULL,
+                classification TEXT NOT NULL,
+                risk_score INTEGER NOT NULL,
+                agreement TEXT NOT NULL,
+                note TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(content_hash, agreement)
+            )
+        """)
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_feedback_created ON verdict_feedback(created_at)"
+        )
         conn.commit()
         conn.close()
     except Exception as e:
@@ -406,6 +426,49 @@ class ReputationResponse(BaseModel):
     category: Optional[str] = None
     first_reported: Optional[str] = None
     last_reported: Optional[str] = None
+
+class VerdictAgreement(str, Enum):
+    # The verdict was right.
+    correct        = "correct"
+    # Flagged as a scam but the user knows it is legitimate.
+    false_positive = "false_positive"
+    # Called safe (or too low) but the user knows it was a scam.
+    missed         = "missed"
+
+class VerdictFeedbackRequest(BaseModel):
+    """A vote on a verdict the app just produced.
+
+    `content_hash` is a client-computed SHA-256 of the analysed text. The text
+    itself is never sent: the hash exists only so repeat votes on the same
+    message collapse into one, and it is not reversible into the message.
+    """
+    content_hash: str = Field(..., min_length=64, max_length=64)
+    classification: ScamClassification
+    risk_score: int = Field(..., ge=0, le=100)
+    agreement: VerdictAgreement
+    note: Optional[str] = Field(default=None, max_length=280)
+
+    @field_validator("content_hash")
+    @classmethod
+    def _is_sha256_hex(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", v):
+            raise ValueError("content_hash must be a hex SHA-256 digest")
+        return v
+
+class VerdictFeedbackResponse(BaseModel):
+    recorded: bool
+    total_feedback: int
+
+class VerdictAccuracyResponse(BaseModel):
+    """Aggregate only — no per-report rows are ever exposed here."""
+    days: int
+    total: int
+    correct: int
+    false_positives: int
+    missed: int
+    accuracy_percent: float
+    by_classification: dict
 
 # ── Gemini prompt ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """You are ScamShield, an elite cybersecurity AI specialising in scam, phishing, and fraud detection.
@@ -1383,6 +1446,103 @@ async def get_indicator_reputation(request: Request, indicator_type: ScamReportT
         category=row[1],
         first_reported=row[2],
         last_reported=row[3],
+    )
+
+@app.post("/feedback/verdict", response_model=VerdictFeedbackResponse)
+@limiter.limit("20/minute")
+async def submit_verdict_feedback(request: Request, body: VerdictFeedbackRequest):
+    """Records whether a verdict the app produced was actually right.
+
+    This closes the loop that a pure heuristic/LLM pipeline otherwise never
+    gets: a false positive on a legitimate bank SMS is invisible to us unless
+    the person who received it says so. Anonymous by construction — no account
+    is required and no message content is accepted, only its hash.
+
+    Re-voting the same way on the same message is idempotent (the UNIQUE
+    constraint absorbs it); changing your mind replaces the earlier vote, so a
+    single user can never stack multiple counts onto one message.
+    """
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        # A person may only hold one opinion per message. Clearing the other
+        # agreements first means switching from "missed" to "correct" moves the
+        # vote rather than counting twice.
+        cur.execute(
+            "DELETE FROM verdict_feedback WHERE content_hash = ? AND agreement != ?",
+            (body.content_hash, body.agreement.value),
+        )
+        cur.execute(
+            """INSERT INTO verdict_feedback (content_hash, classification, risk_score, agreement, note)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(content_hash, agreement) DO UPDATE SET
+                   classification = excluded.classification,
+                   risk_score     = excluded.risk_score,
+                   note           = excluded.note,
+                   created_at     = CURRENT_TIMESTAMP""",
+            (
+                body.content_hash,
+                body.classification.value,
+                body.risk_score,
+                body.agreement.value,
+                body.note,
+            ),
+        )
+        cur.execute("SELECT COUNT(*) FROM verdict_feedback")
+        total = cur.fetchone()[0]
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Verdict feedback write error: {e}")
+        raise HTTPException(500, "Failed to record feedback.")
+
+    log_audit_event("verdict_feedback", body.agreement.value, body.risk_score, body.classification.value)
+    return VerdictFeedbackResponse(recorded=True, total_feedback=total)
+
+@app.get("/feedback/accuracy", response_model=VerdictAccuracyResponse)
+@limiter.limit("60/minute")
+async def verdict_accuracy(request: Request, days: int = 30):
+    """How often the detection pipeline has been agreeing with reality.
+
+    Aggregate counts only. Surfaced publicly on purpose: an accuracy figure the
+    user can actually see is worth more than one asserted in marketing copy.
+    """
+    days = max(1, min(days, 365))
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        cur.execute(
+            f"""SELECT classification, agreement, COUNT(*) FROM verdict_feedback
+                WHERE created_at >= datetime('now', '-{days} days')
+                GROUP BY classification, agreement""",
+        )
+        rows = cur.fetchall()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Verdict accuracy read error: {e}")
+        raise HTTPException(503, "Accuracy stats temporarily unavailable.")
+
+    totals = {"correct": 0, "false_positive": 0, "missed": 0}
+    by_classification: dict = {}
+    for classification, agreement, count in rows:
+        if agreement in totals:
+            totals[agreement] += count
+        bucket = by_classification.setdefault(
+            classification, {"correct": 0, "false_positive": 0, "missed": 0}
+        )
+        if agreement in bucket:
+            bucket[agreement] += count
+
+    total = sum(totals.values())
+    return VerdictAccuracyResponse(
+        days=days,
+        total=total,
+        correct=totals["correct"],
+        false_positives=totals["false_positive"],
+        missed=totals["missed"],
+        # No feedback yet is reported as 0%, not as a fabricated 100%.
+        accuracy_percent=round(totals["correct"] * 100.0 / total, 1) if total else 0.0,
+        by_classification=by_classification,
     )
 
 @app.get("/trends")

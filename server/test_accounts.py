@@ -304,3 +304,191 @@ class TestTrendsAndUpi:
                                      "category": "upi fraud"})
         body = client.get("/trends?days=7").text
         assert "scammer@okaxis" not in body
+
+
+# ── Push tokens ───────────────────────────────────────────────────────────────
+
+class TestPushTokens:
+    def test_register_and_unregister_token(self, client):
+        a = _register(client, "push-a@example.com")
+        resp = client.post("/push/register", headers=a,
+                           json={"token": "fcm-token-abc-0001", "platform": "android"})
+        assert resp.status_code == 200
+        assert resp.json()["registered"] is True
+
+        resp = client.request("DELETE", "/push/register", headers=a,
+                              json={"token": "fcm-token-abc-0001", "platform": "android"})
+        assert resp.status_code == 200
+        assert resp.json()["unregistered"] is True
+
+    def test_token_reassigns_to_the_new_owner(self, client):
+        """A handed-on phone must stop delivering the old owner's alerts."""
+        a = _register(client, "old-owner@example.com")
+        b = _register(client, "new-owner@example.com")
+        client.post("/push/register", headers=a, json={"token": "fcm-token-shared-0002"})
+        client.post("/push/register", headers=b, json={"token": "fcm-token-shared-0002"})
+
+        rows = accounts._query(
+            "SELECT user_id FROM push_tokens WHERE token = ?", ("fcm-token-shared-0002",), fetch="all"
+        )
+        assert len(rows) == 1
+        me_b = client.get("/account/me", headers=b).json()
+        assert rows[0]["user_id"] == me_b["id"]
+
+    def test_registering_a_token_requires_auth(self, client):
+        assert client.post("/push/register", json={"token": "fcm-token-unauth-0005"}).status_code == 401
+
+    def test_cannot_delete_another_users_token(self, client):
+        a = _register(client, "keeper@example.com")
+        b = _register(client, "thief@example.com")
+        client.post("/push/register", headers=a, json={"token": "fcm-token-keeper-0003"})
+        client.request("DELETE", "/push/register", headers=b, json={"token": "fcm-token-keeper-0003"})
+
+        rows = accounts._query(
+            "SELECT user_id FROM push_tokens WHERE token = ?", ("fcm-token-keeper-0003",), fetch="all"
+        )
+        assert len(rows) == 1
+
+    def test_family_alert_still_succeeds_without_push_configured(self, client):
+        """Push is best-effort: an unconfigured provider must not fail the alert."""
+        a = _register(client, "parent@example.com")
+        b = _register(client, "child@example.com")
+        code = client.post("/family/create", headers=a, json={"name": "Fam"}).json()["invite_code"]
+        client.post("/family/join", headers=b, json={"invite_code": code})
+        client.post("/push/register", headers=b, json={"token": "fcm-token-child-0004"})
+
+        resp = client.post("/family/alert", headers=a, json={
+            "classification": "SCAM", "risk_score": 91, "summary": "Fake bank KYC SMS"})
+        assert resp.status_code == 200
+        assert resp.json()["risk_score"] == 91
+        assert client.get("/family", headers=b).json()["alerts"][0]["summary"] == "Fake bank KYC SMS"
+
+
+# ── Learning progress & leaderboard ───────────────────────────────────────────
+
+class TestLeaderboard:
+    def _post_progress(self, client, headers, points, **kw):
+        payload = {"total_points": points, "streak_days": kw.get("streak_days", 0),
+                   "badges_earned": kw.get("badges_earned", 0),
+                   "quizzes_passed": kw.get("quizzes_passed", 0),
+                   "articles_read": kw.get("articles_read", 0)}
+        return client.post("/learning/progress", headers=headers, json=payload)
+
+    def test_progress_upserts_rather_than_duplicating(self, client):
+        a = _register(client, "learner@example.com")
+        assert self._post_progress(client, a, 100).status_code == 200
+        assert self._post_progress(client, a, 250).status_code == 200
+
+        board = client.get("/learning/leaderboard?scope=global", headers=a).json()
+        mine = [e for e in board["entries"] if e["is_you"]]
+        assert len(mine) == 1
+        assert mine[0]["total_points"] == 250
+
+    def test_leaderboard_ranks_by_points(self, client):
+        a = _register(client, "top@example.com")
+        b = _register(client, "mid@example.com")
+        self._post_progress(client, a, 900)
+        self._post_progress(client, b, 300)
+
+        entries = client.get("/learning/leaderboard?scope=global", headers=b).json()["entries"]
+        assert [e["rank"] for e in entries[:2]] == [1, 2]
+        assert entries[0]["total_points"] == 900
+        assert entries[1]["total_points"] == 300
+
+    def test_global_leaderboard_never_exposes_email_addresses(self, client):
+        """A stranger's email is not a display name. Family scope may fall back
+        to it; global scope must not, ever."""
+        a = _register(client, "private.person@example.com")
+        accounts._query("UPDATE users SET display_name = NULL WHERE email = ?",
+                        ("private.person@example.com",))
+        self._post_progress(client, a, 500)
+
+        body = client.get("/learning/leaderboard?scope=global", headers=a).text
+        assert "private.person@example.com" not in body
+        assert "ScamShield user" in body
+
+    def test_family_scope_only_shows_family_members(self, client):
+        a = _register(client, "fam-a@example.com")
+        b = _register(client, "fam-b@example.com")
+        outsider = _register(client, "outsider@example.com")
+        code = client.post("/family/create", headers=a, json={"name": "Fam"}).json()["invite_code"]
+        client.post("/family/join", headers=b, json={"invite_code": code})
+        for h, pts in ((a, 400), (b, 200), (outsider, 5000)):
+            self._post_progress(client, h, pts)
+
+        entries = client.get("/learning/leaderboard?scope=family", headers=a).json()["entries"]
+        assert len(entries) == 2
+        assert 5000 not in [e["total_points"] for e in entries]
+
+    def test_leaderboard_requires_auth(self, client):
+        assert client.get("/learning/leaderboard").status_code == 401
+
+
+# ── Verdict feedback ──────────────────────────────────────────────────────────
+
+_HASH_A = "a" * 64
+_HASH_B = "b" * 64
+
+
+class TestVerdictFeedback:
+    def _feedback(self, client, content_hash, agreement, classification="scam", score=88):
+        return client.post("/feedback/verdict", json={
+            "content_hash": content_hash, "classification": classification,
+            "risk_score": score, "agreement": agreement})
+
+    def test_feedback_is_anonymous_and_recorded(self, client):
+        resp = self._feedback(client, _HASH_A, "correct")
+        assert resp.status_code == 200
+        assert resp.json()["recorded"] is True
+        assert resp.json()["total_feedback"] == 1
+
+    def test_repeat_vote_on_the_same_message_does_not_stack(self, client):
+        for _ in range(4):
+            self._feedback(client, _HASH_A, "correct")
+        assert self._feedback(client, _HASH_A, "correct").json()["total_feedback"] == 1
+
+    def test_changing_your_mind_replaces_the_earlier_vote(self, client):
+        self._feedback(client, _HASH_A, "missed", classification="safe", score=10)
+        self._feedback(client, _HASH_A, "correct", classification="safe", score=10)
+
+        stats = client.get("/feedback/accuracy?days=30").json()
+        assert stats["total"] == 1
+        assert stats["correct"] == 1
+        assert stats["missed"] == 0
+
+    def test_rejects_anything_that_is_not_a_sha256_digest(self, client):
+        """Guards the privacy promise: the endpoint must not become a place
+        raw message text can be posted to."""
+        for bad in ("Your OTP is 123456, do not share", "", "z" * 64, "abc"):
+            resp = client.post("/feedback/verdict", json={
+                "content_hash": bad, "classification": "scam",
+                "risk_score": 90, "agreement": "correct"})
+            assert resp.status_code == 422, bad
+
+    def test_rejects_out_of_range_risk_score(self, client):
+        assert self._feedback(client, _HASH_A, "correct", score=140).status_code == 422
+
+    def test_rejects_unknown_agreement_value(self, client):
+        assert self._feedback(client, _HASH_A, "shrug").status_code == 422
+
+    def test_accuracy_aggregates_and_never_leaks_hashes(self, client):
+        self._feedback(client, _HASH_A, "correct")
+        self._feedback(client, _HASH_B, "false_positive", classification="suspicious", score=60)
+
+        resp = client.get("/feedback/accuracy?days=30")
+        body = resp.json()
+        assert body["total"] == 2
+        assert body["correct"] == 1
+        assert body["false_positives"] == 1
+        assert body["accuracy_percent"] == 50.0
+        assert body["by_classification"]["scam"]["correct"] == 1
+        assert _HASH_A not in resp.text and _HASH_B not in resp.text
+
+    def test_accuracy_with_no_feedback_reports_zero_not_a_perfect_score(self, client):
+        body = client.get("/feedback/accuracy").json()
+        assert body["total"] == 0
+        assert body["accuracy_percent"] == 0.0
+
+    def test_accuracy_window_is_clamped(self, client):
+        assert client.get("/feedback/accuracy?days=99999").json()["days"] == 365
+        assert client.get("/feedback/accuracy?days=0").json()["days"] == 1
