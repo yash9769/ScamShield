@@ -67,6 +67,24 @@
             </intent-filter>
         </receiver>
 
+        <!-- Incoming-call scam screening (Profile > Scam Call Screening).
+             Deliberately declares no call-log permission: the Android 10 role
+             API supplies the caller's number to a screening service directly,
+             which is why this feature is gated to API 29+ rather than taking
+             the pre-10 route of replacing the user's dialer.
+
+             BIND_SCREENING_SERVICE is a system-signature permission, so this
+             service can only ever be bound by the telecom framework — the
+             exported=true below does not expose it to other apps. -->
+        <service
+            android:name=".CallScreeningServiceImpl"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService"/>
+            </intent-filter>
+        </service>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

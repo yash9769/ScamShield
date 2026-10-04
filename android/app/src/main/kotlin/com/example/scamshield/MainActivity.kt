@@ -14,8 +14,18 @@ class MainActivity : FlutterActivity() {
     private val SMS_METHOD_CHANNEL = "com.example.scamshield/sms"
     private val SMS_EVENT_CHANNEL = "com.example.scamshield/sms_stream"
 
+    private var callScreeningBridge: CallScreeningBridge? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Incoming-call screening: this channel only manages the system role.
+        // The screening itself runs in CallScreeningServiceImpl, which the
+        // system starts on its own with no Flutter engine involved.
+        val callBridge = CallScreeningBridge(this)
+        callScreeningBridge = callBridge
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CallScreeningBridge.CHANNEL)
+            .setMethodCallHandler(callBridge)
 
         // Live messages: delivered here whenever the app process is alive,
         // regardless of which screen is in front.
@@ -63,6 +73,15 @@ class MainActivity : FlutterActivity() {
             } else {
                 result.notImplemented()
             }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        // Let the bridge answer its own pending Dart call first; anything it
+        // doesn't recognise still has to reach super, or the Flutter plugins
+        // that use startActivityForResult (image picking, permissions) break.
+        if (callScreeningBridge?.onActivityResult(requestCode, resultCode) != true) {
+            super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
