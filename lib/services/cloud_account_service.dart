@@ -160,6 +160,36 @@ class ScamTrends {
       );
 }
 
+class LeaderboardEntry {
+  final int rank;
+  final String displayName;
+  final int totalPoints;
+  final int streakDays;
+  final int badgesEarned;
+
+  /// Marks the signed-in user's own row so the UI can highlight it without
+  /// having to match on a name that may not be unique.
+  final bool isYou;
+
+  const LeaderboardEntry({
+    required this.rank,
+    required this.displayName,
+    required this.totalPoints,
+    required this.streakDays,
+    required this.badgesEarned,
+    this.isYou = false,
+  });
+
+  factory LeaderboardEntry.fromJson(Map<String, dynamic> j) => LeaderboardEntry(
+        rank: j['rank'] ?? 0,
+        displayName: j['display_name'] ?? 'ScamShield user',
+        totalPoints: j['total_points'] ?? 0,
+        streakDays: j['streak_days'] ?? 0,
+        badgesEarned: j['badges_earned'] ?? 0,
+        isYou: j['is_you'] == true,
+      );
+}
+
 /// Thrown for a request the caller should surface to the user (bad code,
 /// duplicate account, expired session). Network failures are *not* raised as
 /// this — they resolve to null/empty so the app keeps working offline.
@@ -395,6 +425,98 @@ class CloudAccountService {
           .timeout(_timeout);
     } catch (e) {
       debugPrint('CloudAccountService.acknowledgeAlert failed: $e');
+    }
+  }
+
+  // ── Push tokens ─────────────────────────────────────────────────────────
+
+  /// Tells the server which device to wake for this account's family alerts.
+  /// Silent no-op when signed out — push is a convenience layered on top of
+  /// the alert record, never the thing that carries it.
+  static Future<bool> registerPushToken(String token) async {
+    if (await _token() == null) return false;
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('$_baseUrl/push/register'),
+            headers: await _authHeaders(),
+            body: jsonEncode({'token': token, 'platform': 'android'}),
+          )
+          .timeout(_timeout);
+      return resp.statusCode == 200;
+    } catch (e) {
+      debugPrint('CloudAccountService.registerPushToken failed: $e');
+      return false;
+    }
+  }
+
+  /// Called on sign-out. Without this a shared or handed-on phone would keep
+  /// receiving the previous account's family alerts.
+  static Future<void> unregisterPushToken(String token) async {
+    try {
+      await http
+          .delete(
+            Uri.parse('$_baseUrl/push/register'),
+            headers: await _authHeaders(),
+            body: jsonEncode({'token': token, 'platform': 'android'}),
+          )
+          .timeout(_timeout);
+    } catch (e) {
+      debugPrint('CloudAccountService.unregisterPushToken failed: $e');
+    }
+  }
+
+  // ── Learning progress & leaderboard ─────────────────────────────────────
+
+  static Future<bool> pushLearningProgress({
+    required int totalPoints,
+    required int streakDays,
+    required int badgesEarned,
+    required int quizzesPassed,
+    required int articlesRead,
+  }) async {
+    if (await _token() == null) return false;
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('$_baseUrl/learning/progress'),
+            headers: await _authHeaders(),
+            body: jsonEncode({
+              'total_points': totalPoints,
+              'streak_days': streakDays,
+              'badges_earned': badgesEarned,
+              'quizzes_passed': quizzesPassed,
+              'articles_read': articlesRead,
+            }),
+          )
+          .timeout(_timeout);
+      return resp.statusCode == 200;
+    } catch (e) {
+      debugPrint('CloudAccountService.pushLearningProgress failed: $e');
+      return false;
+    }
+  }
+
+  /// [scope] is 'global' or 'family'. Returns null on any failure so the UI
+  /// can say "couldn't load" rather than render a confidently empty board.
+  static Future<List<LeaderboardEntry>?> fetchLeaderboard({
+    String scope = 'global',
+  }) async {
+    if (await _token() == null) return null;
+    try {
+      final resp = await http
+          .get(
+            Uri.parse('$_baseUrl/learning/leaderboard?scope=$scope'),
+            headers: await _authHeaders(),
+          )
+          .timeout(_timeout);
+      final data = _decode(resp);
+      return (data['entries'] as List<dynamic>? ?? [])
+          .map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('CloudAccountService.fetchLeaderboard failed: $e');
+      return null;
     }
   }
 

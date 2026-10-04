@@ -21,6 +21,7 @@ import 'services/cloud_account_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/sms_screening_service.dart';
 import 'services/call_screening_service.dart';
+import 'services/push_notification_service.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -46,6 +47,9 @@ void main() async {
   // turns itself off cleanly if that role was since taken away. Also refreshes
   // the native side's known-bad number list from local scan history.
   unawaited(CallScreeningService.initIfEnabled());
+  // Push notifications for family alerts. Fails soft and silently on any build
+  // without a Firebase config, which is why it is safe to call unconditionally.
+  unawaited(PushNotificationService.init());
   runApp(ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented));
 }
 
@@ -122,6 +126,9 @@ class _MainNavigationState extends State<MainNavigation>
     await CloudAccountService.refreshSignedInState();
     if (!CloudAccountService.signedIn.value) return;
     unawaited(CloudSyncService.sync());
+    // Re-points the server at this device after a fresh sign-in, and re-asserts
+    // the token if a previous registration failed while offline.
+    unawaited(PushNotificationService.syncTokenWithAccount());
   }
 
   /// Re-checks watched email addresses and surfaces anything that newly turned

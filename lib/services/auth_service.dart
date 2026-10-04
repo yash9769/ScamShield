@@ -26,6 +26,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'cloud_account_service.dart';
 import 'cloud_sync_service.dart';
 import 'google_auth_service.dart';
+import 'push_notification_service.dart';
 
 enum AuthResult {
   success,
@@ -212,6 +213,11 @@ class AuthService {
     if (await currentProvider() == AuthProvider.google) {
       await GoogleAuthService.signOut();
     }
+    // Detach this device's push token before the session is torn down — it
+    // needs the session to authenticate the call. Without it, the next person
+    // to sign in on this phone would keep receiving the previous user's
+    // family alerts.
+    await PushNotificationService.clearTokenForSignOut();
     // The cloud session goes too. Leaving it behind on a shared or handed-on
     // device would let the next person's sync pull the previous user's
     // history back down.
