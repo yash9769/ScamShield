@@ -1,0 +1,11 @@
+id: data_exfiltration
+title: Large outbound data transfer to an external host
+severity: high
+mitre:
+  technique: T1041
+logic:
+  type: volume_spike
+  window_minutes: 10
+  suppress_minutes: 30
+  internal_prefix: "10.10."
+  bytes_sent_threshold: 60000000

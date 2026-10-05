@@ -1,0 +1,15 @@
+id: lateral_movement
+title: One internal host authenticating to many others
+severity: high
+mitre:
+  technique: T1021
+logic:
+  type: distinct_count
+  event_type: auth
+  filters:
+    action: login_success
+    src_ip|startswith: "10.10."
+  group_by: [src_ip]
+  window_minutes: 30
+  distinct_field: host
+  min_distinct: 4

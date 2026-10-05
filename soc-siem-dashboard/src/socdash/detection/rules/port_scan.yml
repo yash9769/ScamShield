@@ -1,0 +1,14 @@
+id: port_scan
+title: Single source probing many ports on one host
+severity: medium
+mitre:
+  technique: T1595
+logic:
+  type: distinct_count
+  event_type: network
+  filters:
+    direction: inbound
+  group_by: [src_ip, host]
+  window_minutes: 5
+  distinct_field: port
+  min_distinct: 10

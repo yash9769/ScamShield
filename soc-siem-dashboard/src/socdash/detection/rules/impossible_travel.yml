@@ -1,0 +1,9 @@
+id: impossible_travel
+title: Successful logins from two locations faster than travel allows
+severity: critical
+mitre:
+  technique: T1078
+logic:
+  type: impossible_travel
+  success_action: login_success
+  max_speed_kmh: 900

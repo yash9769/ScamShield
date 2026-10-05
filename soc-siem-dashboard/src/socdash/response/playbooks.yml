@@ -1,0 +1,103 @@
+# Response playbooks keyed by ATT&CK technique. Each step is rendered with
+# the incident's own entities: {hosts}, {users}, {ips}, {domains}. A step is
+# only offered when the entity list named in `needs` is non-empty — no
+# "block {ips}" for an incident that involves no external address.
+#
+# Phases follow the usual incident-response order:
+# investigate -> contain -> eradicate -> recover.
+
+T1595:  # Active Scanning
+  - id: review-exposure
+    phase: investigate
+    needs: hosts
+    action: Review which services on {hosts} answered the scan and whether they need to be internet-facing
+  - id: block-scanner
+    phase: contain
+    needs: ips
+    action: Rate-limit or block {ips} at the perimeter
+
+T1110:  # Brute Force
+  - id: check-success
+    phase: investigate
+    needs: ips
+    action: Check whether any login from {ips} succeeded after the failures
+  - id: block-source
+    phase: contain
+    needs: ips
+    action: Block {ips} at the perimeter and on the VPN concentrator
+  - id: reset-credentials
+    phase: eradicate
+    needs: users
+    action: Force a password reset and revoke active sessions for {users}
+
+T1078:  # Valid Accounts (impossible travel)
+  - id: confirm-travel
+    phase: investigate
+    needs: users
+    action: Confirm with {users} (out of band) whether both logins were theirs
+  - id: revoke-sessions
+    phase: contain
+    needs: users
+    action: Revoke all active sessions and tokens for {users}
+  - id: mfa-reenroll
+    phase: recover
+    needs: users
+    action: Require MFA re-enrollment for {users} before restoring access
+
+T1059.001:  # PowerShell
+  - id: decode-payload
+    phase: investigate
+    needs: hosts
+    action: Decode every encoded command run on {hosts} and pull the URLs and domains out of it
+  - id: isolate-host
+    phase: contain
+    needs: hosts
+    action: Network-isolate {hosts}, kept powered on for memory capture
+  - id: hunt-persistence
+    phase: eradicate
+    needs: hosts
+    action: Hunt for persistence on {hosts} (scheduled tasks, run keys, WMI subscriptions) before reimaging
+
+T1021:  # Remote Services
+  - id: review-logons
+    phase: investigate
+    needs: hosts
+    action: Review every logon to {hosts} during the incident window and what ran afterwards
+  - id: disable-account
+    phase: contain
+    needs: users
+    action: Disable {users} until the investigation clears the account
+  - id: rotate-admin
+    phase: eradicate
+    needs: hosts
+    action: Rotate local administrator and service-account credentials on {hosts}
+
+T1071:  # Application Layer Protocol (C2 beaconing)
+  - id: block-c2
+    phase: contain
+    needs: domains
+    action: Sinkhole or block {domains} at the DNS resolver and web proxy
+  - id: isolate-beacon
+    phase: contain
+    needs: hosts
+    action: Isolate {hosts} — a beacon means the implant is still running
+
+T1041:  # Exfiltration
+  - id: block-destination
+    phase: contain
+    needs: ips
+    action: Block outbound traffic to {ips}
+  - id: scope-loss
+    phase: investigate
+    needs: hosts
+    action: "Establish what left {hosts}: outbound volumes, and every share and database reachable from there"
+  - id: notify
+    phase: recover
+    needs: hosts
+    action: Start the breach-notification assessment (DPDP Act, GDPR — the clocks start at discovery)
+
+_unattributed:  # anomaly alerts without a specific technique
+  - id: triage-anomaly
+    phase: investigate
+    needs: hosts
+    action: Triage the anomalous host-hours on {hosts} — compare against each host's usual pattern on Entity Investigation

@@ -1,0 +1,13 @@
+id: brute_force
+title: Repeated login failures from one source against one host
+severity: high
+mitre:
+  technique: T1110
+logic:
+  type: threshold_then_success
+  event_type: auth
+  group_by: [src_ip, host]
+  window_minutes: 10
+  min_failures: 5
+  failure_action: login_failure
+  success_action: login_success

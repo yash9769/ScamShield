@@ -1,0 +1,20 @@
+id: suspicious_powershell
+title: Encoded or download-cradle PowerShell execution
+severity: high
+mitre:
+  technique: T1059.001
+logic:
+  type: pattern_match
+  event_type: process
+  filters:
+    process_name|in: [powershell.exe, pwsh.exe]
+  field: command_line
+  # Single-quoted so YAML leaves the regex backslashes alone. Keys on how
+  # PowerShell is invoked, not that it ran: -e/-enc/-EncodedCommand followed
+  # by a long base64 blob, or an IEX download cradle. Admin scripts using
+  # -ExecutionPolicy Bypass -File ... don't match either pattern.
+  patterns:
+    - '(?i)\s-e[a-z]*\s+[A-Za-z0-9+/=]{40,}'
+    - '(?i)iex\s*\(.*downloadstring'
+  group_by: [host]
+  window_minutes: 30
