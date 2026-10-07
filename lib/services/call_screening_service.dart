@@ -247,10 +247,12 @@ class CallScreeningService {
   /// as +919876543210, 09876543210 or 9876543210 depending on the caller.
   static String normalize(String raw) {
     final digits = raw.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 12 && digits.startsWith('91'))
+    if (digits.length == 12 && digits.startsWith('91')) {
       return digits.substring(2);
-    if (digits.length == 11 && digits.startsWith('0'))
+    }
+    if (digits.length == 11 && digits.startsWith('0')) {
       return digits.substring(1);
+    }
     return digits;
   }
 

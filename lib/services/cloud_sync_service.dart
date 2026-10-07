@@ -179,8 +179,9 @@ class CloudSyncService {
             final scan = raw as Map<String, dynamic>;
             final id = scan['id'] as String? ?? '';
             if (id.isEmpty) continue;
-            if (scan['deleted'] == true)
+            if (scan['deleted'] == true) {
               continue; // tombstone: nothing to insert
+            }
             if (localById.containsKey(id)) continue; // already here
 
             final scannedAt = DateTime.tryParse(

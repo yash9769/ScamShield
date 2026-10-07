@@ -841,8 +841,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
                                 password: passwordController.text,
                               );
                             }
-                            if (sheetContext.mounted)
+                            if (sheetContext.mounted) {
                               Navigator.pop(sheetContext);
+                            }
                           } on CloudException catch (e) {
                             setSheetState(() {
                               submitting = false;
