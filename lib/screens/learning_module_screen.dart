@@ -106,7 +106,10 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.module.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.module.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
@@ -121,10 +124,7 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildLessonTab(),
-          _buildQuizTab(),
-        ],
+        children: [_buildLessonTab(), _buildQuizTab()],
       ),
     );
   }
@@ -140,91 +140,137 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
           Reveal(
             delay: Reveal.step(0),
             child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.surface],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(m.icon, color: AppColors.primary, size: 40),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(m.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(m.subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                    ],
-                  ),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.15),
+                    AppColors.surface,
+                  ],
                 ),
-              ],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(m.icon, color: AppColors.primary, size: 40),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          m.title,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          m.subtitle,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
           const SizedBox(height: 24),
           Reveal(
             delay: Reveal.step(1),
-            child: const Text('Key Defense Principles', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Key Defense Principles',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 12),
-          ...m.keyTakeaways.asMap().entries.map((entry) => Reveal(
-                delay: Reveal.step(entry.key + 2, baseMs: 80),
-                offsetY: 14,
-                child: Padding(
+          ...m.keyTakeaways.asMap().entries.map(
+            (entry) => Reveal(
+              delay: Reveal.step(entry.key + 2, baseMs: 80),
+              offsetY: 14,
+              child: Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.verified, color: AppColors.success, size: 18),
+                    const Icon(
+                      Icons.verified,
+                      color: AppColors.success,
+                      size: 18,
+                    ),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(entry.value, style: const TextStyle(fontSize: 14, height: 1.5))),
+                    Expanded(
+                      child: Text(
+                        entry.value,
+                        style: const TextStyle(fontSize: 14, height: 1.5),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              )),
+            ),
+          ),
           const SizedBox(height: 24),
           Reveal(
             delay: Reveal.step(6),
-            child: const Text('Detailed Intelligence Report', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Detailed Intelligence Report',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 12),
           Reveal(
             delay: Reveal.step(7),
             child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                m.fullLessonText,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.7,
+                ),
+              ),
             ),
-            child: Text(
-              m.fullLessonText,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.7),
-            ),
-          ),
           ),
           const SizedBox(height: 24),
           Reveal(
             delay: Reveal.step(8),
             child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _tabController.animateTo(1);
-              },
-              icon: const Icon(Icons.arrow_forward, color: Colors.black),
-              label: const Text('PROCEED TO QUIZ →', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _tabController.animateTo(1);
+                },
+                icon: const Icon(Icons.arrow_forward, color: Colors.black),
+                label: const Text(
+                  'PROCEED TO QUIZ →',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
             ),
-          ),
           ),
         ],
       ),
@@ -248,7 +294,10 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
               const SizedBox(height: 16),
               Text(
                 passed ? 'Module Passed!' : 'Review & Retry',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -270,12 +319,20 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: Text(
                   passed ? 'Complete & Return' : 'Retry Quiz',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -296,9 +353,18 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             children: [
               Text(
                 'Question ${_currentQuestionIndex + 1} of ${questions.length}',
-                style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Text('Score: $_score', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              Text(
+                'Score: $_score',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -307,7 +373,9 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             child: LinearProgressIndicator(
               value: (_currentQuestionIndex + 1) / questions.length,
               backgroundColor: AppColors.surface,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
               minHeight: 6,
             ),
           ),
@@ -318,11 +386,17 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+              ),
             ),
             child: Text(
               currentQ.question,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.5),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                height: 1.5,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -361,13 +435,17 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                         height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isSelected ? AppColors.primary : AppColors.background,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.background,
                         ),
                         child: Center(
                           child: Text(
                             String.fromCharCode(65 + i),
                             style: TextStyle(
-                              color: isSelected ? AppColors.background : AppColors.textSecondary,
+                              color: isSelected
+                                  ? AppColors.background
+                                  : AppColors.textSecondary,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -378,7 +456,10 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                       Expanded(
                         child: Text(
                           currentQ.options[i],
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -395,21 +476,34 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: _selectedOptionIndex == currentQ.correctIndex ? AppColors.success : AppColors.danger,
+                  color: _selectedOptionIndex == currentQ.correctIndex
+                      ? AppColors.success
+                      : AppColors.danger,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _selectedOptionIndex == currentQ.correctIndex ? '✅ Correct!' : '❌ Incorrect',
+                    _selectedOptionIndex == currentQ.correctIndex
+                        ? '✅ Correct!'
+                        : '❌ Incorrect',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: _selectedOptionIndex == currentQ.correctIndex ? AppColors.success : AppColors.danger,
+                      color: _selectedOptionIndex == currentQ.correctIndex
+                          ? AppColors.success
+                          : AppColors.danger,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(currentQ.explanation, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4)),
+                  Text(
+                    currentQ.explanation,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -421,11 +515,18 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                 onPressed: _nextQuestion,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: Text(
-                  _currentQuestionIndex < questions.length - 1 ? 'Next question →' : 'See results →',
-                  style: const TextStyle(color: AppColors.background, fontWeight: FontWeight.w600),
+                  _currentQuestionIndex < questions.length - 1
+                      ? 'Next question →'
+                      : 'See results →',
+                  style: const TextStyle(
+                    color: AppColors.background,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

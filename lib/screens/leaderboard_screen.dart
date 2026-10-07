@@ -75,7 +75,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             if (_loading)
               const Padding(
                 padding: EdgeInsets.only(top: 60),
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
               )
             else if (!CloudAccountService.signedIn.value)
               _buildSignedOut()
@@ -107,14 +109,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _scope == scope ? AppColors.primary : AppColors.surface,
+                  color: _scope == scope
+                      ? AppColors.primary
+                      : AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   scope == 'global' ? 'Everyone' : 'My family',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _scope == scope ? Colors.black : AppColors.textSecondary,
+                    color: _scope == scope
+                        ? Colors.black
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 12.5,
                   ),
@@ -131,16 +137,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   List<Widget> _buildRows(List<LeaderboardEntry> entries) {
     return [
       ...entries.asMap().entries.map(
-            (e) => Reveal(
-              delay: Reveal.step(e.key + 1, stepMs: 45),
-              child: _buildRow(e.value),
-            ),
-          ),
+        (e) => Reveal(
+          delay: Reveal.step(e.key + 1, stepMs: 45),
+          child: _buildRow(e.value),
+        ),
+      ),
       const SizedBox(height: 20),
       const Text(
         'Points come from articles read and quizzes passed in the Learn tab. '
         'Nothing you have scanned is ever shown here.',
-        style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+        style: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 11,
+          height: 1.4,
+        ),
       ),
     ];
   }
@@ -185,18 +195,25 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry.isYou ? '${entry.displayName} (you)' : entry.displayName,
+                  entry.isYou
+                      ? '${entry.displayName} (you)'
+                      : entry.displayName,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
-                    color: entry.isYou ? AppColors.primary : AppColors.textPrimary,
+                    color: entry.isYou
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${entry.badgesEarned} badge(s) · ${entry.streakDays}-day streak',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -215,28 +232,31 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildSignedOut() => _notice(
-        icon: Icons.person_outline,
-        color: AppColors.primary,
-        title: 'Sign in to see the leaderboard',
-        body: 'Ranking needs an account so your progress can follow you between '
-            'devices. Everything in the Learn tab works without one.',
-      );
+    icon: Icons.person_outline,
+    color: AppColors.primary,
+    title: 'Sign in to see the leaderboard',
+    body:
+        'Ranking needs an account so your progress can follow you between '
+        'devices. Everything in the Learn tab works without one.',
+  );
 
   Widget _buildEmpty() => _notice(
-        icon: Icons.emoji_events_outlined,
-        color: AppColors.textSecondary,
-        title: 'Nobody on the board yet',
-        body: 'Read an article or pass a quiz in the Learn tab and you will be '
-            'the first name here.',
-      );
+    icon: Icons.emoji_events_outlined,
+    color: AppColors.textSecondary,
+    title: 'Nobody on the board yet',
+    body:
+        'Read an article or pass a quiz in the Learn tab and you will be '
+        'the first name here.',
+  );
 
   Widget _buildUnavailable() => _notice(
-        icon: Icons.cloud_off,
-        color: AppColors.warning,
-        title: 'Leaderboard is unavailable',
-        body: 'Could not reach the ScamShield service. Pull down to try again — '
-            'your progress is stored on this device either way.',
-      );
+    icon: Icons.cloud_off,
+    color: AppColors.warning,
+    title: 'Leaderboard is unavailable',
+    body:
+        'Could not reach the ScamShield service. Pull down to try again — '
+        'your progress is stored on this device either way.',
+  );
 
   Widget _notice({
     required IconData icon,
@@ -255,12 +275,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         children: [
           Icon(icon, color: color, size: 32),
           const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
           const SizedBox(height: 6),
           Text(
             body,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
           ),
         ],
       ),

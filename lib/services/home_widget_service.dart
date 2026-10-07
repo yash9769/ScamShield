@@ -33,8 +33,9 @@ import '../data/repositories/scan_repository.dart';
 class HomeWidgetService {
   HomeWidgetService._();
 
-  static const MethodChannel _channel =
-      MethodChannel('com.example.scamshield/widget');
+  static const MethodChannel _channel = MethodChannel(
+    'com.example.scamshield/widget',
+  );
 
   /// Read by ScamShieldWidgetProvider.kt, which prefixes it with "flutter." —
   /// the prefix shared_preferences adds on Android. Renaming it here without

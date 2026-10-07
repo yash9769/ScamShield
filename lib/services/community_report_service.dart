@@ -18,11 +18,11 @@ enum IndicatorType { phone, url, domain, upi }
 
 extension on IndicatorType {
   String get value => switch (this) {
-        IndicatorType.phone => 'phone',
-        IndicatorType.url => 'url',
-        IndicatorType.domain => 'domain',
-        IndicatorType.upi => 'upi',
-      };
+    IndicatorType.phone => 'phone',
+    IndicatorType.url => 'url',
+    IndicatorType.domain => 'domain',
+    IndicatorType.upi => 'upi',
+  };
 }
 
 class ReputationResult {
@@ -39,17 +39,19 @@ class ReputationResult {
   });
 
   const ReputationResult.unavailable()
-      : checked = false,
-        reported = false,
-        reportCount = 0,
-        category = null;
+    : checked = false,
+      reported = false,
+      reportCount = 0,
+      category = null;
 }
 
 class CommunityReportService {
   static String get _baseUrl {
     const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://localhost:8000';
   }
 
   static const Duration _timeout = Duration(seconds: 6);
@@ -91,7 +93,8 @@ class CommunityReportService {
       final response = await http
           .get(Uri.parse('$_baseUrl/reputation/${type.value}/$encoded'))
           .timeout(_timeout);
-      if (response.statusCode != 200) return const ReputationResult.unavailable();
+      if (response.statusCode != 200)
+        return const ReputationResult.unavailable();
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return ReputationResult(

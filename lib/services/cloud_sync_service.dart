@@ -56,7 +56,8 @@ class CloudSyncService {
   static final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
 
   static String cloudIdFor(ScanRecord record) {
-    final material = '${record.inputText}|${record.timestamp.toIso8601String()}|${record.source ?? ''}';
+    final material =
+        '${record.inputText}|${record.timestamp.toIso8601String()}|${record.source ?? ''}';
     return sha256.convert(utf8.encode(material)).toString().substring(0, 32);
   }
 
@@ -67,7 +68,11 @@ class CloudSyncService {
       // Random per install, and never sent anywhere but this user's own
       // account — it exists to label devices in the sync list, not to track.
       id = sha256
-          .convert(utf8.encode('${DateTime.now().microsecondsSinceEpoch}-${identityHashCode(prefs)}'))
+          .convert(
+            utf8.encode(
+              '${DateTime.now().microsecondsSinceEpoch}-${identityHashCode(prefs)}',
+            ),
+          )
           .toString()
           .substring(0, 24);
       await prefs.setString(_deviceIdKey, id);
@@ -88,7 +93,9 @@ class CloudSyncService {
 
     final prefs = await SharedPreferences.getInstance();
     final lastRun = prefs.getInt(_lastRunKey) ?? 0;
-    final elapsed = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(lastRun));
+    final elapsed = DateTime.now().difference(
+      DateTime.fromMillisecondsSinceEpoch(lastRun),
+    );
     if (!force && elapsed < _minInterval) return SyncOutcome.skipped;
 
     isSyncing.value = true;
@@ -118,19 +125,23 @@ class CloudSyncService {
       var allChunksSucceeded = true;
 
       for (var i = 0; i < entries.length || i == 0; i += _maxBatch) {
-        final end = (i + _maxBatch < entries.length) ? i + _maxBatch : entries.length;
+        final end = (i + _maxBatch < entries.length)
+            ? i + _maxBatch
+            : entries.length;
         final chunk = entries.sublist(i, end);
         final payload = chunk
-            .map((e) => {
-                  'id': e.key,
-                  'input_text': e.value.inputText,
-                  'classification': e.value.classification,
-                  'risk_score': e.value.riskScore,
-                  'summary': e.value.summary,
-                  'source': e.value.source,
-                  'scanned_at': e.value.timestamp.toIso8601String(),
-                  'deleted': false,
-                })
+            .map(
+              (e) => {
+                'id': e.key,
+                'input_text': e.value.inputText,
+                'classification': e.value.classification,
+                'risk_score': e.value.riskScore,
+                'summary': e.value.summary,
+                'source': e.value.source,
+                'scanned_at': e.value.timestamp.toIso8601String(),
+                'deleted': false,
+              },
+            )
             .toList();
 
         // Only the first request carries the real cursor and is the one
@@ -150,7 +161,8 @@ class CloudSyncService {
           if (!reachedServer) {
             return const SyncOutcome(
               ran: false,
-              message: 'Could not reach the sync service. Your scans are still saved on this device.',
+              message:
+                  'Could not reach the sync service. Your scans are still saved on this device.',
             );
           }
           // Later chunk failed after earlier ones already landed — stop here
@@ -167,18 +179,23 @@ class CloudSyncService {
             final scan = raw as Map<String, dynamic>;
             final id = scan['id'] as String? ?? '';
             if (id.isEmpty) continue;
-            if (scan['deleted'] == true) continue; // tombstone: nothing to insert
+            if (scan['deleted'] == true)
+              continue; // tombstone: nothing to insert
             if (localById.containsKey(id)) continue; // already here
 
-            final scannedAt = DateTime.tryParse(scan['scanned_at'] as String? ?? '');
-            await _repo.saveScan(ScanRecord(
-              inputText: scan['input_text'] as String? ?? '',
-              classification: scan['classification'] as String? ?? 'safe',
-              riskScore: (scan['risk_score'] as num?)?.toInt() ?? 0,
-              summary: scan['summary'] as String? ?? '',
-              timestamp: scannedAt ?? DateTime.now(),
-              source: scan['source'] as String?,
-            ));
+            final scannedAt = DateTime.tryParse(
+              scan['scanned_at'] as String? ?? '',
+            );
+            await _repo.saveScan(
+              ScanRecord(
+                inputText: scan['input_text'] as String? ?? '',
+                classification: scan['classification'] as String? ?? 'safe',
+                riskScore: (scan['risk_score'] as num?)?.toInt() ?? 0,
+                summary: scan['summary'] as String? ?? '',
+                timestamp: scannedAt ?? DateTime.now(),
+                source: scan['source'] as String?,
+              ),
+            );
             pulled++;
           }
           serverTime = (result['server_time'] as num?)?.toDouble();
@@ -202,7 +219,10 @@ class CloudSyncService {
       );
     } catch (e) {
       debugPrint('CloudSyncService.sync failed: $e');
-      return const SyncOutcome(ran: false, message: 'Sync failed. Your scans are safe on this device.');
+      return const SyncOutcome(
+        ran: false,
+        message: 'Sync failed. Your scans are safe on this device.',
+      );
     } finally {
       isSyncing.value = false;
     }
@@ -245,18 +265,23 @@ class CloudSyncService {
     // Data" / "Reset All" can hand this hundreds of records at once.
     const chunkSize = 200;
     for (var i = 0; i < records.length; i += chunkSize) {
-      final chunk = records.sublist(i, i + chunkSize > records.length ? records.length : i + chunkSize);
+      final chunk = records.sublist(
+        i,
+        i + chunkSize > records.length ? records.length : i + chunkSize,
+      );
       final payload = chunk
-          .map((r) => {
-                'id': cloudIdFor(r),
-                'input_text': '',
-                'classification': r.classification,
-                'risk_score': 0,
-                'summary': '',
-                'source': r.source,
-                'scanned_at': r.timestamp.toIso8601String(),
-                'deleted': true,
-              })
+          .map(
+            (r) => {
+              'id': cloudIdFor(r),
+              'input_text': '',
+              'classification': r.classification,
+              'risk_score': 0,
+              'summary': '',
+              'source': r.source,
+              'scanned_at': r.timestamp.toIso8601String(),
+              'deleted': true,
+            },
+          )
           .toList();
       try {
         // A far-future `since` means "nothing has changed since then" to the

@@ -51,7 +51,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     setState(() => _isLoading = true);
     try {
       final records = await _repo.loadHistory();
-      if (mounted) setState(() { _allRecords = records; _isLoading = false; });
+      if (mounted)
+        setState(() {
+          _allRecords = records;
+          _isLoading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -60,12 +64,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<ScanRecord> get _filteredRecords {
     final query = _searchController.text.trim().toLowerCase();
     return _allRecords.where((r) {
-      if (_selectedFilterIndex == 1 && r.classification.toLowerCase() == 'safe') return false;
-      if (_selectedFilterIndex == 2 && r.classification.toLowerCase() != 'safe') return false;
+      if (_selectedFilterIndex == 1 && r.classification.toLowerCase() == 'safe')
+        return false;
+      if (_selectedFilterIndex == 2 && r.classification.toLowerCase() != 'safe')
+        return false;
       if (query.isNotEmpty) {
         return r.inputText.toLowerCase().contains(query) ||
-               (r.summary.toLowerCase().contains(query)) ||
-               (r.source?.toLowerCase().contains(query) ?? false);
+            (r.summary.toLowerCase().contains(query)) ||
+            (r.source?.toLowerCase().contains(query) ?? false);
       }
       return true;
     }).toList();
@@ -82,7 +88,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     );
     try {
-      final file = await ReportGeneratorService.generateComplaintReport(record: record);
+      final file = await ReportGeneratorService.generateComplaintReport(
+        record: record,
+      );
       await OpenFilex.open(file.path);
     } catch (e) {
       if (!mounted) return;
@@ -100,9 +108,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final badgeColor = record.classification.toLowerCase() == 'scam'
         ? AppColors.danger
         : record.classification.toLowerCase() == 'suspicious'
-            ? AppColors.warning
-            : AppColors.success;
-    final indicators = ReportGeneratorService.extractIndicators(record.inputText);
+        ? AppColors.warning
+        : AppColors.success;
+    final indicators = ReportGeneratorService.extractIndicators(
+      record.inputText,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -135,8 +145,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  Icon(verdictStyleFor(record.classification).icon,
-                      color: badgeColor, size: 22),
+                  Icon(
+                    verdictStyleFor(record.classification).icon,
+                    color: badgeColor,
+                    size: 22,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     verdictStyleFor(record.classification).label,
@@ -147,7 +160,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const SizedBox(height: 4),
               Text(
                 '${record.source ?? 'Unknown source'} · ${record.timestamp.toString().substring(0, 16)}',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
               ),
               const SizedBox(height: 16),
               Text('Message', style: AppText.label),
@@ -161,34 +177,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 child: SelectableText(
                   record.inputText,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Text('What we found', style: AppText.label),
               const SizedBox(height: 6),
-              Text(record.summary,
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary, height: 1.4)),
+              Text(
+                record.summary,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textPrimary,
+                  height: 1.4,
+                ),
+              ),
               if (indicators.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text('Links and numbers in it', style: AppText.label),
                 const SizedBox(height: 6),
-                ...indicators.map((i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${i.type}: ',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          Expanded(
-                            child: SelectableText(
-                              i.value,
-                              style: const TextStyle(fontSize: 12, color: AppColors.warning),
+                ...indicators.map(
+                  (i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${i.type}: ',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Expanded(
+                          child: SelectableText(
+                            i.value,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.warning,
                             ),
                           ),
-                        ],
-                      ),
-                    )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
               const SizedBox(height: 22),
               SizedBox(
@@ -199,12 +235,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Navigator.pop(sheetContext);
                     _exportComplaint(record);
                   },
-                  icon: const Icon(Icons.gavel_outlined, size: 18, color: Colors.black),
-                  label: const Text('Export complaint evidence (PDF)',
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                  icon: const Icon(
+                    Icons.gavel_outlined,
+                    size: 18,
+                    color: Colors.black,
+                  ),
+                  label: const Text(
+                    'Export complaint evidence (PDF)',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -212,7 +259,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const Text(
                 'Creates a PDF with the message, timestamp and extracted links/numbers, '
                 'ready to attach to a cybercrime.gov.in complaint or a bank dispute.',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.35),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  height: 1.35,
+                ),
               ),
             ],
           ),
@@ -241,22 +292,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             Icon(Icons.warning_amber_rounded, color: AppColors.danger),
             SizedBox(width: 8),
-            Text("Clear All Scan Data?", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              "Clear All Scan Data?",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: const Text(
           "This will reset all scan history to 0 and permanently delete local SQLite records.",
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancel", style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text("Reset All to 0", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Reset All to 0",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -290,7 +357,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search, color: AppColors.textPrimary),
+            icon: Icon(
+              _isSearching ? Icons.close : Icons.search,
+              color: AppColors.textPrimary,
+            ),
             onPressed: () => setState(() {
               _isSearching = !_isSearching;
               if (!_isSearching) _searchController.clear();
@@ -298,7 +368,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           if (_allRecords.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.danger),
+              icon: const Icon(
+                Icons.delete_sweep_outlined,
+                color: AppColors.danger,
+              ),
               onPressed: _clearAll,
               tooltip: 'Reset All Data',
             ),
@@ -316,7 +389,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.black,
         icon: const Icon(Icons.shield_outlined),
-        label: const Text("New scan", style: TextStyle(fontWeight: FontWeight.w600)),
+        label: const Text(
+          "New scan",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -330,7 +406,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     const labels = ['All', 'Threats', 'Safe'];
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screen, AppSpacing.sm, AppSpacing.screen, AppSpacing.md,
+        AppSpacing.screen,
+        AppSpacing.sm,
+        AppSpacing.screen,
+        AppSpacing.md,
       ),
       child: Container(
         padding: const EdgeInsets.all(4),
@@ -358,7 +437,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     labels[i],
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: sel ? AppColors.textPrimary : AppColors.textSecondary,
+                      color: sel
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
                       fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
                       fontSize: 14,
                     ),
@@ -374,7 +455,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     final records = _filteredRecords;
@@ -383,11 +466,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.screen),
           child: EmptyState(
-            icon: _allRecords.isEmpty ? Icons.inbox_outlined : Icons.search_off_rounded,
+            icon: _allRecords.isEmpty
+                ? Icons.inbox_outlined
+                : Icons.search_off_rounded,
             title: _allRecords.isEmpty ? 'Nothing checked yet' : 'No matches',
             message: _allRecords.isEmpty
                 ? 'Everything you check gets saved here, so you can find it again '
-                    'or turn it into a complaint later.'
+                      'or turn it into a complaint later.'
                 : 'Nothing here matches that search or filter.',
             actionLabel: _allRecords.isEmpty ? 'Check something now' : null,
             onAction: _allRecords.isEmpty
@@ -400,7 +485,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screen, 0, AppSpacing.screen, 96,
+        AppSpacing.screen,
+        0,
+        AppSpacing.screen,
+        96,
       ),
       itemCount: records.length,
       separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
@@ -410,10 +498,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final timeStr = diff.inMinutes < 1
             ? 'Just now'
             : diff.inHours < 1
-                ? '${diff.inMinutes}m ago'
-                : diff.inDays < 1
-                    ? '${diff.inHours}h ago'
-                    : '${diff.inDays}d ago';
+            ? '${diff.inMinutes}m ago'
+            : diff.inDays < 1
+            ? '${diff.inHours}h ago'
+            : '${diff.inDays}d ago';
 
         return Reveal(
           delay: Reveal.step(index, stepMs: 35),
@@ -429,8 +517,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 color: AppColors.danger.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: const Icon(Icons.delete_outline_rounded,
-                  color: AppColors.danger, size: 22),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.danger,
+                size: 22,
+              ),
             ),
             child: AppCard(
               onTap: () => _showRecordDetail(r),
@@ -459,8 +550,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Row(
                       children: [
-                        Icon(_sourceIcon(r.source!),
-                            size: 13, color: AppColors.textSecondary),
+                        Icon(
+                          _sourceIcon(r.source!),
+                          size: 13,
+                          color: AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 5),
                         Text(r.source!, style: AppText.caption),
                       ],

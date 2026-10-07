@@ -60,7 +60,9 @@ class _TrendsScreenState extends State<TrendsScreen> {
             if (_loading)
               const Padding(
                 padding: EdgeInsets.only(top: 60),
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
               )
             else if (_trends == null)
               _buildUnavailable()
@@ -90,14 +92,18 @@ class _TrendsScreenState extends State<TrendsScreen> {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _windowDays == days ? AppColors.primary : AppColors.surface,
+                  color: _windowDays == days
+                      ? AppColors.primary
+                      : AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   days == 7 ? 'This week' : '$days days',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _windowDays == days ? Colors.black : AppColors.textSecondary,
+                    color: _windowDays == days
+                        ? Colors.black
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 12.5,
                   ),
@@ -133,7 +139,9 @@ class _TrendsScreenState extends State<TrendsScreen> {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.28),
+            ),
           ),
           child: Row(
             children: [
@@ -143,11 +151,16 @@ class _TrendsScreenState extends State<TrendsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${trends.totalReports} reports',
-                        style: Theme.of(context).textTheme.headlineSmall),
+                    Text(
+                      '${trends.totalReports} reports',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                     Text(
                       'submitted by the community in the last ${trends.windowDays} days',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -171,16 +184,20 @@ class _TrendsScreenState extends State<TrendsScreen> {
       ),
       const SizedBox(height: 10),
       ...trends.trends.asMap().entries.map(
-            (e) => Reveal(
-              delay: Reveal.step(e.key + 3, stepMs: 45),
-              child: _buildTrendRow(e.value, maxReports),
-            ),
-          ),
+        (e) => Reveal(
+          delay: Reveal.step(e.key + 3, stepMs: 45),
+          child: _buildTrendRow(e.value, maxReports),
+        ),
+      ),
       const SizedBox(height: 20),
       const Text(
         'Counts come from reports submitted by ScamShield users. The reported '
         'numbers and links themselves are never shown here.',
-        style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+        style: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 11,
+          height: 1.4,
+        ),
       ),
     ];
   }
@@ -202,7 +219,10 @@ class _TrendsScreenState extends State<TrendsScreen> {
               Expanded(
                 child: Text(
                   item.category,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
                 ),
               ),
               Text(
@@ -222,13 +242,18 @@ class _TrendsScreenState extends State<TrendsScreen> {
               value: fraction,
               minHeight: 6,
               backgroundColor: AppColors.background,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             '${item.distinctIndicators} distinct number(s)/link(s) reported',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -244,7 +269,11 @@ class _TrendsScreenState extends State<TrendsScreen> {
       ),
       child: const Column(
         children: [
-          Icon(Icons.insights_outlined, color: AppColors.textSecondary, size: 34),
+          Icon(
+            Icons.insights_outlined,
+            color: AppColors.textSecondary,
+            size: 34,
+          ),
           SizedBox(height: 12),
           Text(
             'No reports in this window yet',
@@ -255,7 +284,11 @@ class _TrendsScreenState extends State<TrendsScreen> {
             'When you report a scam link or number, it feeds this trend view for '
             'everyone else too.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -274,14 +307,20 @@ class _TrendsScreenState extends State<TrendsScreen> {
         children: [
           Icon(Icons.cloud_off, color: AppColors.warning, size: 30),
           SizedBox(height: 12),
-          Text('Trends are unavailable',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(
+            'Trends are unavailable',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
           SizedBox(height: 6),
           Text(
             'Could not reach the ScamShield service. Pull down to try again — '
             'scanning still works offline.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
           ),
         ],
       ),

@@ -8,7 +8,7 @@ class PreferencesRepository {
   final DatabaseHelper _dbHelper;
 
   PreferencesRepository({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   /// Loads the singleton preferences row (id = 1).
   Future<UserPreferences> load() async {
@@ -49,11 +49,13 @@ class PreferencesRepository {
   /// Records that the user affirmatively agreed to [policyVersion] just now.
   Future<void> grantConsent(String policyVersion) async {
     final current = await load();
-    await save(current.copyWith(
-      hasConsented: true,
-      consentVersion: policyVersion,
-      consentTimestamp: DateTime.now().toIso8601String(),
-    ));
+    await save(
+      current.copyWith(
+        hasConsented: true,
+        consentVersion: policyVersion,
+        consentTimestamp: DateTime.now().toIso8601String(),
+      ),
+    );
   }
 
   /// Convenience: toggle the optional AI-processing consent.

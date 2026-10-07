@@ -49,12 +49,12 @@ class FamilyMember {
   String get label => displayName?.isNotEmpty == true ? displayName! : email;
 
   factory FamilyMember.fromJson(Map<String, dynamic> j) => FamilyMember(
-        userId: j['user_id'] ?? '',
-        email: j['email'] ?? '',
-        displayName: j['display_name'],
-        role: j['role'] ?? 'guardian',
-        isYou: j['is_you'] == true,
-      );
+    userId: j['user_id'] ?? '',
+    email: j['email'] ?? '',
+    displayName: j['display_name'],
+    role: j['role'] ?? 'guardian',
+    isYou: j['is_you'] == true,
+  );
 }
 
 class FamilyAlert {
@@ -77,14 +77,14 @@ class FamilyAlert {
   });
 
   factory FamilyAlert.fromJson(Map<String, dynamic> j) => FamilyAlert(
-        id: j['id'] ?? '',
-        fromDisplay: j['from_display'] ?? 'A family member',
-        classification: j['classification'],
-        riskScore: j['risk_score'],
-        summary: j['summary'],
-        createdAt: j['created_at'],
-        acknowledged: j['acknowledged'] == true,
-      );
+    id: j['id'] ?? '',
+    fromDisplay: j['from_display'] ?? 'A family member',
+    classification: j['classification'],
+    riskScore: j['risk_score'],
+    summary: j['summary'],
+    createdAt: j['created_at'],
+    acknowledged: j['acknowledged'] == true,
+  );
 }
 
 class FamilyGroup {
@@ -109,17 +109,17 @@ class FamilyGroup {
   bool get exists => id != null && id!.isNotEmpty;
 
   factory FamilyGroup.fromJson(Map<String, dynamic> j) => FamilyGroup(
-        id: j['id'],
-        name: j['name'],
-        inviteCode: j['invite_code'],
-        role: j['role'],
-        members: ((j['members'] as List?) ?? [])
-            .map((m) => FamilyMember.fromJson(m as Map<String, dynamic>))
-            .toList(),
-        alerts: ((j['alerts'] as List?) ?? [])
-            .map((a) => FamilyAlert.fromJson(a as Map<String, dynamic>))
-            .toList(),
-      );
+    id: j['id'],
+    name: j['name'],
+    inviteCode: j['invite_code'],
+    role: j['role'],
+    members: ((j['members'] as List?) ?? [])
+        .map((m) => FamilyMember.fromJson(m as Map<String, dynamic>))
+        .toList(),
+    alerts: ((j['alerts'] as List?) ?? [])
+        .map((a) => FamilyAlert.fromJson(a as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class TrendItem {
@@ -134,10 +134,10 @@ class TrendItem {
   });
 
   factory TrendItem.fromJson(Map<String, dynamic> j) => TrendItem(
-        category: j['category'] ?? 'Uncategorised',
-        reports: j['reports'] ?? 0,
-        distinctIndicators: j['distinct_indicators'] ?? 0,
-      );
+    category: j['category'] ?? 'Uncategorised',
+    reports: j['reports'] ?? 0,
+    distinctIndicators: j['distinct_indicators'] ?? 0,
+  );
 }
 
 class ScamTrends {
@@ -152,12 +152,12 @@ class ScamTrends {
   });
 
   factory ScamTrends.fromJson(Map<String, dynamic> j) => ScamTrends(
-        windowDays: j['window_days'] ?? 7,
-        totalReports: j['total_reports'] ?? 0,
-        trends: ((j['trends'] as List?) ?? [])
-            .map((t) => TrendItem.fromJson(t as Map<String, dynamic>))
-            .toList(),
-      );
+    windowDays: j['window_days'] ?? 7,
+    totalReports: j['total_reports'] ?? 0,
+    trends: ((j['trends'] as List?) ?? [])
+        .map((t) => TrendItem.fromJson(t as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class LeaderboardEntry {
@@ -181,13 +181,13 @@ class LeaderboardEntry {
   });
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> j) => LeaderboardEntry(
-        rank: j['rank'] ?? 0,
-        displayName: j['display_name'] ?? 'ScamShield user',
-        totalPoints: j['total_points'] ?? 0,
-        streakDays: j['streak_days'] ?? 0,
-        badgesEarned: j['badges_earned'] ?? 0,
-        isYou: j['is_you'] == true,
-      );
+    rank: j['rank'] ?? 0,
+    displayName: j['display_name'] ?? 'ScamShield user',
+    totalPoints: j['total_points'] ?? 0,
+    streakDays: j['streak_days'] ?? 0,
+    badgesEarned: j['badges_earned'] ?? 0,
+    isYou: j['is_you'] == true,
+  );
 }
 
 /// Thrown for a request the caller should surface to the user (bad code,
@@ -206,7 +206,9 @@ class CloudAccountService {
   static String get _baseUrl {
     const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://localhost:8000';
   }
 
   static const _storage = FlutterSecureStorage(
@@ -258,7 +260,10 @@ class CloudAccountService {
   static Future<void> _storeSession(Map<String, dynamic> data) async {
     await _storage.write(key: _tokenKey, value: data['token'] as String);
     await _storage.write(key: _emailKey, value: data['email'] as String? ?? '');
-    await _storage.write(key: _userIdKey, value: data['user_id'] as String? ?? '');
+    await _storage.write(
+      key: _userIdKey,
+      value: data['user_id'] as String? ?? '',
+    );
     signedIn.value = true;
   }
 
@@ -283,7 +288,10 @@ class CloudAccountService {
     await _storeSession(_decode(resp));
   }
 
-  static Future<void> login({required String email, required String password}) async {
+  static Future<void> login({
+    required String email,
+    required String password,
+  }) async {
     final resp = await http
         .post(
           Uri.parse('$_baseUrl/account/login'),
@@ -345,7 +353,10 @@ class CloudAccountService {
     if (await _token() == null) return null;
     try {
       final resp = await http
-          .get(Uri.parse('$_baseUrl/account/export'), headers: await _authHeaders())
+          .get(
+            Uri.parse('$_baseUrl/account/export'),
+            headers: await _authHeaders(),
+          )
           .timeout(_timeout);
       if (resp.statusCode != 200) return null;
       return jsonDecode(resp.body) as Map<String, dynamic>;
@@ -424,7 +435,10 @@ class CloudAccountService {
     return FamilyGroup.fromJson(_decode(resp));
   }
 
-  static Future<FamilyGroup> joinFamily(String inviteCode, {String role = 'guardian'}) async {
+  static Future<FamilyGroup> joinFamily(
+    String inviteCode, {
+    String role = 'guardian',
+  }) async {
     final resp = await http
         .post(
           Uri.parse('$_baseUrl/family/join'),
@@ -437,7 +451,10 @@ class CloudAccountService {
 
   static Future<void> leaveFamily() async {
     final resp = await http
-        .post(Uri.parse('$_baseUrl/family/leave'), headers: await _authHeaders())
+        .post(
+          Uri.parse('$_baseUrl/family/leave'),
+          headers: await _authHeaders(),
+        )
         .timeout(_timeout);
     _decode(resp);
   }

@@ -11,9 +11,15 @@ class UserProfileService {
 
   static const String defaultAvatar = 'https://i.pravatar.cc/300?u=alexchen';
 
-  static final ValueNotifier<String> avatarNotifier = ValueNotifier<String>(defaultAvatar);
-  static final ValueNotifier<String> nameNotifier = ValueNotifier<String>('Alex Chen');
-  static final ValueNotifier<String> titleNotifier = ValueNotifier<String>('Intelligence Level: Advanced Protector');
+  static final ValueNotifier<String> avatarNotifier = ValueNotifier<String>(
+    defaultAvatar,
+  );
+  static final ValueNotifier<String> nameNotifier = ValueNotifier<String>(
+    'Alex Chen',
+  );
+  static final ValueNotifier<String> titleNotifier = ValueNotifier<String>(
+    'Intelligence Level: Advanced Protector',
+  );
 
   static bool _initialized = false;
 
@@ -32,7 +38,9 @@ class UserProfileService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final name = prefs.getString(_nameKey) ?? 'Alex Chen';
-      final title = prefs.getString(_titleKey) ?? 'Intelligence Level: Advanced Protector';
+      final title =
+          prefs.getString(_titleKey) ??
+          'Intelligence Level: Advanced Protector';
       final avatar = prefs.getString(_avatarKey) ?? defaultAvatar;
 
       nameNotifier.value = name;
@@ -42,7 +50,11 @@ class UserProfileService {
     } catch (_) {}
   }
 
-  static Future<void> updateProfile({String? name, String? title, String? avatarUrl}) async {
+  static Future<void> updateProfile({
+    String? name,
+    String? title,
+    String? avatarUrl,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (name != null && name.isNotEmpty) {

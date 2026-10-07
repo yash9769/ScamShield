@@ -65,13 +65,19 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final stats = await _repo.getStatistics();
       final recent = await _repo.loadHistory(limit: 3);
-      if (mounted) setState(() { _stats = stats; _recent = recent; });
+      if (mounted)
+        setState(() {
+          _stats = stats;
+          _recent = recent;
+        });
     } catch (_) {}
   }
 
   void _openHistory() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()))
-        .then((_) => _loadStats());
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HistoryScreen()),
+    ).then((_) => _loadStats());
   }
 
   @override
@@ -86,8 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
             button: true,
             child: GestureDetector(
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
-                    .then((_) => _loadStats());
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                ).then((_) => _loadStats());
               },
               child: ValueListenableBuilder<String>(
                 valueListenable: UserProfileService.avatarNotifier,
@@ -109,7 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screen, AppSpacing.sm, AppSpacing.screen, AppSpacing.huge,
+            AppSpacing.screen,
+            AppSpacing.sm,
+            AppSpacing.screen,
+            AppSpacing.huge,
           ),
           children: [
             Reveal(delay: Reveal.step(0), child: _buildScanPrompt()),
@@ -161,11 +172,21 @@ class _HomeScreenState extends State<HomeScreen> {
             return AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               transformAlignment: Alignment.center,
-              transform: Matrix4.diagonal3Values(_isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0), _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0), 1.0),
+              transform: Matrix4.diagonal3Values(
+                _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0),
+                _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0),
+                1.0,
+              ),
               decoration: BoxDecoration(
-                boxShadow: _isHovered 
-                  ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))]
-                  : null,
+                boxShadow: _isHovered
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
               ),
               child: Semantics(
                 label: 'Scan a message, link, or phone number for scams',
@@ -180,24 +201,37 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: AppCard(
                       onTap: () => ScanNowBottomSheet.show(context),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg, vertical: AppSpacing.lg,
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.lg,
                       ),
                       child: Row(
                         children: [
                           AnimatedScale(
                             duration: const Duration(milliseconds: 150),
                             scale: _isHovered ? 1.05 : 1.0,
-                            child: const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
+                            child: const Icon(
+                              Icons.search_rounded,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
                           ),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
-                            child: Text('Check a message or link', style: AppText.body),
+                            child: Text(
+                              'Check a message or link',
+                              style: AppText.body,
+                            ),
                           ),
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
                             decoration: BoxDecoration(
-                              color: _isHovered ? AppColors.primary.withValues(alpha: 0.9) : AppColors.primary,
+                              color: _isHovered
+                                  ? AppColors.primary.withValues(alpha: 0.9)
+                                  : AppColors.primary,
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: const Text(
@@ -238,7 +272,11 @@ class _HomeScreenState extends State<HomeScreen> {
       return AppCard(
         child: Row(
           children: [
-            const Icon(Icons.shield_outlined, size: 20, color: AppColors.textSecondary),
+            const Icon(
+              Icons.shield_outlined,
+              size: 20,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
@@ -252,13 +290,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Semantics(
-      label: 'View scan history: $total messages checked, $caught threats found',
+      label:
+          'View scan history: $total messages checked, $caught threats found',
       button: true,
       child: AppCard(
         onTap: _openHistory,
         child: Row(
           children: [
-            _stat('$total', total == 1 ? 'message checked' : 'messages checked'),
+            _stat(
+              '$total',
+              total == 1 ? 'message checked' : 'messages checked',
+            ),
             Container(
               width: 1,
               height: 34,
@@ -273,8 +315,11 @@ class _HomeScreenState extends State<HomeScreen> {
               // colours a reassuring "0".
               color: caught > 0 ? AppColors.warning : null,
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textSecondary, size: 22),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textSecondary,
+              size: 22,
+            ),
           ],
         ),
       ),
@@ -319,29 +364,41 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.mark_email_unread_outlined,
           title: 'Was my email leaked?',
           subtitle: 'Check an address against known data breaches',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const BreachScreen(initialIndex: 0))),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const BreachScreen(initialIndex: 0),
+            ),
+          ),
         ),
         AppListRow(
           icon: Icons.public_outlined,
           title: 'Recent breaches',
           subtitle: 'What has leaked lately, and who it affects',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const BreachScreen(initialIndex: 1))),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const BreachScreen(initialIndex: 1),
+            ),
+          ),
         ),
         AppListRow(
           icon: Icons.lock_outline_rounded,
           title: 'Safe Vault',
           subtitle: 'Notes and codes, encrypted on this device',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const SafeVaultScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SafeVaultScreen()),
+          ),
         ),
         AppListRow(
           icon: Icons.sim_card_outlined,
           title: 'Device check',
           subtitle: 'SIM and device security status',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const SimLockScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SimLockScreen()),
+          ),
         ),
       ],
     );
@@ -352,19 +409,26 @@ class _HomeScreenState extends State<HomeScreen> {
       return EmptyState(
         icon: Icons.inbox_outlined,
         title: 'Nothing checked yet',
-        message: 'Anything you check will show up here so you can find it again.',
+        message:
+            'Anything you check will show up here so you can find it again.',
         actionLabel: 'Check something now',
         onAction: () => ScanNowBottomSheet.show(context),
       );
     }
 
     return AppListGroup(
-        children: _recent.asMap().entries.map((entry) => Reveal(
-          delay: Reveal.step(entry.key, stepMs: 35),
-          offsetY: 8,
-          child: _recentRow(entry.value),
-        )).toList(),
-      );
+      children: _recent
+          .asMap()
+          .entries
+          .map(
+            (entry) => Reveal(
+              delay: Reveal.step(entry.key, stepMs: 35),
+              offsetY: 8,
+              child: _recentRow(entry.value),
+            ),
+          )
+          .toList(),
+    );
   }
 
   Widget _recentRow(ScanRecord r) {
@@ -373,10 +437,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final timeStr = diff.inMinutes < 1
         ? 'Just now'
         : diff.inHours < 1
-            ? '${diff.inMinutes}m ago'
-            : diff.inDays < 1
-                ? '${diff.inHours}h ago'
-                : '${diff.inDays}d ago';
+        ? '${diff.inMinutes}m ago'
+        : diff.inDays < 1
+        ? '${diff.inHours}h ago'
+        : '${diff.inDays}d ago';
 
     return Material(
       color: Colors.transparent,
@@ -385,7 +449,8 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.md,
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
           ),
           child: Row(
             children: [
@@ -408,7 +473,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           v.label,
-                          style: AppText.subheading.copyWith(color: v.color, fontSize: 15),
+                          style: AppText.subheading.copyWith(
+                            color: v.color,
+                            fontSize: 15,
+                          ),
                         ),
                         const Spacer(),
                         Text(timeStr, style: AppText.caption),

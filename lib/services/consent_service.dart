@@ -24,7 +24,7 @@ import '../data/repositories/preferences_repository.dart';
 
 class ConsentService {
   ConsentService({PreferencesRepository? repository})
-      : _repository = repository ?? PreferencesRepository();
+    : _repository = repository ?? PreferencesRepository();
 
   final PreferencesRepository _repository;
 
@@ -38,8 +38,9 @@ class ConsentService {
   static const String currentPolicyVersion = '1.1.0';
 
   /// Reactive flag other widgets can listen to without re-querying SQLite.
-  static final ValueNotifier<bool> aiProcessingEnabled =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> aiProcessingEnabled = ValueNotifier<bool>(
+    true,
+  );
 
   bool _cachedHasCurrentConsent = false;
 

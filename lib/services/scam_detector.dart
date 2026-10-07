@@ -20,14 +20,7 @@ class DetectionReason {
   });
 }
 
-enum IconCategory {
-  financial,
-  link,
-  urgency,
-  suspicious,
-  manipulation,
-  safe,
-}
+enum IconCategory { financial, link, urgency, suspicious, manipulation, safe }
 
 /// The full analysis result returned by [ScamDetector.analyze].
 class AnalysisResult {
@@ -45,7 +38,6 @@ class AnalysisResult {
     this.aiPowered = false, // false = local heuristic, true = Gemini AI
   });
 }
-
 
 /// Pure-Dart, offline scam detection engine using keyword + regex patterns.
 class ScamDetector {
@@ -137,10 +129,7 @@ class ScamDetector {
 
   // ── Regex patterns ────────────────────────────────────────────────────────
   /// Detects any http / https URL.
-  static final _urlRegex = RegExp(
-    r'https?://[^\s]+',
-    caseSensitive: false,
-  );
+  static final _urlRegex = RegExp(r'https?://[^\s]+', caseSensitive: false);
 
   /// Detects shortened / obfuscated URLs commonly used in phishing.
   static final _shortUrlRegex = RegExp(
@@ -149,9 +138,7 @@ class ScamDetector {
   );
 
   /// Detects phone numbers that could be used for vishing.
-  static final _phoneRegex = RegExp(
-    r'(\+?\d[\d\s\-().]{7,}\d)',
-  );
+  static final _phoneRegex = RegExp(r'(\+?\d[\d\s\-().]{7,}\d)');
 
   /// Detects patterns like "Your OTP is 123456" or "OTP: 654321".
   static final _otpPatternRegex = RegExp(
@@ -177,17 +164,21 @@ class ScamDetector {
     int score = 0;
 
     // ── 1. Financial keywords ─────────────────────────────────────────────
-    final financialHits = _financialKeywords.where((k) => lower.contains(k)).toList();
+    final financialHits = _financialKeywords
+        .where((k) => lower.contains(k))
+        .toList();
     if (financialHits.isNotEmpty) {
       final pts = (financialHits.length * 12).clamp(0, 35);
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'Financial Keywords Detected',
-        description:
-            'Found sensitive financial terms: ${financialHits.take(3).map((k) => '"$k"').join(', ')}${financialHits.length > 3 ? ', and ${financialHits.length - 3} more' : ''}.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.financial,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Financial Keywords Detected',
+          description:
+              'Found sensitive financial terms: ${financialHits.take(3).map((k) => '"$k"').join(', ')}${financialHits.length > 3 ? ', and ${financialHits.length - 3} more' : ''}.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.financial,
+        ),
+      );
     }
 
     // ── 2. Prize / lottery keywords ───────────────────────────────────────
@@ -195,27 +186,33 @@ class ScamDetector {
     if (prizeHits.isNotEmpty) {
       final pts = (prizeHits.length * 14).clamp(0, 30);
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'Prize / Lottery Language',
-        description:
-            'Detected classic lottery-scam language: ${prizeHits.take(3).map((k) => '"$k"').join(', ')}. Legitimate organisations never announce prizes via SMS.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.suspicious,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Prize / Lottery Language',
+          description:
+              'Detected classic lottery-scam language: ${prizeHits.take(3).map((k) => '"$k"').join(', ')}. Legitimate organisations never announce prizes via SMS.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.suspicious,
+        ),
+      );
     }
 
     // ── 3. Urgency keywords ───────────────────────────────────────────────
-    final urgencyHits = _urgencyKeywords.where((k) => lower.contains(k)).toList();
+    final urgencyHits = _urgencyKeywords
+        .where((k) => lower.contains(k))
+        .toList();
     if (urgencyHits.isNotEmpty) {
       final pts = (urgencyHits.length * 10).clamp(0, 25);
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'Urgency & Pressure Tactics',
-        description:
-            'Detected ${urgencyHits.length} urgency trigger(s): ${urgencyHits.take(3).map((k) => '"$k"').join(', ')}. Creating pressure is a core scam technique.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.urgency,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Urgency & Pressure Tactics',
+          description:
+              'Detected ${urgencyHits.length} urgency trigger(s): ${urgencyHits.take(3).map((k) => '"$k"').join(', ')}. Creating pressure is a core scam technique.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.urgency,
+        ),
+      );
     }
 
     // ── 4. URL detection ─────────────────────────────────────────────────
@@ -227,21 +224,25 @@ class ScamDetector {
       final shortMatches = _shortUrlRegex.allMatches(text);
       if (shortMatches.isNotEmpty) {
         urlPts = 25;
-        reasons.add(DetectionReason(
-          label: 'Shortened / Obfuscated URL',
-          description:
-              'Found ${shortMatches.length} shortened URL(s). Scammers use services like bit.ly to hide the real destination of malicious links.',
-          scoreContribution: urlPts,
-          iconCategory: IconCategory.link,
-        ));
+        reasons.add(
+          DetectionReason(
+            label: 'Shortened / Obfuscated URL',
+            description:
+                'Found ${shortMatches.length} shortened URL(s). Scammers use services like bit.ly to hide the real destination of malicious links.',
+            scoreContribution: urlPts,
+            iconCategory: IconCategory.link,
+          ),
+        );
       } else {
-        reasons.add(DetectionReason(
-          label: 'URL / Link Detected',
-          description:
-              'Found ${urlMatches.length} link(s) in the message. Verify any link before clicking, especially if you were not expecting it.',
-          scoreContribution: urlPts,
-          iconCategory: IconCategory.link,
-        ));
+        reasons.add(
+          DetectionReason(
+            label: 'URL / Link Detected',
+            description:
+                'Found ${urlMatches.length} link(s) in the message. Verify any link before clicking, especially if you were not expecting it.',
+            scoreContribution: urlPts,
+            iconCategory: IconCategory.link,
+          ),
+        );
       }
       score += urlPts;
     }
@@ -250,41 +251,51 @@ class ScamDetector {
     if (_otpPatternRegex.hasMatch(lower)) {
       const pts = 20;
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'OTP / Code Sharing Request',
-        description:
-            'The message appears to contain or request an OTP. No legitimate service will ever ask you to share your OTP.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.financial,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'OTP / Code Sharing Request',
+          description:
+              'The message appears to contain or request an OTP. No legitimate service will ever ask you to share your OTP.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.financial,
+        ),
+      );
     }
 
     // ── 6. Manipulation keywords ─────────────────────────────────────────
-    final manipHits = _manipulationKeywords.where((k) => lower.contains(k)).toList();
+    final manipHits = _manipulationKeywords
+        .where((k) => lower.contains(k))
+        .toList();
     if (manipHits.isNotEmpty) {
       final pts = (manipHits.length * 8).clamp(0, 20);
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'Psychological Manipulation',
-        description:
-            'Detected manipulative language: ${manipHits.take(3).map((k) => '"$k"').join(', ')}. Scammers use these phrases to bypass critical thinking.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.manipulation,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Psychological Manipulation',
+          description:
+              'Detected manipulative language: ${manipHits.take(3).map((k) => '"$k"').join(', ')}. Scammers use these phrases to bypass critical thinking.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.manipulation,
+        ),
+      );
     }
 
     // ── 7. Generic suspicious action words ───────────────────────────────
-    final suspHits = _suspiciousKeywords.where((k) => lower.contains(k)).toList();
+    final suspHits = _suspiciousKeywords
+        .where((k) => lower.contains(k))
+        .toList();
     if (suspHits.isNotEmpty) {
       final pts = (suspHits.length * 5).clamp(0, 15);
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'Suspicious Action Words',
-        description:
-            'Found action-driving language: ${suspHits.take(3).map((k) => '"$k"').join(', ')}. Be cautious of messages asking you to click, download, or install anything.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.suspicious,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Suspicious Action Words',
+          description:
+              'Found action-driving language: ${suspHits.take(3).map((k) => '"$k"').join(', ')}. Be cautious of messages asking you to click, download, or install anything.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.suspicious,
+        ),
+      );
     }
 
     // ── 8. Phone number in message ───────────────────────────────────────
@@ -293,13 +304,15 @@ class ScamDetector {
       // Only flag phones as suspicious when combined with other signals
       const pts = 5;
       score += pts;
-      reasons.add(DetectionReason(
-        label: 'Embedded Phone Number',
-        description:
-            'Found ${phoneMatches.length} phone number(s). Scammers often embed call-back numbers to establish direct voice contact with victims.',
-        scoreContribution: pts,
-        iconCategory: IconCategory.suspicious,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Embedded Phone Number',
+          description:
+              'Found ${phoneMatches.length} phone number(s). Scammers often embed call-back numbers to establish direct voice contact with victims.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.suspicious,
+        ),
+      );
     }
 
     // ── Clamp score ────────────────────────────────────────────────────────
@@ -311,7 +324,8 @@ class ScamDetector {
 
     if (score == 0) {
       classification = ScamClassification.safe;
-      summary = 'No suspicious patterns were detected. This message appears safe.';
+      summary =
+          'No suspicious patterns were detected. This message appears safe.';
     } else if (score < 30) {
       classification = ScamClassification.safe;
       summary =
@@ -328,12 +342,14 @@ class ScamDetector {
 
     // ── If no reasons but score > 0, add safe indicator ──────────────────
     if (reasons.isEmpty) {
-      reasons.add(const DetectionReason(
-        label: 'No Threats Detected',
-        description: 'This message does not contain known scam patterns.',
-        scoreContribution: 0,
-        iconCategory: IconCategory.safe,
-      ));
+      reasons.add(
+        const DetectionReason(
+          label: 'No Threats Detected',
+          description: 'This message does not contain known scam patterns.',
+          scoreContribution: 0,
+          iconCategory: IconCategory.safe,
+        ),
+      );
     }
 
     return AnalysisResult(
@@ -347,10 +363,13 @@ class ScamDetector {
   // ─────────────────────────────────────────────────────────────────────────
   /// Analyzes an APK based on its static extraction and OSINT results.
   // ─────────────────────────────────────────────────────────────────────────
-  static AnalysisResult analyzeApk(ApkAnalysisResult apk, List<OsintResult> osintResults) {
+  static AnalysisResult analyzeApk(
+    ApkAnalysisResult apk,
+    List<OsintResult> osintResults,
+  ) {
     int score = 0;
     final reasons = <DetectionReason>[];
-    
+
     // 1. Dangerous Permissions Analysis
     final dangerousPermissions = <String, int>{
       'READ_SMS': 25,
@@ -371,15 +390,18 @@ class ScamDetector {
         foundDangerous.add(perm);
       }
     }
-    
+
     if (foundDangerous.isNotEmpty) {
       score += permissionScore;
-      reasons.add(DetectionReason(
-        label: 'Dangerous Permissions',
-        description: 'App requests: ${foundDangerous.join(', ')}. This combination is highly sensitive and often abused by malware.',
-        scoreContribution: permissionScore,
-        iconCategory: IconCategory.suspicious,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Dangerous Permissions',
+          description:
+              'App requests: ${foundDangerous.join(', ')}. This combination is highly sensitive and often abused by malware.',
+          scoreContribution: permissionScore,
+          iconCategory: IconCategory.suspicious,
+        ),
+      );
     }
 
     // 2. OSINT Analysis
@@ -388,20 +410,29 @@ class ScamDetector {
     if (maliciousOsint.isNotEmpty) {
       for (final result in maliciousOsint) {
         osintScore += 40; // Heavy penalty for flagged OSINT
-        reasons.add(DetectionReason(
-          label: 'OSINT Blacklist (${result.provider})',
-          description: result.details,
-          scoreContribution: 40,
-          iconCategory: IconCategory.suspicious, // mapped to manipulation/suspicious later
-        ));
+        reasons.add(
+          DetectionReason(
+            label: 'OSINT Blacklist (${result.provider})',
+            description: result.details,
+            scoreContribution: 40,
+            iconCategory: IconCategory
+                .suspicious, // mapped to manipulation/suspicious later
+          ),
+        );
       }
       score += osintScore;
     }
 
-    // 3. Secrets / URLs 
+    // 3. Secrets / URLs
     // Basic heuristic: check if urls contains suspicious keywords
     int urlScore = 0;
-    final suspiciousUrlKeywords = ['free', 'money', 'bit.ly', 'ngrok', 'tinyurl'];
+    final suspiciousUrlKeywords = [
+      'free',
+      'money',
+      'bit.ly',
+      'ngrok',
+      'tinyurl',
+    ];
     for (final url in apk.urls) {
       final lower = url.toLowerCase();
       if (suspiciousUrlKeywords.any((k) => lower.contains(k))) {
@@ -411,42 +442,56 @@ class ScamDetector {
     if (urlScore > 0) {
       urlScore = urlScore.clamp(0, 20);
       score += urlScore;
-      reasons.add(DetectionReason(
-        label: 'Suspicious Domains/Endpoints',
-        description: 'Extracted network endpoints match suspicious patterns or link shorteners.',
-        scoreContribution: urlScore,
-        iconCategory: IconCategory.link,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Suspicious Domains/Endpoints',
+          description:
+              'Extracted network endpoints match suspicious patterns or link shorteners.',
+          scoreContribution: urlScore,
+          iconCategory: IconCategory.link,
+        ),
+      );
     }
 
     // 3.5 Secrets Detection
     if (apk.secrets.isNotEmpty) {
       score += 25; // High penalty for hardcoded secrets
-      reasons.add(DetectionReason(
-        label: 'Exposed Secrets',
-        description: 'Found hardcoded sensitive keys/tokens: ${apk.secrets.take(3).join(', ')}...',
-        scoreContribution: 25,
-        iconCategory: IconCategory.manipulation,
-      ));
+      reasons.add(
+        DetectionReason(
+          label: 'Exposed Secrets',
+          description:
+              'Found hardcoded sensitive keys/tokens: ${apk.secrets.take(3).join(', ')}...',
+          scoreContribution: 25,
+          iconCategory: IconCategory.manipulation,
+        ),
+      );
     }
 
     // 4. Certificates
     if (apk.certificates.isEmpty) {
       // Unsigned or v2/v3 signed
-      reasons.add(const DetectionReason(
-        label: 'No V1 Certificate Found',
-        description: 'No META-INF certificates found. App is either unsigned or uses v2/v3 signatures exclusively.',
-        scoreContribution: 0,
-        iconCategory: IconCategory.safe,
-      ));
-    } else if (apk.certificates.any((c) => c.contains('testkey') || c.contains('debug'))) {
+      reasons.add(
+        const DetectionReason(
+          label: 'No V1 Certificate Found',
+          description:
+              'No META-INF certificates found. App is either unsigned or uses v2/v3 signatures exclusively.',
+          scoreContribution: 0,
+          iconCategory: IconCategory.safe,
+        ),
+      );
+    } else if (apk.certificates.any(
+      (c) => c.contains('testkey') || c.contains('debug'),
+    )) {
       score += 15;
-      reasons.add(const DetectionReason(
-        label: 'Debug/Test Certificate',
-        description: 'App is signed with a debug or test key. Legitimate production apps use proper release keys.',
-        scoreContribution: 15,
-        iconCategory: IconCategory.suspicious,
-      ));
+      reasons.add(
+        const DetectionReason(
+          label: 'Debug/Test Certificate',
+          description:
+              'App is signed with a debug or test key. Legitimate production apps use proper release keys.',
+          scoreContribution: 15,
+          iconCategory: IconCategory.suspicious,
+        ),
+      );
     }
 
     score = score.clamp(0, 100);
@@ -456,22 +501,27 @@ class ScamDetector {
 
     if (score < 20) {
       classification = ScamClassification.safe;
-      summary = 'APK appears safe based on static analysis. No significant red flags detected.';
+      summary =
+          'APK appears safe based on static analysis. No significant red flags detected.';
     } else if (score < 60) {
       classification = ScamClassification.suspicious;
-      summary = 'APK exhibits some suspicious behavior or requests sensitive permissions. Proceed with caution.';
+      summary =
+          'APK exhibits some suspicious behavior or requests sensitive permissions. Proceed with caution.';
     } else {
       classification = ScamClassification.scam;
-      summary = 'High risk! APK contains multiple indicators of compromise, dangerous permissions, or is flagged by threat intel.';
+      summary =
+          'High risk! APK contains multiple indicators of compromise, dangerous permissions, or is flagged by threat intel.';
     }
 
     if (reasons.isEmpty) {
-       reasons.add(const DetectionReason(
-        label: 'No Threats Detected',
-        description: 'Static analysis found no known malicious patterns.',
-        scoreContribution: 0,
-        iconCategory: IconCategory.safe,
-      ));
+      reasons.add(
+        const DetectionReason(
+          label: 'No Threats Detected',
+          description: 'Static analysis found no known malicious patterns.',
+          scoreContribution: 0,
+          iconCategory: IconCategory.safe,
+        ),
+      );
     }
 
     return AnalysisResult(

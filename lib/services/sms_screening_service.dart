@@ -43,12 +43,17 @@ import 'scam_detector.dart';
 class SmsScreeningService {
   SmsScreeningService._();
 
-  static const MethodChannel _methodChannel = MethodChannel('com.example.scamshield/sms');
-  static const EventChannel _eventChannel = EventChannel('com.example.scamshield/sms_stream');
+  static const MethodChannel _methodChannel = MethodChannel(
+    'com.example.scamshield/sms',
+  );
+  static const EventChannel _eventChannel = EventChannel(
+    'com.example.scamshield/sms_stream',
+  );
   static const String _enabledKey = 'scamshield_sms_screening_enabled';
 
   static StreamSubscription<dynamic>? _subscription;
-  static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _notifications =
+      FlutterLocalNotificationsPlugin();
   static bool _notificationsReady = false;
   static int _notificationSeq = 0;
 
@@ -93,9 +98,9 @@ class SmsScreeningService {
   static Future<void> _start() async {
     await _ensureNotifications();
     _subscription ??= _eventChannel.receiveBroadcastStream().listen(
-          _handleLiveEvent,
-          onError: (Object e) => debugPrint('SmsScreeningService stream error: $e'),
-        );
+      _handleLiveEvent,
+      onError: (Object e) => debugPrint('SmsScreeningService stream error: $e'),
+    );
     isActive.value = true;
     unawaited(_drainQueuedMessages());
   }
@@ -110,11 +115,13 @@ class SmsScreeningService {
     if (event is! String) return;
     try {
       final map = jsonDecode(event) as Map<String, dynamic>;
-      unawaited(_screen(
-        sender: map['sender'] as String?,
-        body: map['body'] as String? ?? '',
-        receivedAt: DateTime.now(),
-      ));
+      unawaited(
+        _screen(
+          sender: map['sender'] as String?,
+          body: map['body'] as String? ?? '',
+          receivedAt: DateTime.now(),
+        ),
+      );
     } catch (e) {
       debugPrint('SmsScreeningService: malformed live event ($e)');
     }
@@ -123,7 +130,9 @@ class SmsScreeningService {
   /// Pulls in anything that arrived while the app process was not running.
   static Future<void> _drainQueuedMessages() async {
     try {
-      final raw = await _methodChannel.invokeMethod<String>('drainQueuedMessages');
+      final raw = await _methodChannel.invokeMethod<String>(
+        'drainQueuedMessages',
+      );
       if (raw == null || raw.isEmpty) return;
       final list = jsonDecode(raw) as List<dynamic>;
       for (final item in list) {
@@ -132,7 +141,9 @@ class SmsScreeningService {
         await _screen(
           sender: map['sender'] as String?,
           body: map['body'] as String? ?? '',
-          receivedAt: tsMs != null ? DateTime.fromMillisecondsSinceEpoch(tsMs) : DateTime.now(),
+          receivedAt: tsMs != null
+              ? DateTime.fromMillisecondsSinceEpoch(tsMs)
+              : DateTime.now(),
         );
       }
     } on PlatformException catch (e) {
@@ -155,7 +166,8 @@ class SmsScreeningService {
       result = await ApiService.analyzeMessage(text);
       if (result.riskScore == 0 &&
           !result.aiPowered &&
-          (result.reasons.isEmpty || result.reasons.first.label == 'Analysis Unavailable')) {
+          (result.reasons.isEmpty ||
+              result.reasons.first.label == 'Analysis Unavailable')) {
         result = ScamDetector.analyze(text);
       }
     } catch (_) {
@@ -166,15 +178,19 @@ class SmsScreeningService {
       final record = ScanRecord.fromAnalysisResult(
         inputText: text,
         result: result,
-        source: sender != null && sender.isNotEmpty ? 'SMS from $sender' : 'SMS',
+        source: sender != null && sender.isNotEmpty
+            ? 'SMS from $sender'
+            : 'SMS',
       );
       await ScanRepository().saveScan(record);
     } catch (e) {
       debugPrint('SmsScreeningService: failed to save scan ($e)');
     }
 
-    final isDangerous = result.classification == ScamClassification.scam ||
-        (result.classification == ScamClassification.suspicious && result.riskScore >= 60);
+    final isDangerous =
+        result.classification == ScamClassification.scam ||
+        (result.classification == ScamClassification.suspicious &&
+            result.riskScore >= 60);
     if (!isDangerous) return;
 
     await _notifyDanger(sender: sender, result: result);
@@ -183,16 +199,20 @@ class SmsScreeningService {
     unawaited(CallScreeningService.refreshBlocklist());
     // Same family-alert relay the manual scan flow uses — best-effort, and a
     // failure here must never be surfaced as an SMS-screening failure.
-    unawaited(CloudAccountService.raiseAlert(
-      classification: result.classification.name,
-      riskScore: result.riskScore,
-      summary: result.summary,
-    ));
+    unawaited(
+      CloudAccountService.raiseAlert(
+        classification: result.classification.name,
+        riskScore: result.riskScore,
+        summary: result.summary,
+      ),
+    );
   }
 
   static Future<void> _ensureNotifications() async {
     if (_notificationsReady) return;
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     await _notifications.initialize(
       settings: const InitializationSettings(android: androidSettings),
     );

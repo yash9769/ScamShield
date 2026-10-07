@@ -58,7 +58,8 @@ VerdictStyle verdictStyleFor(String classification) {
         color: AppColors.danger,
         icon: Icons.dangerous_rounded,
         label: 'Scam',
-        advice: 'Do not reply, tap any link, or send money. It is safe to delete this.',
+        advice:
+            'Do not reply, tap any link, or send money. It is safe to delete this.',
       );
     case 'safe':
       return const VerdictStyle(
@@ -66,7 +67,8 @@ VerdictStyle verdictStyleFor(String classification) {
         color: AppColors.success,
         icon: Icons.check_circle_rounded,
         label: 'Looks safe',
-        advice: 'Nothing dangerous found. Still never share a code with someone who '
+        advice:
+            'Nothing dangerous found. Still never share a code with someone who '
             'contacted you first.',
       );
     default:
@@ -290,8 +292,11 @@ class AppListRow extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 trailing!,
               ] else if (onTap != null)
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.textSecondary, size: 22),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 22,
+                ),
             ],
           ),
         ),

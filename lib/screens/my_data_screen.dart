@@ -52,13 +52,15 @@ class _MyDataScreenState extends State<MyDataScreen> {
     try {
       final dir = await getTemporaryDirectory();
       final file = File(
-          '${dir.path}/ScamShield_MyData_${DateTime.now().millisecondsSinceEpoch}.json');
+        '${dir.path}/ScamShield_MyData_${DateTime.now().millisecondsSinceEpoch}.json',
+      );
       const encoder = JsonEncoder.withIndent('  ');
       await file.writeAsString(encoder.convert(_data));
       await OpenFilex.open(file.path);
       if (mounted) setState(() => _statusMessage = 'Exported and opened.');
     } catch (e) {
-      if (mounted) setState(() => _statusMessage = 'Export failed: could not write file.');
+      if (mounted)
+        setState(() => _statusMessage = 'Export failed: could not write file.');
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
@@ -68,17 +70,27 @@ class _MyDataScreenState extends State<MyDataScreen> {
   Widget build(BuildContext context) {
     final scans = (_data?['scanHistory'] as List?)?.length ?? 0;
     final vaultItems =
-        (_data?['safeVaultItems (titles/categories only — see note)'] as List?)?.length ?? 0;
+        (_data?['safeVaultItems (titles/categories only — see note)'] as List?)
+            ?.length ??
+        0;
     final email = _data?['account']?['email'] as String?;
     final cloudSection = _data?['cloudSyncAccount'] as Map<String, dynamic>?;
     final cloudSignedIn = cloudSection?['signedIn'] == true;
-    final cloudScans = ((cloudSection?['data'] as Map?)?['syncedScans'] as List?)?.length;
+    final cloudScans =
+        ((cloudSection?['data'] as Map?)?['syncedScans'] as List?)?.length;
     final points = (_data?['learningProgress'] as Map?)?['totalPoints'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Data', style: TextStyle(fontWeight: FontWeight.bold))),
+      appBar: AppBar(
+        title: const Text(
+          'My Data',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -86,20 +98,29 @@ class _MyDataScreenState extends State<MyDataScreen> {
                 children: [
                   const Text(
                     'Summary of what ScamShield stores about you on this device.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   _row('Account email', email ?? '(no local account)'),
                   _row('Profile name', _data?['profile']?['name'] ?? '—'),
                   _row('Scan history records', '$scans'),
-                  _row('Safe Vault items', '$vaultItems (titles only shown here)'),
+                  _row(
+                    'Safe Vault items',
+                    '$vaultItems (titles only shown here)',
+                  ),
                   _row(
                     'AI-assisted analysis',
-                    (_data?['consent']?['aiProcessingConsent'] == true) ? 'Enabled' : 'Disabled',
+                    (_data?['consent']?['aiProcessingConsent'] == true)
+                        ? 'Enabled'
+                        : 'Disabled',
                   ),
                   _row(
                     'Privacy Policy agreed',
-                    _data?['consent']?['privacyPolicyVersionAgreed'] ?? 'Not recorded',
+                    _data?['consent']?['privacyPolicyVersionAgreed'] ??
+                        'Not recorded',
                   ),
                   _row('Learning points', '${points ?? 0}'),
                   const SizedBox(height: 8),
@@ -123,18 +144,28 @@ class _MyDataScreenState extends State<MyDataScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 18),
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
                             'Safe Vault secret contents are not included in this export — only '
                             'titles and categories — so exporting never writes your stored '
                             'passwords/PINs to an unencrypted file.',
-                            style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5, height: 1.4),
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11.5,
+                              height: 1.4,
+                            ),
                           ),
                         ),
                       ],
@@ -148,21 +179,41 @@ class _MyDataScreenState extends State<MyDataScreen> {
                       onPressed: _exporting ? null : _export,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       icon: _exporting
                           ? const SizedBox(
-                              width: 16, height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black,
+                              ),
                             )
-                          : const Icon(Icons.download_outlined, color: Colors.black),
-                      label: const Text('Export My Data (JSON)',
-                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          : const Icon(
+                              Icons.download_outlined,
+                              color: Colors.black,
+                            ),
+                      label: const Text(
+                        'Export My Data (JSON)',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   if (_statusMessage != null) ...[
                     const SizedBox(height: 10),
-                    Text(_statusMessage!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(
+                      _statusMessage!,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -176,13 +227,13 @@ class _MyDataScreenState extends State<MyDataScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 160,
-            child: Text(label, style: AppText.caption),
-          ),
+          SizedBox(width: 160, child: Text(label, style: AppText.caption)),
           Expanded(
-          child: Text(value, style: AppText.caption.copyWith(fontWeight: FontWeight.w600)),
-        ),
+            child: Text(
+              value,
+              style: AppText.caption.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );

@@ -32,15 +32,15 @@ class UserPreferences {
   });
 
   Map<String, dynamic> toMap() => {
-        'has_consented': hasConsented ? 1 : 0,
-        'notifications_enabled': notificationsEnabled ? 1 : 0,
-        'daily_tip_enabled': dailyTipEnabled ? 1 : 0,
-        'auto_delete_days': autoDeleteDays,
-        'offline_mode_acknowledged': offlineModeAcknowledged ? 1 : 0,
-        'consent_version': consentVersion,
-        'consent_timestamp': consentTimestamp,
-        'ai_processing_enabled': aiProcessingEnabled ? 1 : 0,
-      };
+    'has_consented': hasConsented ? 1 : 0,
+    'notifications_enabled': notificationsEnabled ? 1 : 0,
+    'daily_tip_enabled': dailyTipEnabled ? 1 : 0,
+    'auto_delete_days': autoDeleteDays,
+    'offline_mode_acknowledged': offlineModeAcknowledged ? 1 : 0,
+    'consent_version': consentVersion,
+    'consent_timestamp': consentTimestamp,
+    'ai_processing_enabled': aiProcessingEnabled ? 1 : 0,
+  };
 
   factory UserPreferences.fromMap(Map<String, dynamic> map) {
     return UserPreferences(

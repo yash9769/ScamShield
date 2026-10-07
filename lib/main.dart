@@ -68,7 +68,9 @@ void main() async {
   // a restore fires that signal once per record.
   DataChangeNotifier.version.addListener(HomeWidgetService.refreshSoon);
   unawaited(HomeWidgetService.refresh());
-  runApp(ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented));
+  runApp(
+    ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented),
+  );
 }
 
 Future<void> _applyScanHistoryRetention() async {
@@ -80,7 +82,9 @@ Future<void> _applyScanHistoryRetention() async {
     // Loaded before deleting so an aged-out scan that was ever cross-device
     // synced can be tombstoned server-side too — an automatic local purge is
     // still a deletion, and the server has no other way to learn about it.
-    final cutoff = DateTime.now().subtract(Duration(days: prefs.autoDeleteDays));
+    final cutoff = DateTime.now().subtract(
+      Duration(days: prefs.autoDeleteDays),
+    );
     final expiring = (await repo.loadHistory())
         .where((r) => r.timestamp.isBefore(cutoff))
         .toList();
@@ -93,7 +97,11 @@ class ScamShieldApp extends StatefulWidget {
   final bool startLoggedIn;
   final bool hasConsented;
 
-  const ScamShieldApp({super.key, this.startLoggedIn = false, this.hasConsented = false});
+  const ScamShieldApp({
+    super.key,
+    this.startLoggedIn = false,
+    this.hasConsented = false,
+  });
 
   @override
   State<ScamShieldApp> createState() => _ScamShieldAppState();
@@ -117,10 +125,12 @@ class _ScamShieldAppState extends State<ScamShieldApp> {
           // Consent and sign-in come first in either mode — Simple Mode
           // simplifies the app, it does not skip asking permission.
           home: !_hasConsented
-              ? ConsentScreen(onConsented: () => setState(() => _hasConsented = true))
+              ? ConsentScreen(
+                  onConsented: () => setState(() => _hasConsented = true),
+                )
               : !widget.startLoggedIn
-                  ? const LoginScreen()
-                  : (simple ? const SimpleHomeScreen() : const MainNavigation()),
+              ? const LoginScreen()
+              : (simple ? const SimpleHomeScreen() : const MainNavigation()),
           debugShowCheckedModeBanner: false,
         ),
       ),
@@ -200,12 +210,20 @@ class _MainNavigationState extends State<MainNavigation>
         duration: const Duration(seconds: 8),
         content: Row(
           children: [
-            const Icon(Icons.mark_email_unread, color: AppColors.warning, size: 20),
+            const Icon(
+              Icons.mark_email_unread,
+              color: AppColors.warning,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 more > 0 ? '$headline (+$more more)' : headline,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -253,7 +271,10 @@ class _MainNavigationState extends State<MainNavigation>
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim() ?? "";
       if (text.isNotEmpty && text != _lastCopiedText) {
-        if (text.contains("http://") || text.contains("https://") || text.toUpperCase().contains("URGENT") || text.toUpperCase().contains("OTP")) {
+        if (text.contains("http://") ||
+            text.contains("https://") ||
+            text.toUpperCase().contains("URGENT") ||
+            text.toUpperCase().contains("OTP")) {
           _lastCopiedText = text;
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -262,12 +283,20 @@ class _MainNavigationState extends State<MainNavigation>
                 duration: const Duration(seconds: 4),
                 content: Row(
                   children: [
-                    const Icon(Icons.security, color: AppColors.primary, size: 20),
+                    const Icon(
+                      Icons.security,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         "Copied link/text detected in clipboard!",
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -292,10 +321,7 @@ class _MainNavigationState extends State<MainNavigation>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppColors.surface,

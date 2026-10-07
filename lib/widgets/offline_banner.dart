@@ -34,8 +34,9 @@ class _OfflineBannerState extends State<OfflineBanner>
     _heightAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
 
     // Listen to connectivity changes
-    _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((results) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
       if (!mounted) return;
       final offline = results.every((r) => r == ConnectivityResult.none);
       if (offline != _isOffline) {

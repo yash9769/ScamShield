@@ -94,7 +94,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : RefreshIndicator(
               onRefresh: _load,
               color: AppColors.primary,
@@ -103,7 +105,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 padding: const EdgeInsets.all(20),
                 child: !CloudAccountService.signedIn.value
                     ? _buildSignInPrompt()
-                    : (_family?.exists == true ? _buildFamily(_family!) : _buildNoFamily()),
+                    : (_family?.exists == true
+                          ? _buildFamily(_family!)
+                          : _buildNoFamily()),
               ),
             ),
     );
@@ -124,7 +128,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: AppColors.surfaceLight.withValues(alpha: 0.5),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +144,11 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   'Everything else in ScamShield works entirely on your device. '
                   'Alerting a relative is the one thing that genuinely needs a '
                   'server, because the warning has to reach their phone.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.45),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12.5,
+                    height: 1.45,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -148,10 +158,17 @@ class _FamilyScreenState extends State<FamilyScreen> {
                     onPressed: _busy ? null : _showCloudAuthSheet,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    child: const Text('Set up sync & family',
-                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'Set up sync & family',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -175,14 +192,20 @@ class _FamilyScreenState extends State<FamilyScreen> {
         children: [
           const Icon(Icons.family_restroom, color: AppColors.primary, size: 32),
           const SizedBox(height: 12),
-          Text('Protect the people who get targeted most',
-              style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            'Protect the people who get targeted most',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 8),
           const Text(
             'Scammers go after parents and grandparents hardest. Link their '
             'phone and you\'ll know the moment something dangerous reaches it — '
             'in time to call them before they act on it.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -197,22 +220,30 @@ class _FamilyScreenState extends State<FamilyScreen> {
       children: [
         Reveal(delay: Reveal.step(0), child: _heroCard()),
         const SizedBox(height: 20),
-        Reveal(delay: Reveal.step(1), child: _actionCard(
-          icon: Icons.group_add_outlined,
-          title: 'Create a family group',
-          body: 'You\'ll get an invite code to share with the people you want to protect.',
-          buttonLabel: 'Create group',
-          onPressed: _promptCreateFamily,
-        )),
+        Reveal(
+          delay: Reveal.step(1),
+          child: _actionCard(
+            icon: Icons.group_add_outlined,
+            title: 'Create a family group',
+            body:
+                'You\'ll get an invite code to share with the people you want to protect.',
+            buttonLabel: 'Create group',
+            onPressed: _promptCreateFamily,
+          ),
+        ),
         const SizedBox(height: 14),
-        Reveal(delay: Reveal.step(2), child: _actionCard(
-          icon: Icons.link,
-          title: 'Join with an invite code',
-          body: 'Someone in your family already made a group? Enter their code.',
-          buttonLabel: 'Enter code',
-          onPressed: _promptJoinFamily,
-          filled: false,
-        )),
+        Reveal(
+          delay: Reveal.step(2),
+          child: _actionCard(
+            icon: Icons.link,
+            title: 'Join with an invite code',
+            body:
+                'Someone in your family already made a group? Enter their code.',
+            buttonLabel: 'Enter code',
+            onPressed: _promptJoinFamily,
+            filled: false,
+          ),
+        ),
       ],
     );
   }
@@ -230,7 +261,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,11 +272,24 @@ class _FamilyScreenState extends State<FamilyScreen> {
             children: [
               Icon(icon, color: AppColors.primary, size: 20),
               const SizedBox(width: 10),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(body, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4)),
+          Text(
+            body,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -253,19 +299,35 @@ class _FamilyScreenState extends State<FamilyScreen> {
                     onPressed: _busy ? null : onPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: Text(buttonLabel,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      buttonLabel,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   )
                 : OutlinedButton(
                     onPressed: _busy ? null : onPressed,
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(
+                        color: AppColors.primary.withValues(alpha: 0.5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: Text(buttonLabel,
-                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      buttonLabel,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
           ),
         ],
@@ -306,12 +368,20 @@ class _FamilyScreenState extends State<FamilyScreen> {
             ),
             child: const Row(
               children: [
-                Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
+                Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.success,
+                  size: 20,
+                ),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'No alerts. You\'ll see one here when a family member scans something dangerous.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
@@ -323,22 +393,24 @@ class _FamilyScreenState extends State<FamilyScreen> {
         TextButton.icon(
           onPressed: _busy ? null : _confirmLeave,
           icon: const Icon(Icons.logout, color: AppColors.danger, size: 18),
-          label: const Text('Leave this family group',
-              style: TextStyle(color: AppColors.danger, fontSize: 13)),
+          label: const Text(
+            'Leave this family group',
+            style: TextStyle(color: AppColors.danger, fontSize: 13),
+          ),
         ),
       ],
     );
   }
 
   Widget _sectionTitle(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textSecondary,
-          letterSpacing: 0,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 10.5,
+      fontWeight: FontWeight.w700,
+      color: AppColors.textSecondary,
+      letterSpacing: 0,
+    ),
+  );
 
   Widget _buildInviteCard(FamilyGroup family) {
     return Container(
@@ -351,27 +423,37 @@ class _FamilyScreenState extends State<FamilyScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(family.name ?? 'Family group',
-              style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            family.name ?? 'Family group',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 4),
           Text(
             'You joined as ${family.role == 'protected' ? 'a protected member' : 'a guardian'}.',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text('INVITE CODE',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-                letterSpacing: 0,
-              )),
+          const Text(
+            'INVITE CODE',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0,
+            ),
+          ),
           const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.circular(10),
@@ -389,9 +471,15 @@ class _FamilyScreenState extends State<FamilyScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.copy, color: AppColors.primary, size: 20),
+                icon: const Icon(
+                  Icons.copy,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: family.inviteCode ?? ''));
+                  Clipboard.setData(
+                    ClipboardData(text: family.inviteCode ?? ''),
+                  );
                   _toast('Invite code copied.');
                 },
               ),
@@ -400,7 +488,11 @@ class _FamilyScreenState extends State<FamilyScreen> {
           const SizedBox(height: 6),
           const Text(
             'Anyone with this code can join and see the group\'s alerts — share it only with family.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.35),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              height: 1.35,
+            ),
           ),
         ],
       ),
@@ -422,7 +514,11 @@ class _FamilyScreenState extends State<FamilyScreen> {
             backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             child: Text(
               m.label.isNotEmpty ? m.label[0].toUpperCase() : '?',
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -430,10 +526,20 @@ class _FamilyScreenState extends State<FamilyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(m.isYou ? '${m.label} (you)' : m.label,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                Text(m.email,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                Text(
+                  m.isYou ? '${m.label} (you)' : m.label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
+                ),
+                Text(
+                  m.email,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
               ],
             ),
           ),
@@ -450,7 +556,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: m.role == 'protected' ? AppColors.warning : AppColors.primary,
+                color: m.role == 'protected'
+                    ? AppColors.warning
+                    : AppColors.primary,
               ),
             ),
           ),
@@ -469,7 +577,12 @@ class _FamilyScreenState extends State<FamilyScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border(left: BorderSide(color: a.acknowledged ? AppColors.surfaceLight : color, width: 3)),
+        border: Border(
+          left: BorderSide(
+            color: a.acknowledged ? AppColors.surfaceLight : color,
+            width: 3,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,41 +594,75 @@ class _FamilyScreenState extends State<FamilyScreen> {
               Expanded(
                 child: Text(
                   '${a.fromDisplay} scanned a ${(a.classification ?? 'risky').toUpperCase()}',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               if (a.riskScore != null)
-                Text('${a.riskScore}/100',
-                    style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                Text(
+                  '${a.riskScore}/100',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
             ],
           ),
           if (a.summary?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            Text(a.summary!,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.35)),
+            Text(
+              a.summary!,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
           ],
           const SizedBox(height: 8),
           Row(
             children: [
               if (a.createdAt != null)
-                Text(a.createdAt!,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                Text(
+                  a.createdAt!,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
               const Spacer(),
               if (a.acknowledged)
-                const Text('Seen',
-                    style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w600))
+                const Text(
+                  'Seen',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
               else
                 TextButton(
                   onPressed: _busy
                       ? null
-                      : () => _run(() => CloudAccountService.acknowledgeAlert(a.id)),
+                      : () => _run(
+                          () => CloudAccountService.acknowledgeAlert(a.id),
+                        ),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Mark as seen',
-                      style: TextStyle(color: AppColors.primary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    'Mark as seen',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -527,7 +674,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
   // ── Dialogs ───────────────────────────────────────────────────────────────
 
   Future<void> _showCloudAuthSheet() async {
-    final emailController = TextEditingController(text: await AuthService.registeredEmail() ?? '');
+    final emailController = TextEditingController(
+      text: await AuthService.registeredEmail() ?? '',
+    );
     final passwordController = TextEditingController();
     var isRegister = true;
     var submitting = false;
@@ -544,19 +693,28 @@ class _FamilyScreenState extends State<FamilyScreen> {
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) => Padding(
           padding: EdgeInsets.fromLTRB(
-            20, 20, 20, MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+            20,
+            20,
+            20,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(isRegister ? 'Create a sync account' : 'Sign in to sync',
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                isRegister ? 'Create a sync account' : 'Sign in to sync',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 6),
               const Text(
                 'This is separate from the passcode on this device — it\'s what '
                 'links your phones together and carries family alerts.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 10),
               // The one place in the app where scan content stops being
@@ -568,17 +726,29 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.warning.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.cloud_upload_outlined, color: AppColors.warning, size: 16),
+                        Icon(
+                          Icons.cloud_upload_outlined,
+                          color: AppColors.warning,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
-                        Text('What this changes',
-                            style: TextStyle(color: AppColors.warning, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        Text(
+                          'What this changes',
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -589,17 +759,30 @@ class _FamilyScreenState extends State<FamilyScreen> {
                       'short summary of anything dangerous you scan — never the message itself.\n\n'
                       'You can delete this account and everything synced to it at any time from '
                       'Settings > Privacy & Data > Delete Account.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5, height: 1.4),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen(showAcceptedVersion: false)),
+                        MaterialPageRoute(
+                          builder: (_) => const PrivacyPolicyScreen(
+                            showAcceptedVersion: false,
+                          ),
+                        ),
                       ),
                       child: const Text(
                         'Read the full Privacy Policy',
-                        style: TextStyle(color: AppColors.primary, fontSize: 11.5, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ],
@@ -619,13 +802,21 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 enabled: !submitting,
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  helperText: isRegister ? 'At least 8 characters, letters and numbers.' : null,
-                  helperStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  helperText: isRegister
+                      ? 'At least 8 characters, letters and numbers.'
+                      : null,
+                  helperStyle: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
                 ),
               ),
               if (error != null) ...[
                 const SizedBox(height: 10),
-                Text(error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                Text(
+                  error!,
+                  style: const TextStyle(color: AppColors.danger, fontSize: 12),
+                ),
               ],
               const SizedBox(height: 18),
               SizedBox(
@@ -650,7 +841,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
                                 password: passwordController.text,
                               );
                             }
-                            if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            if (sheetContext.mounted)
+                              Navigator.pop(sheetContext);
                           } on CloudException catch (e) {
                             setSheetState(() {
                               submitting = false;
@@ -659,32 +851,50 @@ class _FamilyScreenState extends State<FamilyScreen> {
                           } catch (_) {
                             setSheetState(() {
                               submitting = false;
-                              error = 'Could not reach the server. Check your connection.';
+                              error =
+                                  'Could not reach the server. Check your connection.';
                             });
                           }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   child: submitting
                       ? const SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.black))
-                      : Text(isRegister ? 'Create account' : 'Sign in',
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: Colors.black,
+                          ),
+                        )
+                      : Text(
+                          isRegister ? 'Create account' : 'Sign in',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
               TextButton(
                 onPressed: submitting
                     ? null
                     : () => setSheetState(() {
-                          isRegister = !isRegister;
-                          error = null;
-                        }),
+                        isRegister = !isRegister;
+                        error = null;
+                      }),
                 child: Text(
-                  isRegister ? 'I already have an account' : 'Create a new account instead',
-                  style: const TextStyle(color: AppColors.primary, fontSize: 13),
+                  isRegister
+                      ? 'I already have an account'
+                      : 'Create a new account instead',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -709,7 +919,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
     CloudSyncService.sync(force: true).then((outcome) {
       if (!mounted || !outcome.ran) return;
       if (outcome.pulled > 0) {
-        _toast('Synced — ${outcome.pulled} scan(s) restored from your account.');
+        _toast(
+          'Synced — ${outcome.pulled} scan(s) restored from your account.',
+        );
       }
     });
   }
@@ -726,7 +938,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withValues(alpha: 0.12) : Colors.transparent,
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.surfaceLight,
@@ -736,7 +950,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
         child: Row(
           children: [
             Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              selected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
               color: selected ? AppColors.primary : AppColors.textSecondary,
               size: 18,
             ),
@@ -745,9 +961,20 @@ class _FamilyScreenState extends State<FamilyScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  Text(subtitle,
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -774,7 +1001,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
@@ -785,8 +1015,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
     controller.dispose();
     if (name == null || name.isEmpty) return;
-    await _run(() => CloudAccountService.createFamily(name).then((_) {}),
-        success: 'Family group created. Share the invite code.');
+    await _run(
+      () => CloudAccountService.createFamily(name).then((_) {}),
+      success: 'Family group created. Share the invite code.',
+    );
   }
 
   Future<void> _promptJoinFamily() async {
@@ -798,7 +1030,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Join a family group'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -810,8 +1044,14 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 decoration: const InputDecoration(labelText: 'Invite code'),
               ),
               const SizedBox(height: 16),
-              const Text('Your role',
-                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary, letterSpacing: 0.8)),
+              const Text(
+                'Your role',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.8,
+                ),
+              ),
               const SizedBox(height: 8),
               _roleOption(
                 selected: role == 'guardian',
@@ -831,10 +1071,16 @@ class _FamilyScreenState extends State<FamilyScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, {'code': controller.text.trim(), 'role': role}),
+              onPressed: () => Navigator.pop(ctx, {
+                'code': controller.text.trim(),
+                'role': role,
+              }),
               child: const Text('Join'),
             ),
           ],
@@ -846,7 +1092,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
     final code = result?['code'] ?? '';
     if (code.isEmpty) return;
     await _run(
-      () => CloudAccountService.joinFamily(code, role: result!['role']!).then((_) {}),
+      () => CloudAccountService.joinFamily(
+        code,
+        role: result!['role']!,
+      ).then((_) {}),
       success: 'Joined the family group.',
     );
   }
@@ -865,7 +1114,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -876,6 +1128,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
       ),
     );
     if (confirmed != true) return;
-    await _run(CloudAccountService.leaveFamily, success: 'You left the family group.');
+    await _run(
+      CloudAccountService.leaveFamily,
+      success: 'You left the family group.',
+    );
   }
 }

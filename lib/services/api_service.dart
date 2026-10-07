@@ -16,7 +16,9 @@ class ApiService {
   static String get _baseUrl {
     const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://localhost:8000';
   }
 
   /// Calls the FastAPI backend to analyze the text using Gemini AI.
@@ -41,17 +43,19 @@ class ApiService {
                 'Using the on-device engine instead.',
             scoreContribution: 0,
             iconCategory: IconCategory.suspicious,
-          )
+          ),
         ],
         summary: 'AI-assisted analysis is disabled by your privacy settings.',
       );
     }
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/analyze'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': text}),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/analyze'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'text': text}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -78,9 +82,10 @@ class ApiService {
                 'Please check your connection and try again.',
             scoreContribution: 0,
             iconCategory: IconCategory.suspicious,
-          )
+          ),
         ],
-        summary: 'Not analysed — the analysis service is unreachable. '
+        summary:
+            'Not analysed — the analysis service is unreachable. '
             'This is not a verdict of safety.',
       );
     }
@@ -89,10 +94,19 @@ class ApiService {
   /// Calls the FastAPI backend to analyze a voice note file.
   static Future<AnalysisResult> analyzeVoice(File audioFile) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/analyze-voice'));
-      request.files.add(await http.MultipartFile.fromPath('file', audioFile.path));
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
-      final response = await http.Response.fromStream(streamedResponse).timeout(const Duration(seconds: 10));
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/analyze-voice'),
+      );
+      request.files.add(
+        await http.MultipartFile.fromPath('file', audioFile.path),
+      );
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 10),
+      );
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      ).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }
@@ -109,19 +123,29 @@ class ApiService {
           description: 'Voice note analysis failed or backend was unreachable.',
           scoreContribution: 0,
           iconCategory: IconCategory.suspicious,
-        )
+        ),
       ],
-      summary: 'Voice note could not be analyzed because the service was unreachable or returned an error.',
+      summary:
+          'Voice note could not be analyzed because the service was unreachable or returned an error.',
     );
   }
 
   /// Calls the FastAPI backend to analyze a screenshot image file via OCR.
   static Future<AnalysisResult> analyzeImage(File imageFile) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/analyze-image'));
-      request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
-      final response = await http.Response.fromStream(streamedResponse).timeout(const Duration(seconds: 10));
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/analyze-image'),
+      );
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 10),
+      );
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      ).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }
@@ -138,12 +162,12 @@ class ApiService {
           description: 'OCR analysis failed or backend was unreachable.',
           scoreContribution: 0,
           iconCategory: IconCategory.suspicious,
-        )
+        ),
       ],
-      summary: 'OCR image analysis failed because the service was unreachable or returned an error.',
+      summary:
+          'OCR image analysis failed because the service was unreachable or returned an error.',
     );
   }
-
 
   static AnalysisResult _parseAnalysisResult(Map<String, dynamic> json) {
     return AnalysisResult(
@@ -151,12 +175,14 @@ class ApiService {
       riskScore: json['riskScore'] ?? 0,
       aiPowered: json['aiPowered'] ?? true,
       reasons: (json['reasons'] as List)
-          .map((r) => DetectionReason(
-                label: r['label'],
-                description: r['description'],
-                scoreContribution: r['scoreContribution'],
-                iconCategory: _parseIconCategory(r['iconCategory']),
-              ))
+          .map(
+            (r) => DetectionReason(
+              label: r['label'],
+              description: r['description'],
+              scoreContribution: r['scoreContribution'],
+              iconCategory: _parseIconCategory(r['iconCategory']),
+            ),
+          )
           .toList(),
       summary: json['summary'] ?? '',
     );

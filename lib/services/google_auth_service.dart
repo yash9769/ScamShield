@@ -54,23 +54,24 @@ class GoogleAuthResult {
     String? displayName,
     String? photoUrl,
   }) : this._(
-          GoogleAuthStatus.success,
-          email: email,
-          displayName: displayName,
-          photoUrl: photoUrl,
-        );
+         GoogleAuthStatus.success,
+         email: email,
+         displayName: displayName,
+         photoUrl: photoUrl,
+       );
 
   const GoogleAuthResult.cancelled() : this._(GoogleAuthStatus.cancelled);
 
   const GoogleAuthResult.notConfigured()
-      : this._(
-          GoogleAuthStatus.notConfigured,
-          message: 'Google Sign-In is not configured for this build. '
-              'Rebuild with --dart-define=GOOGLE_SERVER_CLIENT_ID=<web client id>.',
-        );
+    : this._(
+        GoogleAuthStatus.notConfigured,
+        message:
+            'Google Sign-In is not configured for this build. '
+            'Rebuild with --dart-define=GOOGLE_SERVER_CLIENT_ID=<web client id>.',
+      );
 
   const GoogleAuthResult.failed(String message)
-      : this._(GoogleAuthStatus.failed, message: message);
+    : this._(GoogleAuthStatus.failed, message: message);
 
   bool get isSuccess => status == GoogleAuthStatus.success;
 }
@@ -79,8 +80,9 @@ class GoogleAuthService {
   GoogleAuthService._();
 
   /// Supplied at build time via --dart-define. Empty means "not configured".
-  static const String _serverClientId =
-      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+  static const String _serverClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
 
   static bool get isConfigured => _serverClientId.isNotEmpty;
 
@@ -108,8 +110,8 @@ class GoogleAuthService {
         );
       }
 
-      final GoogleSignInAccount account =
-          await GoogleSignIn.instance.authenticate();
+      final GoogleSignInAccount account = await GoogleSignIn.instance
+          .authenticate();
 
       return GoogleAuthResult.success(
         email: account.email,

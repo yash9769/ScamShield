@@ -93,9 +93,10 @@ class LocalizationService {
     }
   }
 
-  static AppLanguage get current =>
-      supported.firstWhere((l) => l.code == language.value,
-          orElse: () => supported.first);
+  static AppLanguage get current => supported.firstWhere(
+    (l) => l.code == language.value,
+    orElse: () => supported.first,
+  );
 
   /// True only for the language every string here was written in. The picker
   /// uses this to tell the truth about partial coverage rather than presenting
@@ -149,7 +150,8 @@ class LocalizationService {
 
       // Feedback
       'feedback_prompt': 'WAS THIS RIGHT?',
-      'feedback_privacy': 'Only the verdict and a fingerprint of the text are '
+      'feedback_privacy':
+          'Only the verdict and a fingerprint of the text are '
           'sent — never the message itself.',
       'feedback_correct': 'Correct',
       'feedback_legit': "It's legitimate",
@@ -166,7 +168,8 @@ class LocalizationService {
       // Language picker
       'language_title': 'Language',
       'language_subtitle': 'Choose the language for warnings and app screens',
-      'language_partial': 'Warnings, verdicts and navigation are translated. '
+      'language_partial':
+          'Warnings, verdicts and navigation are translated. '
           'Learn articles and AI-written scan summaries are still in English.',
     },
     'hi': {
@@ -197,7 +200,8 @@ class LocalizationService {
       'scan_factors': 'पाए गए जोखिम',
 
       'feedback_prompt': 'क्या यह नतीजा सही था?',
-      'feedback_privacy': 'केवल नतीजा और टेक्स्ट की पहचान भेजी जाती है — '
+      'feedback_privacy':
+          'केवल नतीजा और टेक्स्ट की पहचान भेजी जाती है — '
           'संदेश कभी नहीं।',
       'feedback_correct': 'सही था',
       'feedback_legit': 'यह असली है',
@@ -212,7 +216,8 @@ class LocalizationService {
 
       'language_title': 'भाषा',
       'language_subtitle': 'चेतावनियों और ऐप के लिए भाषा चुनें',
-      'language_partial': 'चेतावनियाँ, नतीजे और नेविगेशन अनुवादित हैं। '
+      'language_partial':
+          'चेतावनियाँ, नतीजे और नेविगेशन अनुवादित हैं। '
           'सीखने के लेख और AI द्वारा लिखा सारांश अभी अंग्रेज़ी में है।',
     },
     'mr': {
@@ -243,7 +248,8 @@ class LocalizationService {
       'scan_factors': 'आढळलेले धोके',
 
       'feedback_prompt': 'हा निकाल बरोबर होता का?',
-      'feedback_privacy': 'फक्त निकाल आणि मजकुराची ओळख पाठवली जाते — '
+      'feedback_privacy':
+          'फक्त निकाल आणि मजकुराची ओळख पाठवली जाते — '
           'संदेश कधीच नाही.',
       'feedback_correct': 'बरोबर होता',
       'feedback_legit': 'हे खरे आहे',
@@ -258,7 +264,8 @@ class LocalizationService {
 
       'language_title': 'भाषा',
       'language_subtitle': 'इशारे आणि अ‍ॅपसाठी भाषा निवडा',
-      'language_partial': 'इशारे, निकाल आणि नेव्हिगेशन भाषांतरित आहेत. '
+      'language_partial':
+          'इशारे, निकाल आणि नेव्हिगेशन भाषांतरित आहेत. '
           'शिकण्याचे लेख आणि AI सारांश अजून इंग्रजीत आहेत.',
     },
     'bn': {
@@ -274,7 +281,8 @@ class LocalizationService {
       'verdict_scam': 'প্রতারণা',
       'verdict_safe_detail': 'কোনো পরিচিত ঝুঁকি পাওয়া যায়নি',
       'verdict_suspicious_detail': 'সাবধানে এগোন',
-      'verdict_scam_detail': 'উত্তর দেবেন না, লিঙ্কে ক্লিক করবেন না, টাকা পাঠাবেন না',
+      'verdict_scam_detail':
+          'উত্তর দেবেন না, লিঙ্কে ক্লিক করবেন না, টাকা পাঠাবেন না',
 
       'scan_title': 'ঝুঁকি স্ক্যানার',
       'scan_tab_message': 'বার্তা',
@@ -289,7 +297,8 @@ class LocalizationService {
       'scan_factors': 'শনাক্ত হওয়া ঝুঁকি',
 
       'feedback_prompt': 'এই রায় কি সঠিক ছিল?',
-      'feedback_privacy': 'শুধু রায় ও লেখার শনাক্তচিহ্ন পাঠানো হয় — '
+      'feedback_privacy':
+          'শুধু রায় ও লেখার শনাক্তচিহ্ন পাঠানো হয় — '
           'বার্তাটি কখনও নয়।',
       'feedback_correct': 'সঠিক ছিল',
       'feedback_legit': 'এটি আসল',
@@ -304,7 +313,8 @@ class LocalizationService {
 
       'language_title': 'ভাষা',
       'language_subtitle': 'সতর্কতা ও অ্যাপের ভাষা বেছে নিন',
-      'language_partial': 'সতর্কতা, রায় ও নেভিগেশন অনূদিত। '
+      'language_partial':
+          'সতর্কতা, রায় ও নেভিগেশন অনূদিত। '
           'শেখার নিবন্ধ ও AI সারাংশ এখনও ইংরেজিতে।',
     },
     'ta': {
@@ -320,7 +330,8 @@ class LocalizationService {
       'verdict_scam': 'மோசடி',
       'verdict_safe_detail': 'அறியப்பட்ட அபாயம் எதுவும் இல்லை',
       'verdict_suspicious_detail': 'கவனமாக இருங்கள்',
-      'verdict_scam_detail': 'பதிலளிக்காதீர்கள், இணைப்பைத் திறக்காதீர்கள், பணம் அனுப்பாதீர்கள்',
+      'verdict_scam_detail':
+          'பதிலளிக்காதீர்கள், இணைப்பைத் திறக்காதீர்கள், பணம் அனுப்பாதீர்கள்',
 
       'scan_title': 'அபாய ஸ்கேனர்',
       'scan_tab_message': 'செய்தி',
@@ -335,7 +346,8 @@ class LocalizationService {
       'scan_factors': 'கண்டறியப்பட்ட அபாயங்கள்',
 
       'feedback_prompt': 'இந்த முடிவு சரியா?',
-      'feedback_privacy': 'முடிவும் உரையின் அடையாளமும் மட்டுமே அனுப்பப்படும் — '
+      'feedback_privacy':
+          'முடிவும் உரையின் அடையாளமும் மட்டுமே அனுப்பப்படும் — '
           'செய்தி ஒருபோதும் இல்லை.',
       'feedback_correct': 'சரி',
       'feedback_legit': 'இது உண்மையானது',
@@ -349,8 +361,10 @@ class LocalizationService {
       'common_offline': 'ScamShield சேவையை அணுக முடியவில்லை.',
 
       'language_title': 'மொழி',
-      'language_subtitle': 'எச்சரிக்கைகளுக்கும் செயலிக்கும் மொழியைத் தேர்வுசெய்க',
-      'language_partial': 'எச்சரிக்கைகள், முடிவுகள், வழிசெலுத்தல் மொழிபெயர்க்கப்பட்டுள்ளன. '
+      'language_subtitle':
+          'எச்சரிக்கைகளுக்கும் செயலிக்கும் மொழியைத் தேர்வுசெய்க',
+      'language_partial':
+          'எச்சரிக்கைகள், முடிவுகள், வழிசெலுத்தல் மொழிபெயர்க்கப்பட்டுள்ளன. '
           'கற்றல் கட்டுரைகளும் AI சுருக்கமும் இன்னும் ஆங்கிலத்தில்.',
     },
     'te': {
@@ -381,7 +395,8 @@ class LocalizationService {
       'scan_factors': 'గుర్తించిన ప్రమాదాలు',
 
       'feedback_prompt': 'ఈ తీర్పు సరైనదా?',
-      'feedback_privacy': 'తీర్పు మరియు వచనపు గుర్తు మాత్రమే పంపబడతాయి — '
+      'feedback_privacy':
+          'తీర్పు మరియు వచనపు గుర్తు మాత్రమే పంపబడతాయి — '
           'సందేశం ఎప్పుడూ కాదు.',
       'feedback_correct': 'సరైనది',
       'feedback_legit': 'ఇది నిజమైనది',
@@ -396,7 +411,8 @@ class LocalizationService {
 
       'language_title': 'భాష',
       'language_subtitle': 'హెచ్చరికలకు మరియు యాప్‌కు భాషను ఎంచుకోండి',
-      'language_partial': 'హెచ్చరికలు, తీర్పులు, నావిగేషన్ అనువదించబడ్డాయి. '
+      'language_partial':
+          'హెచ్చరికలు, తీర్పులు, నావిగేషన్ అనువదించబడ్డాయి. '
           'నేర్చుకునే వ్యాసాలు మరియు AI సారాంశం ఇంకా ఇంగ్లీషులో ఉన్నాయి.',
     },
   };

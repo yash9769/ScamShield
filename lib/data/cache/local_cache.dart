@@ -10,16 +10,15 @@ class LocalCache<T> {
   final Map<String, _CacheEntry<T>> _store = {};
 
   LocalCache({int maxEntries = 32, Duration? ttl})
-      : _maxEntries = maxEntries,
-        _ttl = ttl;
+    : _maxEntries = maxEntries,
+      _ttl = ttl;
 
   /// Returns the cached value for [key], or null if missing / expired.
   T? get(String key) {
     final entry = _store[key];
     if (entry == null) return null;
     final ttl = _ttl;
-    if (ttl != null &&
-        DateTime.now().difference(entry.createdAt) > ttl) {
+    if (ttl != null && DateTime.now().difference(entry.createdAt) > ttl) {
       _store.remove(key);
       return null;
     }
@@ -31,8 +30,9 @@ class LocalCache<T> {
     if (_store.length >= _maxEntries) {
       // Evict oldest entry
       final oldest = _store.entries
-          .reduce((a, b) =>
-              a.value.createdAt.isBefore(b.value.createdAt) ? a : b)
+          .reduce(
+            (a, b) => a.value.createdAt.isBefore(b.value.createdAt) ? a : b,
+          )
           .key;
       _store.remove(oldest);
     }

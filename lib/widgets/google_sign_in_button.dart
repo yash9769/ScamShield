@@ -35,13 +35,18 @@ class GoogleSignInButton extends StatelessWidget {
           backgroundColor: Colors.white,
           disabledBackgroundColor: Colors.white.withValues(alpha: 0.6),
           side: BorderSide.none,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         child: isLoading
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2.4, color: Color(0xFF4285F4)),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: Color(0xFF4285F4),
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -99,7 +104,9 @@ class AuthDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Divider(color: AppColors.surfaceLight.withValues(alpha: 0.8))),
+        Expanded(
+          child: Divider(color: AppColors.surfaceLight.withValues(alpha: 0.8)),
+        ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 12),
           child: Text(
@@ -107,7 +114,9 @@ class AuthDivider extends StatelessWidget {
             style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
         ),
-        Expanded(child: Divider(color: AppColors.surfaceLight.withValues(alpha: 0.8))),
+        Expanded(
+          child: Divider(color: AppColors.surfaceLight.withValues(alpha: 0.8)),
+        ),
       ],
     );
   }

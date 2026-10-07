@@ -70,9 +70,11 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? 'Reported. Thanks — this warns the next person who scans it.'
-            : 'Could not submit the report. Check your connection.'),
+        content: Text(
+          ok
+              ? 'Reported. Thanks — this warns the next person who scans it.'
+              : 'Could not submit the report. Check your connection.',
+        ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: ok ? AppColors.surfaceLight : AppColors.danger,
       ),
@@ -82,7 +84,10 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
   Future<void> _openPaymentApp() async {
     final uri = Uri.parse(widget.rawPayload);
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -112,7 +117,8 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
         color: AppColors.textSecondary,
         icon: Icons.help_outline,
         title: 'Could not check this payee',
-        body: 'The reputation service is unreachable, so this handle has NOT been '
+        body:
+            'The reputation service is unreachable, so this handle has NOT been '
             'checked. That is not the same as it being safe.',
       );
     }
@@ -121,7 +127,8 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
         color: AppColors.danger,
         icon: Icons.dangerous_outlined,
         title: 'Reported as a scam',
-        body: '${rep.reportCount} ScamShield user(s) have reported this UPI handle'
+        body:
+            '${rep.reportCount} ScamShield user(s) have reported this UPI handle'
             '${rep.category != null ? ' (${rep.category})' : ''}. Do not pay it.',
       );
     }
@@ -130,14 +137,16 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
         color: AppColors.warning,
         icon: Icons.warning_amber_rounded,
         title: 'Reported ${rep.reportCount} time(s)',
-        body: 'Not yet enough reports to confirm, but treat this handle with caution.',
+        body:
+            'Not yet enough reports to confirm, but treat this handle with caution.',
       );
     }
     return (
       color: AppColors.success,
       icon: Icons.verified_user_outlined,
       title: 'No reports for this payee',
-      body: 'Nobody has reported this handle. That is not proof it is genuine — '
+      body:
+          'Nobody has reported this handle. That is not proof it is genuine — '
           'only pay if you know who it belongs to.',
     );
   }
@@ -167,7 +176,9 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
     );
   }
 
-  Widget _buildVerdictCard(({Color color, IconData icon, String title, String body}) v) {
+  Widget _buildVerdictCard(
+    ({Color color, IconData icon, String title, String body}) v,
+  ) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -180,8 +191,13 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
         children: [
           _checking
               ? const SizedBox(
-                  width: 26, height: 26,
-                  child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary))
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primary,
+                  ),
+                )
               : Icon(v.icon, color: v.color, size: 28),
           const SizedBox(width: 14),
           Expanded(
@@ -190,13 +206,22 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
               children: [
                 Text(
                   _checking ? 'Checking this payee…' : v.title,
-                  style: TextStyle(color: v.color, fontWeight: FontWeight.w700, fontSize: 15.5),
+                  style: TextStyle(
+                    color: v.color,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                  ),
                 ),
                 if (!_checking) ...[
                   const SizedBox(height: 6),
-                  Text(v.body,
-                      style: const TextStyle(
-                          color: AppColors.textPrimary, fontSize: 12.5, height: 1.45)),
+                  Text(
+                    v.body,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 12.5,
+                      height: 1.45,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -212,18 +237,22 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('YOU WOULD BE PAYING',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-                letterSpacing: 0,
-              )),
+          const Text(
+            'YOU WOULD BE PAYING',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0,
+            ),
+          ),
           const SizedBox(height: 10),
           SelectableText(
             req.payeeAddress,
@@ -235,8 +264,13 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
           ),
           if (req.payeeName != null) ...[
             const SizedBox(height: 4),
-            Text(req.payeeName!,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text(
+              req.payeeName!,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
           ],
           const SizedBox(height: 14),
           Row(
@@ -244,11 +278,18 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
               Expanded(
                 child: _fact(
                   'Amount',
-                  req.hasFixedAmount ? '${req.currency ?? 'INR'} ${req.amount}' : 'You would enter it',
+                  req.hasFixedAmount
+                      ? '${req.currency ?? 'INR'} ${req.amount}'
+                      : 'You would enter it',
                   highlight: !req.hasFixedAmount,
                 ),
               ),
-              Expanded(child: _fact('Handle', req.handleProvider.isEmpty ? '—' : req.handleProvider)),
+              Expanded(
+                child: _fact(
+                  'Handle',
+                  req.handleProvider.isEmpty ? '—' : req.handleProvider,
+                ),
+              ),
             ],
           ),
           if (req.note != null) ...[
@@ -264,8 +305,13 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
@@ -293,8 +339,10 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
             children: [
               Icon(Icons.info_outline, color: AppColors.primary, size: 18),
               SizedBox(width: 8),
-              Text('Worth knowing',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+              Text(
+                'Worth knowing',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -326,11 +374,19 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
           child: ElevatedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back, color: Colors.black, size: 18),
-            label: const Text("Don't pay — go back",
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 15)),
+            label: const Text(
+              "Don't pay — go back",
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),
@@ -340,15 +396,26 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
           height: 48,
           child: OutlinedButton.icon(
             onPressed: (_reporting || _reported) ? null : _report,
-            icon: Icon(_reported ? Icons.check : Icons.flag_outlined,
-                color: AppColors.danger, size: 18),
+            icon: Icon(
+              _reported ? Icons.check : Icons.flag_outlined,
+              color: AppColors.danger,
+              size: 18,
+            ),
             label: Text(
-              _reported ? 'Reported — thank you' : 'Report this payee as a scam',
-              style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 13),
+              _reported
+                  ? 'Reported — thank you'
+                  : 'Report this payee as a scam',
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.danger),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),
@@ -368,7 +435,11 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
             'This payee has been reported as a scam, so ScamShield will not open '
             'your payment app for it.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.danger, fontSize: 12, height: 1.4),
+            style: TextStyle(
+              color: AppColors.danger,
+              fontSize: 12,
+              height: 1.4,
+            ),
           ),
       ],
     );
@@ -392,14 +463,22 @@ class _Bullet extends StatelessWidget {
               width: 5,
               height: 5,
               child: DecoratedBox(
-                decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
           Expanded(
-            child: Text(text,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12, height: 1.45)),
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.45,
+              ),
+            ),
           ),
         ],
       ),

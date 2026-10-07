@@ -63,10 +63,16 @@ class ShareIntentService {
       case SharedMediaType.text:
       case SharedMediaType.url:
         if (file.path.trim().isEmpty) return;
-        pending.value = SharedScanRequest(kind: SharedScanKind.text, value: file.path.trim());
+        pending.value = SharedScanRequest(
+          kind: SharedScanKind.text,
+          value: file.path.trim(),
+        );
         break;
       case SharedMediaType.image:
-        pending.value = SharedScanRequest(kind: SharedScanKind.image, value: file.path);
+        pending.value = SharedScanRequest(
+          kind: SharedScanKind.image,
+          value: file.path,
+        );
         break;
       case SharedMediaType.video:
       case SharedMediaType.file:

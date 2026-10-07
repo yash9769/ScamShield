@@ -19,7 +19,9 @@ class SettingsService {
   static final ValueNotifier<bool> threatAlerts = ValueNotifier<bool>(true);
 
   /// Offer to analyse links/messages copied to the clipboard.
-  static final ValueNotifier<bool> autoScanClipboard = ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> autoScanClipboard = ValueNotifier<bool>(
+    false,
+  );
 
   static bool _initialized = false;
 

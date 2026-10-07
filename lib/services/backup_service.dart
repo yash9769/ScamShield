@@ -90,7 +90,8 @@ class BackupService {
   static Future<String> create(String passphrase) async {
     if (passphrase.length < minPassphraseLength) {
       throw BackupException(
-          'Use at least $minPassphraseLength characters for the passphrase.');
+        'Use at least $minPassphraseLength characters for the passphrase.',
+      );
     }
 
     final payload = await _collect();
@@ -132,7 +133,10 @@ class BackupService {
   /// they have been using should not silently lose the scans they did in
   /// between. Duplicates are skipped by content, so restoring the same file
   /// twice is harmless.
-  static Future<BackupResult> restore(String fileContents, String passphrase) async {
+  static Future<BackupResult> restore(
+    String fileContents,
+    String passphrase,
+  ) async {
     final Map<String, dynamic> envelope;
     try {
       envelope = jsonDecode(fileContents) as Map<String, dynamic>;
@@ -146,8 +150,9 @@ class BackupService {
     final version = envelope['version'];
     if (version is! int || version > _formatVersion) {
       throw const BackupException(
-          'This backup was made by a newer version of ScamShield. Update the '
-          'app and try again.');
+        'This backup was made by a newer version of ScamShield. Update the '
+        'app and try again.',
+      );
     }
     if (envelope['kdf'] != 'pbkdf2-hmac-sha256' ||
         envelope['cipher'] != 'aes-256-gcm') {
@@ -198,7 +203,8 @@ class BackupService {
       // being vague about both.
       debugPrint('BackupService.restore: authentication failed ($e)');
       throw const BackupException(
-          'Wrong passphrase, or the file has been changed since it was made.');
+        'Wrong passphrase, or the file has been changed since it was made.',
+      );
     }
 
     final Map<String, dynamic> payload;
@@ -231,15 +237,17 @@ class BackupService {
 
     return {
       'scans': scans
-          .map((s) => {
-                'inputText': s.inputText,
-                'classification': s.classification,
-                'riskScore': s.riskScore,
-                'summary': s.summary,
-                'timestamp': s.timestamp.toIso8601String(),
-                'isFlagged': s.isFlagged,
-                'source': s.source,
-              })
+          .map(
+            (s) => {
+              'inputText': s.inputText,
+              'classification': s.classification,
+              'riskScore': s.riskScore,
+              'summary': s.summary,
+              'timestamp': s.timestamp.toIso8601String(),
+              'isFlagged': s.isFlagged,
+              'source': s.source,
+            },
+          )
           .toList(),
       'profile': {
         'name': UserProfileService.nameNotifier.value,
@@ -263,7 +271,9 @@ class BackupService {
     // Content identity, not database id: the ids in a backup belong to the
     // device it came from and mean nothing here.
     final seen = existing
-        .map((s) => '${s.inputText}|${s.timestamp.toIso8601String()}|${s.source}')
+        .map(
+          (s) => '${s.inputText}|${s.timestamp.toIso8601String()}|${s.source}',
+        )
         .toSet();
 
     var restored = 0;
@@ -272,20 +282,23 @@ class BackupService {
       try {
         final map = raw as Map<String, dynamic>;
         final timestamp = DateTime.parse(map['timestamp'] as String);
-        final key = '${map['inputText']}|${timestamp.toIso8601String()}|${map['source']}';
+        final key =
+            '${map['inputText']}|${timestamp.toIso8601String()}|${map['source']}';
         if (seen.contains(key)) {
           skipped++;
           continue;
         }
-        await repo.saveScan(ScanRecord(
-          inputText: map['inputText'] as String,
-          classification: map['classification'] as String,
-          riskScore: map['riskScore'] as int,
-          summary: map['summary'] as String? ?? '',
-          timestamp: timestamp,
-          isFlagged: map['isFlagged'] == true,
-          source: map['source'] as String?,
-        ));
+        await repo.saveScan(
+          ScanRecord(
+            inputText: map['inputText'] as String,
+            classification: map['classification'] as String,
+            riskScore: map['riskScore'] as int,
+            summary: map['summary'] as String? ?? '',
+            timestamp: timestamp,
+            isFlagged: map['isFlagged'] == true,
+            source: map['source'] as String?,
+          ),
+        );
         seen.add(key);
         restored++;
       } catch (e) {
@@ -308,14 +321,19 @@ class BackupService {
       final settings = payload['settings'] as Map<String, dynamic>?;
       if (settings != null) {
         if (settings['threatAlerts'] is bool) {
-          await SettingsService.setThreatAlerts(settings['threatAlerts'] as bool);
+          await SettingsService.setThreatAlerts(
+            settings['threatAlerts'] as bool,
+          );
         }
         if (settings['autoScanClipboard'] is bool) {
           await SettingsService.setAutoScanClipboard(
-              settings['autoScanClipboard'] as bool);
+            settings['autoScanClipboard'] as bool,
+          );
         }
         if (settings['autoDeleteDays'] is int) {
-          await PreferencesRepository().setAutoDelete(settings['autoDeleteDays'] as int);
+          await PreferencesRepository().setAutoDelete(
+            settings['autoDeleteDays'] as int,
+          );
         }
       }
     } catch (e) {
@@ -330,7 +348,10 @@ class BackupService {
   // ── Crypto helpers ────────────────────────────────────────────────────────
 
   static Future<SecretKey> _deriveKey(
-      String passphrase, List<int> salt, int iterations) async {
+    String passphrase,
+    List<int> salt,
+    int iterations,
+  ) async {
     final pbkdf2 = Pbkdf2.hmacSha256(iterations: iterations, bits: 256);
     return pbkdf2.deriveKeyFromPassword(password: passphrase, nonce: salt);
   }
