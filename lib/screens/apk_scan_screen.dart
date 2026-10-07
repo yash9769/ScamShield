@@ -294,9 +294,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             onPressed: _isScanning ? null : _pickAndScanApk,
             icon: const Icon(Icons.file_open_outlined, color: Colors.black),
             label: Text(
-                _fileName != null ? 'SELECT DIFFERENT APK' : 'CHOOSE APK FILE',
+                _fileName != null ? 'Select different APK' : 'Choose APK file',
                 style: const TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold)),
+                    color: Colors.black, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               padding:
@@ -358,11 +358,11 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
           TextButton.icon(
             onPressed: _isScanning ? null : _pickAndScanApk,
             icon: const Icon(Icons.refresh, size: 16, color: AppColors.primary),
-            label: const Text('NEW SCAN',
+            label: const Text('New scan',
                 style: TextStyle(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13)),
           ),
         ],
       ),
@@ -448,29 +448,29 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         _buildSafeBrowsingCard(sb, sbResults),
         const SizedBox(height: 20),
 
-        // ── 5. YARA SIGNATURES ────────────────────────────────────────────
-        _buildSectionHeader('YARA SIGNATURES', Icons.pest_control),
+        // ── 5. Yara signatures ────────────────────────────────────────────
+        _buildSectionHeader('Yara signatures', Icons.pest_control),
         const SizedBox(height: 8),
         _buildYaraCard(yaraMatches),
         const SizedBox(height: 20),
 
-        // ── 6. ANDROID ANALYSIS ───────────────────────────────────────────
-        _buildSectionHeader('ANDROID ANALYSIS', Icons.android),
+        // ── 6. Android analysis ───────────────────────────────────────────
+        _buildSectionHeader('Android analysis', Icons.android),
         const SizedBox(height: 8),
         _buildAndroidCard(
             packageName, androguardStatus, permissions, dangerousPermissions, certificates),
         const SizedBox(height: 20),
 
-        // ── 7. SECRETS & SUSPICIOUS STRINGS ──────────────────────────────
+        // ── 7. Secrets & suspicious strings ──────────────────────────────
         if (secretsFindings.isNotEmpty || suspiciousUrls.isNotEmpty) ...[
-          _buildSectionHeader('SECRETS & SUSPICIOUS STRINGS', Icons.vpn_key),
+          _buildSectionHeader('Secrets & suspicious strings', Icons.vpn_key),
           const SizedBox(height: 8),
           _buildSecretsCard(secretsFindings, suspiciousUrls, urls),
           const SizedBox(height: 20),
         ],
 
-        // ── 8. FILE HASHES & METADATA ─────────────────────────────────────
-        _buildSectionHeader('FILE HASHES & METADATA', Icons.fingerprint),
+        // ── 8. File hashes & metadata ─────────────────────────────────────
+        _buildSectionHeader('File hashes & metadata', Icons.fingerprint),
         const SizedBox(height: 8),
         _buildInfoCard([
           _buildHashRow('MD5', fileInfo['md5']?.toString() ?? 'N/A'),
@@ -1010,12 +1010,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       children: [
         Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: 8),
-        Text(title,
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 0)),
+        Text(title, style: AppText.label),
       ],
     );
   }

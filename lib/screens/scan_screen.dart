@@ -49,20 +49,10 @@ class _ScanScreenState extends State<ScanScreen>
   VerdictAgreement? _feedbackGiven;
   bool _feedbackSending = false;
 
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-
   @override
   void initState() {
     super.initState();
     _controller.addListener(() => setState(() {}));
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
     ShareIntentService.pending.addListener(_onSharedContent);
     // Handle content shared before this screen instance existed (e.g. a
     // cold-start share landed while MainNavigation was still building).
@@ -75,7 +65,6 @@ class _ScanScreenState extends State<ScanScreen>
     ShareIntentService.pending.removeListener(_onSharedContent);
     _controller.dispose();
     _focusNode.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -316,7 +305,7 @@ class _ScanScreenState extends State<ScanScreen>
             TextButton.icon(
               onPressed: _clearAll,
               icon: const Icon(Icons.refresh, color: AppColors.primary, size: 16),
-              label: Text(LocalizationService.tr('scan_clear'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+              label: Text(LocalizationService.tr('scan_clear'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
             ),
           const SizedBox(width: 8),
         ],
@@ -788,9 +777,9 @@ class _ScanScreenState extends State<ScanScreen>
                 size: 16,
               ),
               label: Text(
-                _reportSubmitted ? 'REPORTED — THANK YOU' : 'REPORT THIS LINK AS A SCAM',
-                style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
+            _reportSubmitted ? 'Reported — thank you' : 'Report this link as a scam',
+            style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
             ),
           ),
         ],

@@ -367,7 +367,7 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                           child: Text(
                             String.fromCharCode(65 + i),
                             style: TextStyle(
-                              color: isSelected ? Colors.black : AppColors.textSecondary,
+                              color: isSelected ? AppColors.background : AppColors.textSecondary,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -424,8 +424,8 @@ class _LearningModuleScreenState extends State<LearningModuleScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  _currentQuestionIndex < questions.length - 1 ? 'NEXT QUESTION →' : 'SEE RESULTS →',
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  _currentQuestionIndex < questions.length - 1 ? 'Next question →' : 'See results →',
+                  style: const TextStyle(color: AppColors.background, fontWeight: FontWeight.w600),
                 ),
               ),
             ),

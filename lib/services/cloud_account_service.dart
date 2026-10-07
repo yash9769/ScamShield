@@ -276,7 +276,7 @@ class CloudAccountService {
           body: jsonEncode({
             'email': email,
             'password': password,
-            if (displayName != null) 'display_name': displayName,
+            'display_name': ?displayName,
           }),
         )
         .timeout(_timeout);
@@ -376,8 +376,8 @@ class CloudAccountService {
             body: jsonEncode({
               'since': since,
               'scans': scans,
-              if (deviceId != null) 'device_id': deviceId,
-              if (deviceName != null) 'device_name': deviceName,
+              'device_id': ?deviceId,
+              'device_name': ?deviceName,
             }),
           )
           .timeout(_timeout);

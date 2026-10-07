@@ -49,6 +49,13 @@ class ShareIntentService {
     });
   }
 
+  /// Cancels the share intent listener and cleans up resources.
+  static void dispose() {
+    _subscription?.cancel();
+    _subscription = null;
+    _initialized = false;
+  }
+
   static void _handle(List<SharedMediaFile> files) {
     if (files.isEmpty) return;
     final file = files.first;

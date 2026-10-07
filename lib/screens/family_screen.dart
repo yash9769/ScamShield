@@ -166,13 +166,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.18), AppColors.accent.withValues(alpha: 0.10)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.surfaceLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
