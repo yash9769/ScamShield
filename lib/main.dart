@@ -23,6 +23,8 @@ import 'services/sms_screening_service.dart';
 import 'services/call_screening_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/localization_service.dart';
+import 'services/simple_mode_service.dart';
+import 'screens/simple_home_screen.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -35,6 +37,9 @@ void main() async {
   // user's language, or the app visibly flips from English a moment after
   // launch every single time.
   await LocalizationService.init();
+  // Also awaited: which of the two interfaces to show is decided before the
+  // first frame, so a Simple Mode user never briefly sees the full app.
+  await SimpleModeService.init();
   final startLoggedIn = await AuthService.isLoggedIn();
   final hasConsented = await ConsentService().hasGivenCurrentConsent();
   await PermissionService.requestAllPermissionsOnce();
@@ -87,13 +92,20 @@ class _ScamShieldAppState extends State<ScamShieldApp> {
     // broken setting rather than a deliberate one.
     return ValueListenableBuilder<String>(
       valueListenable: LocalizationService.language,
-      builder: (context, _, __) => MaterialApp(
-        title: 'ScamShield',
-        theme: appTheme,
-        home: !_hasConsented
-            ? ConsentScreen(onConsented: () => setState(() => _hasConsented = true))
-            : (widget.startLoggedIn ? const MainNavigation() : const LoginScreen()),
-        debugShowCheckedModeBanner: false,
+      builder: (context, _, __) => ValueListenableBuilder<bool>(
+        valueListenable: SimpleModeService.enabled,
+        builder: (context, simple, __) => MaterialApp(
+          title: 'ScamShield',
+          theme: appTheme,
+          // Consent and sign-in come first in either mode — Simple Mode
+          // simplifies the app, it does not skip asking permission.
+          home: !_hasConsented
+              ? ConsentScreen(onConsented: () => setState(() => _hasConsented = true))
+              : !widget.startLoggedIn
+                  ? const LoginScreen()
+                  : (simple ? const SimpleHomeScreen() : const MainNavigation()),
+          debugShowCheckedModeBanner: false,
+        ),
       ),
     );
   }
