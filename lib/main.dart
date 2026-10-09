@@ -22,6 +22,7 @@ import 'services/cloud_sync_service.dart';
 import 'services/sms_screening_service.dart';
 import 'services/call_screening_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/localization_service.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
@@ -30,6 +31,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await UserProfileService.init();
   await SettingsService.init();
+  // Awaited, not fire-and-forget: the first frame must already be in the
+  // user's language, or the app visibly flips from English a moment after
+  // launch every single time.
+  await LocalizationService.init();
   final startLoggedIn = await AuthService.isLoggedIn();
   final hasConsented = await ConsentService().hasGivenCurrentConsent();
   await PermissionService.requestAllPermissionsOnce();
@@ -77,13 +82,19 @@ class _ScamShieldAppState extends State<ScamShieldApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ScamShield',
-      theme: appTheme,
-      home: !_hasConsented
-          ? ConsentScreen(onConsented: () => setState(() => _hasConsented = true))
-          : (widget.startLoggedIn ? const MainNavigation() : const LoginScreen()),
-      debugShowCheckedModeBanner: false,
+    // Rebuilding the whole tree on a language change is the point: without it
+    // the choice would only take effect on next launch, which reads as a
+    // broken setting rather than a deliberate one.
+    return ValueListenableBuilder<String>(
+      valueListenable: LocalizationService.language,
+      builder: (context, _, __) => MaterialApp(
+        title: 'ScamShield',
+        theme: appTheme,
+        home: !_hasConsented
+            ? ConsentScreen(onConsented: () => setState(() => _hasConsented = true))
+            : (widget.startLoggedIn ? const MainNavigation() : const LoginScreen()),
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -272,36 +283,36 @@ class _MainNavigationState extends State<MainNavigation>
               unselectedItemColor: AppColors.textSecondary,
               selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
               unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
-              items: const [
+              items: [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.shield_outlined),
                   activeIcon: Icon(Icons.shield, color: AppColors.primary),
-                  label: 'HOME',
+                  label: LocalizationService.tr('nav_home'),
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.qr_code_scanner),
                   activeIcon: Icon(Icons.center_focus_strong, color: AppColors.primary),
-                  label: 'SCAN',
+                  label: LocalizationService.tr('nav_scan'),
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.mark_email_unread_outlined),
                   activeIcon: Icon(Icons.mark_email_unread, color: AppColors.primary),
-                  label: 'BREACH',
+                  label: LocalizationService.tr('nav_breach'),
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.history_outlined),
                   activeIcon: Icon(Icons.history, color: AppColors.primary),
-                  label: 'HISTORY',
+                  label: LocalizationService.tr('nav_history'),
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.menu_book_outlined),
                   activeIcon: Icon(Icons.menu_book, color: AppColors.primary),
-                  label: 'LEARN',
+                  label: LocalizationService.tr('nav_learn'),
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person_outline),
                   activeIcon: Icon(Icons.person, color: AppColors.primary),
-                  label: 'PROFILE',
+                  label: LocalizationService.tr('nav_profile'),
                 ),
               ],
             ),
