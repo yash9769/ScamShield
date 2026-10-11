@@ -14,6 +14,7 @@ import '../data/repositories/preferences_repository.dart';
 import '../services/data_privacy_service.dart';
 import 'privacy_policy_screen.dart';
 import 'my_data_screen.dart';
+import 'backup_screen.dart';
 import 'login_screen.dart';
 
 class PrivacySettingsScreen extends StatefulWidget {
@@ -339,6 +340,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   'My Data',
                   'View & export what ScamShield stores about you',
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyDataScreen())),
+                ),
+                _tile(
+                  Icons.lock_outline,
+                  'Backup & Restore',
+                  'Encrypted backup you keep yourself — no account needed',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupScreen())),
                 ),
               ]),
               const SizedBox(height: 24),
