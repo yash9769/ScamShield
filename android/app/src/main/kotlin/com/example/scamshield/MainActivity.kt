@@ -13,6 +13,7 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.scamshield/security"
     private val SMS_METHOD_CHANNEL = "com.example.scamshield/sms"
     private val SMS_EVENT_CHANNEL = "com.example.scamshield/sms_stream"
+    private val WIDGET_CHANNEL = "com.example.scamshield/widget"
 
     private var callScreeningBridge: CallScreeningBridge? = null
 
@@ -50,6 +51,30 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
+        // Home-screen widget. Dart owns the status text (so the statistics
+        // logic is not duplicated in Kotlin where it would drift); this channel
+        // only lets it ask for a redraw, and reports how the app was launched.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "refresh" -> {
+                        ScamShieldWidgetProvider.refreshAll(applicationContext)
+                        result.success(true)
+                    }
+                    "consumeLaunchAction" -> {
+                        // Consumed, not just read: without clearing the extra,
+                        // every later resume would look like a fresh widget tap
+                        // and yank the user back to the scan tab.
+                        val action = intent?.getStringExtra(
+                            ScamShieldWidgetProvider.EXTRA_ACTION
+                        )
+                        intent?.removeExtra(ScamShieldWidgetProvider.EXTRA_ACTION)
+                        result.success(action)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "checkDeviceIntegrity") {
                 val isRooted = checkRootMethod1() || checkRootMethod2()
@@ -74,6 +99,15 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        // launchMode is singleTask, so tapping the widget while the app is
+        // already running delivers here rather than through onCreate. Without
+        // this the activity would keep serving the extras it was first started
+        // with, and the widget would appear to do nothing.
+        setIntent(intent)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
