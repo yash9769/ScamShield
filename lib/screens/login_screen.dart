@@ -94,11 +94,30 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    await AuthService.completeGoogleSignIn(
+    final linked = await AuthService.completeGoogleSignIn(
       email: result.email!,
       displayName: result.displayName,
       photoUrl: result.photoUrl,
     );
+
+    if (!linked) {
+      // A different account is already registered on this device. Signing
+      // in would otherwise hand this Google identity that account's scan
+      // history and Safe Vault, and permanently destroy its password — so
+      // refuse rather than silently taking it over. Also sign out of the
+      // Google session itself: leaving it signed in would make the next tap
+      // of this button silently reuse the same wrong account instead of
+      // showing the picker again.
+      await GoogleAuthService.signOut();
+      if (!mounted) return;
+      setState(() => _isGoogleLoading = false);
+      _showMessage(
+        'A different account is already set up on this device. Sign in with '
+        'that account\'s own method, or delete it first from Settings > '
+        'Privacy & Data.',
+      );
+      return;
+    }
 
     // Adopt the Google display name only while the profile still holds the
     // stock placeholder — a user who renamed themselves in-app shouldn't have

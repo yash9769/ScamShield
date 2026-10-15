@@ -314,6 +314,9 @@ class BackupService {
           await SettingsService.setAutoScanClipboard(
               settings['autoScanClipboard'] as bool);
         }
+        if (settings['autoDeleteDays'] is int) {
+          await PreferencesRepository().setAutoDelete(settings['autoDeleteDays'] as int);
+        }
       }
     } catch (e) {
       // Settings are a convenience; the scan history is the part worth

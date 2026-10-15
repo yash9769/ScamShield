@@ -95,11 +95,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    await AuthService.completeGoogleSignIn(
+    final linked = await AuthService.completeGoogleSignIn(
       email: result.email!,
       displayName: result.displayName,
       photoUrl: result.photoUrl,
     );
+
+    if (!linked) {
+      // Someone already has an account on this device — "sign up" here would
+      // actually mean silently taking it over: this Google identity would
+      // inherit that account's existing scan history and Safe Vault, and its
+      // password would be permanently destroyed. Refuse instead.
+      await GoogleAuthService.signOut();
+      if (!mounted) return;
+      setState(() => _isGoogleLoading = false);
+      _showMessage(
+        'A different account is already set up on this device. Sign in with '
+        'that account\'s own method instead, or delete it first from '
+        'Settings > Privacy & Data.',
+      );
+      return;
+    }
+
     // Seed the in-app profile with the Google display name so the user isn't
     // asked for a name they've already effectively given us.
     if (result.displayName != null && result.displayName!.isNotEmpty) {

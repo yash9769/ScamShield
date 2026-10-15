@@ -138,12 +138,32 @@ class AuthService {
   /// derive or store — the identity itself is the credential. Any previous
   /// password material is cleared so a stale hash can't be used to sign in as
   /// this account afterwards.
-  static Future<void> completeGoogleSignIn({
+  ///
+  /// Returns false, changing nothing, if a *different* account already
+  /// exists on this device. Google verifying the signed-in address says
+  /// nothing about whether that's the same person the existing account
+  /// belongs to — LoginScreen offers "Continue with Google" even when a
+  /// password account is already registered and simply signed out (logout()
+  /// clears the session, not the account itself), so without this check
+  /// anyone with physical access to a locked device could hand a Google
+  /// identity of their own choosing the existing account's scan history and
+  /// Safe Vault, and permanently destroy the original owner's password in
+  /// the process (this used to unconditionally delete the stored hash
+  /// below). Signing in again with the *same* email — whichever way the
+  /// account was originally created — is unaffected; that's re-authentication,
+  /// not a takeover.
+  static Future<bool> completeGoogleSignIn({
     required String email,
     String? displayName,
     String? photoUrl,
   }) async {
-    await _storage.write(key: _emailKey, value: email.trim().toLowerCase());
+    final normalized = email.trim().toLowerCase();
+    final existingEmail = await _storage.read(key: _emailKey);
+    if (existingEmail != null && existingEmail != normalized) {
+      return false;
+    }
+
+    await _storage.write(key: _emailKey, value: normalized);
     await _storage.write(key: _providerKey, value: 'google');
     await _storage.delete(key: _saltKey);
     await _storage.delete(key: _hashKey);
@@ -160,6 +180,7 @@ class AuthService {
     }
 
     await _storage.write(key: _sessionKey, value: 'active');
+    return true;
   }
 
   static Future<AuthResult> register(String email, String password) async {
