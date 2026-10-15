@@ -301,6 +301,60 @@ class CloudAccountService {
     signedIn.value = false;
   }
 
+  /// Deletes the server-side account and everything hanging off it (synced
+  /// scan history, family membership/alerts, push tokens, learning progress —
+  /// the server cascades all of it in one statement) and always ends the
+  /// local cloud session afterward, whether or not the server call succeeded.
+  ///
+  /// Always clearing the local session on failure, rather than leaving it
+  /// alone so the caller could "retry", is deliberate: a session that survives
+  /// an erasure attempt is one an interrupted "delete my data" flow could
+  /// leave signed in with no visible trace that anything went wrong, and the
+  /// next sync would then re-populate local storage from an account the user
+  /// just tried to delete. Recovery if the network call did fail is still
+  /// possible — the account still exists server-side, so signing back in
+  /// (password or Google) and deleting again reaches the same row.
+  ///
+  /// Returns true only if the server confirmed deletion. The caller must
+  /// still treat local erasure as unconditional — this covers the *server's*
+  /// copy only, and its result decides what to tell the user about whether
+  /// their cloud-held data specifically was confirmed erased.
+  static Future<bool> deleteAccount() async {
+    final hadSession = await _token() != null;
+    if (!hadSession) return true; // nothing server-side to delete
+
+    var confirmed = false;
+    try {
+      final resp = await http
+          .delete(Uri.parse('$_baseUrl/account'), headers: await _authHeaders())
+          .timeout(_timeout);
+      confirmed = resp.statusCode == 200;
+    } catch (e) {
+      debugPrint('CloudAccountService.deleteAccount failed: $e');
+      confirmed = false;
+    }
+    await signOut();
+    return confirmed;
+  }
+
+  /// Everything the server holds about the signed-in user (DPDP right to
+  /// access), for merging into the local "My Data" export. Returns null when
+  /// signed out or unreachable — the caller shows that state explicitly
+  /// rather than a silently thinner export.
+  static Future<Map<String, dynamic>?> exportAccountData() async {
+    if (await _token() == null) return null;
+    try {
+      final resp = await http
+          .get(Uri.parse('$_baseUrl/account/export'), headers: await _authHeaders())
+          .timeout(_timeout);
+      if (resp.statusCode != 200) return null;
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('CloudAccountService.exportAccountData failed: $e');
+      return null;
+    }
+  }
+
   // ── Sync ────────────────────────────────────────────────────────────────
 
   /// Pushes [scans] and returns whatever changed server-side since [since].

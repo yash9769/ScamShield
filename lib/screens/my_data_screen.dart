@@ -70,6 +70,10 @@ class _MyDataScreenState extends State<MyDataScreen> {
     final vaultItems =
         (_data?['safeVaultItems (titles/categories only — see note)'] as List?)?.length ?? 0;
     final email = _data?['account']?['email'] as String?;
+    final cloudSection = _data?['cloudSyncAccount'] as Map<String, dynamic>?;
+    final cloudSignedIn = cloudSection?['signedIn'] == true;
+    final cloudScans = ((cloudSection?['data'] as Map?)?['syncedScans'] as List?)?.length;
+    final points = (_data?['learningProgress'] as Map?)?['totalPoints'];
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Data', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -97,6 +101,22 @@ class _MyDataScreenState extends State<MyDataScreen> {
                     'Privacy Policy agreed',
                     _data?['consent']?['privacyPolicyVersionAgreed'] ?? 'Not recorded',
                   ),
+                  _row('Learning points', '${points ?? 0}'),
+                  const SizedBox(height: 8),
+                  _row(
+                    'Cloud sync account',
+                    cloudSignedIn
+                        ? 'Signed in${cloudScans != null ? ' · $cloudScans scan(s) held on the server' : ''}'
+                        : 'Not signed in — nothing held on the server',
+                  ),
+                  if (cloudSignedIn && cloudSection?['data'] == null) ...[
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Could not reach the server just now to fetch what it holds for this '
+                      'section — try exporting again while online for the full picture.',
+                      style: TextStyle(color: AppColors.warning, fontSize: 11),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(14),

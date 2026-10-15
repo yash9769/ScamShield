@@ -12,6 +12,7 @@ import '../services/google_auth_service.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/repositories/preferences_repository.dart';
 import '../services/data_privacy_service.dart';
+import '../services/cloud_account_service.dart';
 import 'privacy_policy_screen.dart';
 import 'my_data_screen.dart';
 import 'backup_screen.dart';
@@ -80,10 +81,16 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Delete My Data?'),
-        content: const Text(
-          'This permanently deletes your scan history, all Safe Vault items, and all '
-          'generated reports on this device. Your account stays signed in. This cannot be undone.',
-          style: TextStyle(color: AppColors.textSecondary),
+        content: Text(
+          CloudAccountService.signedIn.value
+              ? 'This permanently deletes your scan history, all Safe Vault items, all '
+                  'generated reports, and your learning progress — on this device and on the '
+                  'server copy from cross-device sync. Your account stays signed in. This '
+                  'cannot be undone.'
+              : 'This permanently deletes your scan history, all Safe Vault items, all '
+                  'generated reports, and your learning progress on this device. Your account '
+                  'stays signed in. This cannot be undone.',
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -106,6 +113,57 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     _showSnack('Your scan history, Safe Vault and reports have been deleted.');
   }
 
+  /// Deletes the local device account and — if one exists — the server-side
+  /// cloud account, and reports honestly if the cloud half couldn't be
+  /// confirmed rather than letting a network failure pass silently as
+  /// "everything's gone."
+  Future<void> _finishAccountDeletion() async {
+    setState(() => _busy = true);
+    final result = await _dataPrivacyService.deleteAccountAndAllData();
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (result.hadCloudAccount && !result.cloudAccountDeleted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.cloud_off, color: AppColors.warning),
+              SizedBox(width: 8),
+              Expanded(child: Text('Cloud data may still exist')),
+            ],
+          ),
+          content: const Text(
+            'Everything on this device has been deleted, and it is now signed out of your '
+            'cloud sync account. But we could not reach the server to confirm your account '
+            'and its synced data (scan history, family membership, learning progress) were '
+            'actually deleted there — most likely no connection right now.\n\n'
+            'To finish: sign back in with the same email or Google account from Family '
+            'Protection, then delete the account again from here.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Understood', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    }
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   Future<void> _confirmDeleteAccount() async {
     // Deleting an account must be re-authenticated, but a Google-linked
     // account has no password on this device — asking for one would lock
@@ -119,15 +177,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         : await _confirmDeleteWithPassword();
 
     if (confirmed != true || !mounted) return;
-    setState(() => _busy = true);
-    await _dataPrivacyService.deleteAccountAndAllData();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    await _finishAccountDeletion();
   }
 
   /// Re-verifies by signing in with Google again and requiring the returned

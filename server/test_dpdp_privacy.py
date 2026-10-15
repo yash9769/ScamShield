@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
-from main import app, DB_PATH
+from main import app
 
 main.limiter.enabled = False
 client = TestClient(app)
@@ -89,8 +89,16 @@ def test_cleanup_is_a_noop_when_retention_not_configured():
 
 
 def test_cleanup_deletes_rows_older_than_configured_retention(monkeypatch):
+    # main.DB_PATH, read fresh here rather than imported by value: another test
+    # module in the same run (test_accounts.py) reassigns it per test to an
+    # isolated temp file, and a name imported at module-import time would
+    # keep pointing at whatever it was bound to *then* — silently writing
+    # these rows into a different file than the one cleanup_audit_logs()
+    # (and the client.get() below) actually reads from, depending on test
+    # order. That's not hypothetical: it was the exact cause of this test
+    # failing only when run after test_accounts.py, and passing in isolation.
     import sqlite3
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(main.DB_PATH))
     cur = conn.cursor()
     cur.execute("DELETE FROM audit_logs")
     old_ts = (datetime.now() - timedelta(days=100)).strftime("%Y-%m-%d %H:%M:%S")

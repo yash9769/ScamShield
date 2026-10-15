@@ -74,9 +74,18 @@ void main() async {
 Future<void> _applyScanHistoryRetention() async {
   try {
     final prefs = await PreferencesRepository().load();
-    if (prefs.autoDeleteDays > 0) {
-      await ScanRepository().deleteOlderThan(prefs.autoDeleteDays);
-    }
+    if (prefs.autoDeleteDays <= 0) return;
+
+    final repo = ScanRepository();
+    // Loaded before deleting so an aged-out scan that was ever cross-device
+    // synced can be tombstoned server-side too — an automatic local purge is
+    // still a deletion, and the server has no other way to learn about it.
+    final cutoff = DateTime.now().subtract(Duration(days: prefs.autoDeleteDays));
+    final expiring = (await repo.loadHistory())
+        .where((r) => r.timestamp.isBefore(cutoff))
+        .toList();
+    await repo.deleteOlderThan(prefs.autoDeleteDays);
+    unawaited(CloudSyncService.pushTombstones(expiring));
   } catch (_) {}
 }
 
