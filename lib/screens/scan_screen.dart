@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
+import '../widgets/ui_kit.dart';
 import '../services/scam_detector.dart';
 import '../services/api_service.dart';
 import '../services/share_intent_service.dart';
@@ -349,29 +350,25 @@ class _ScanScreenState extends State<ScanScreen>
     );
   }
 
+  /// A slim segmented control.
+  ///
+  /// This was a 2×2 block of four full-width tabs with ALL-CAPS labels, which
+  /// ate about a fifth of the screen before the user could type anything. Four
+  /// short segments on one row say the same thing in a quarter of the space.
   Widget _buildTabHeader() {
     return Container(
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.surfaceLight),
       ),
-      padding: const EdgeInsets.all(4),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(child: _buildTabButton(0, 'SMS / TEXT', Icons.message_outlined)),
-              Expanded(child: _buildTabButton(1, 'URL / LINK', Icons.link)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(child: _buildTabButton(2, 'VOICE NOTE', Icons.mic_none)),
-              Expanded(child: _buildTabButton(3, 'SCREENSHOT', Icons.image_outlined)),
-            ],
-          ),
+          Expanded(child: _buildTabButton(0, 'Text', Icons.chat_bubble_outline_rounded)),
+          Expanded(child: _buildTabButton(1, 'Link', Icons.link_rounded)),
+          Expanded(child: _buildTabButton(2, 'Voice', Icons.mic_none_rounded)),
+          Expanded(child: _buildTabButton(3, 'Image', Icons.image_outlined)),
         ],
       ),
     );
@@ -381,25 +378,26 @@ class _ScanScreenState extends State<ScanScreen>
     final isSel = _activeTab == index;
     return GestureDetector(
       onTap: () => setState(() => _activeTab = index),
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        duration: AppMotion.fast,
+        curve: AppMotion.curve,
+        padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
-          color: isSel ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isSel ? AppColors.surfaceLight : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
           children: [
-            Icon(icon, color: isSel ? Colors.black : AppColors.textSecondary, size: 18),
-            const SizedBox(width: 8),
+            Icon(icon,
+                color: isSel ? AppColors.primary : AppColors.textSecondary, size: 18),
+            const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: isSel ? Colors.black : AppColors.textSecondary,
-                fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                color: isSel ? AppColors.textPrimary : AppColors.textSecondary,
+                fontWeight: isSel ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 12,
-                letterSpacing: 0.5,
               ),
             ),
           ],
@@ -408,265 +406,205 @@ class _ScanScreenState extends State<ScanScreen>
     );
   }
 
+  /// The input.
+  ///
+  /// The ALL-CAPS "PASTE SUSPICIOUS TEXT" header above the field is gone — the
+  /// placeholder already says what to do, and a label that repeats the
+  /// placeholder is just noise above the thing you were going to tap anyway.
+  /// Paste and Scan-QR became icon buttons on one quiet row underneath.
   Widget _buildInputField() {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.surfaceLight),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _activeTab == 0
-                    ? 'PASTE SUSPICIOUS TEXT'
-                    : _activeTab == 1
-                        ? 'PASTE SUSPICIOUS LINK'
-                        : _activeTab == 2
-                            ? 'VOICE NOTE TRANSCRIPT / PROMPT'
-                            : 'SCREENSHOT OCR / EXTRACTED TEXT',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    onTap: _scanQrCode,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.qr_code_scanner, color: AppColors.primary, size: 14),
-                          SizedBox(width: 4),
-                          Text('SCAN QR', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: _pasteFromClipboard,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.content_paste, color: AppColors.primary, size: 14),
-                          SizedBox(width: 4),
-                          Text('PASTE', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           TextField(
             controller: _controller,
             focusNode: _focusNode,
-            maxLines: 5,
-            minLines: 3,
-            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            maxLines: 6,
+            minLines: 4,
+            style: AppText.body,
             decoration: InputDecoration(
               hintText: _activeTab == 0
-                  ? 'e.g. "URGENT: Your bank account is locked! Click http://bit.ly/fake-bank to verify now."'
+                  ? LocalizationService.tr('scan_hint')
                   : _activeTab == 1
-                      ? 'e.g. "https://secure-login-verify.top/auth"'
+                      ? 'Paste the link here'
                       : _activeTab == 2
-                          ? 'Paste audio transcript or tap scan to analyze voice note.'
-                          : 'Paste image text or tap scan to run screenshot OCR.',
+                          ? 'Paste what the caller said, or the voicemail text'
+                          : 'Paste the text from the screenshot',
+              hintStyle: AppText.bodyMuted,
               filled: false,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
             ),
+          ),
+          const Divider(height: 1),
+          Row(
+            children: [
+              _inputAction(Icons.content_paste_rounded, 'Paste', _pasteFromClipboard),
+              _inputAction(Icons.qr_code_scanner_rounded, 'Scan QR', _scanQrCode),
+              const Spacer(),
+              if (_controller.text.isNotEmpty)
+                Text('${_controller.text.trim().length}', style: AppText.caption),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _inputAction(IconData icon, String label, VoidCallback onTap) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 16, color: AppColors.primary),
+      label: Text(label, style: const TextStyle(fontSize: 13)),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+
+  /// One primary action, in plain words.
+  ///
+  /// Was a gradient-filled "ANALYZE FOR THREATS". The gradient is gone (the
+  /// theme's flat primary is enough to mark the one thing on screen you press)
+  /// and so is the jargon — "check" is what a person would call this.
   Widget _buildActionButton() {
     final hasText = _controller.text.trim().isNotEmpty;
-    return Container(
-      width: double.infinity,
-      height: 52,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: hasText
-            ? const LinearGradient(colors: [AppColors.primary, AppColors.accent])
-            : null,
-        color: hasText ? null : AppColors.surfaceLight.withValues(alpha: 0.4),
-      ),
-      child: ElevatedButton(
-        onPressed: _isAnalyzing ? null : _analyze,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.security, color: hasText ? Colors.black : AppColors.textSecondary, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              'ANALYZE FOR THREATS',
-              style: TextStyle(
-                color: hasText ? Colors.black : AppColors.textSecondary,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return ElevatedButton.icon(
+      onPressed: (_isAnalyzing || !hasText) ? null : _analyze,
+      icon: const Icon(Icons.shield_outlined, size: 20),
+      label: Text(LocalizationService.tr('scan_button')),
     );
   }
 
+  /// The waiting state.
+  ///
+  /// Was a pulsing 48px brain icon over "Analyzing with Gemini AI…". Two
+  /// problems: the animation added drama to a moment that is already tense,
+  /// and the copy named a provider that may not even be the one running —
+  /// analysis falls back to Groq or to the on-device engine, and says so
+  /// honestly now.
   Widget _buildAnalyzingWidget() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xxl, horizontal: AppSpacing.lg,
       ),
-      child: Column(
+      child: Row(
         children: [
-          ScaleTransition(
-            scale: _pulseAnimation,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.15),
-              ),
-              child: const Icon(Icons.psychology, color: AppColors.primary, size: 48),
-            ),
+          const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
           ),
-          const SizedBox(height: 20),
-          const Text('Analyzing with Gemini AI...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
-          const Text('Extracting entities, scam patterns, and risk factors', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          const SizedBox(height: 20),
-          const LinearProgressIndicator(color: AppColors.primary, backgroundColor: AppColors.surfaceLight),
+          const SizedBox(width: AppSpacing.md),
+          Text(LocalizationService.tr('scan_analyzing'), style: AppText.body),
         ],
       ),
     );
   }
 
+  /// The verdict — the single most important thing this app ever renders.
+  ///
+  /// What changed: the answer now leads with what to *do*, not what was
+  /// measured. The old card opened with a coloured word, a "GEMINI AI" badge
+  /// and "Risk Score: 87/100" — a measurement, a vendor name, and a number
+  /// nobody can act on, all above the advice. Someone reading this is often
+  /// mid-decision about whether to tap a link or send money; the instruction
+  /// belongs at the top and the diagnostics belong below it.
+  ///
+  /// The verdict's colour, icon and wording come from the shared kit
+  /// (verdictStyleFor), so this card, History, Home and Simple Mode cannot
+  /// describe the same result differently.
   Widget _buildResultCard() {
     final r = _result!;
-    final Color badgeColor;
-    final IconData badgeIcon;
-    switch (r.classification.name.toLowerCase()) {
-      case 'scam':
-        badgeColor = AppColors.danger;
-        badgeIcon = Icons.gpp_bad_outlined;
-        break;
-      case 'suspicious':
-        badgeColor = AppColors.warning;
-        badgeIcon = Icons.gpp_maybe_outlined;
-        break;
-      default:
-        badgeColor = AppColors.success;
-        badgeIcon = Icons.gpp_good_outlined;
-    }
+    final v = verdictStyleFor(r.classification.name);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(color: badgeColor.withValues(alpha: 0.12), blurRadius: 20, spreadRadius: 2),
-        ],
-      ),
+    return AppCard(
+      tone: v.color,
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
-                child: Icon(badgeIcon, color: badgeColor, size: 28),
-              ),
-              const SizedBox(width: 14),
+              Icon(v.icon, color: v.color, size: 30),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          // Translated, not `r.classification.name` upcased:
-                          // this is the one line the user has to understand.
-                          LocalizationService.tr('verdict_${r.classification.name}'),
-                          style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1),
-                        ),
-                        const SizedBox(width: 8),
-                        if (r.aiPowered)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                            child: const Text('GEMINI AI', style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text('${LocalizationService.tr('scan_risk_score')}: ${r.riskScore}/100', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                  ],
+                child: Text(
+                  // Translated, not the enum name upcased: this is the one
+                  // line the user has to understand.
+                  LocalizationService.tr('verdict_${r.classification.name}'),
+                  style: AppText.title.copyWith(color: v.color),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(LocalizationService.tr('scan_summary'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          Text(r.summary, style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textPrimary)),
+          const SizedBox(height: AppSpacing.md),
+          // The instruction. Plain, imperative, and above the detail.
+          Text(v.advice, style: AppText.body),
+          const SizedBox(height: AppSpacing.lg),
+          Container(height: 1, color: AppColors.surfaceLight),
+          const SizedBox(height: AppSpacing.lg),
+          Text(LocalizationService.tr('scan_summary'), style: AppText.label),
+          const SizedBox(height: AppSpacing.xs),
+          Text(r.summary, style: AppText.secondary),
           if (r.reasons.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            Text(LocalizationService.tr('scan_factors'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
-            const SizedBox(height: 10),
-            ...r.reasons.asMap().entries.map((entry) => Reveal(
-              delay: Reveal.step(entry.key, baseMs: 120),
-              offsetY: 14,
-              child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning_amber, color: entry.value.scoreContribution > 20 ? AppColors.danger : AppColors.warning, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(entry.value.label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        Text(entry.value.description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                      ],
-                    ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(LocalizationService.tr('scan_factors'), style: AppText.label),
+            const SizedBox(height: AppSpacing.sm),
+            ...r.reasons.map((reason) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // A small dot, not a warning triangle per row. Ten
+                      // triangles below a verdict the user has already read
+                      // adds alarm without adding information.
+                      Container(
+                        margin: const EdgeInsets.only(top: 7),
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: AppColors.textSecondary,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(reason.label,
+                                style: AppText.body.copyWith(fontSize: 14)),
+                            Text(reason.description, style: AppText.secondary),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ))),
+                )),
           ],
+          const SizedBox(height: AppSpacing.md),
+          // Score and provenance, kept but demoted to a footnote — useful to
+          // the curious, irrelevant to the decision.
+          Text(
+            '${LocalizationService.tr('scan_risk_score')} ${r.riskScore}/100'
+            '${r.aiPowered ? ' · AI-assisted' : ' · on-device check'}',
+            style: AppText.caption,
+          ),
         ],
       ),
     );
@@ -730,7 +668,7 @@ class _ScanScreenState extends State<ScanScreen>
               children: [
                 Text(
                   LocalizationService.tr('feedback_prompt'),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -815,7 +753,7 @@ class _ScanScreenState extends State<ScanScreen>
             children: [
               Icon(Icons.groups_outlined, color: AppColors.textSecondary, size: 16),
               SizedBox(width: 8),
-              Text('COMMUNITY REPORTS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              Text('Community reports', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
             ],
           ),
           const SizedBox(height: 10),
@@ -870,7 +808,7 @@ class _ScanScreenState extends State<ScanScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('TRY SAMPLE MESSAGES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+        const Text('Try an example', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
         const SizedBox(height: 10),
         ...samples.asMap().entries.map((entry) => Reveal(
           delay: Reveal.step(entry.key, baseMs: 90),

@@ -340,7 +340,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondary,
-          letterSpacing: 1.1,
+          letterSpacing: 0,
         ),
       );
 
@@ -368,7 +368,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textSecondary,
-                letterSpacing: 1.1,
+                letterSpacing: 0,
               )),
           const SizedBox(height: 6),
           Row(
@@ -386,7 +386,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
-                      letterSpacing: 1.5,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),

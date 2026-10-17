@@ -404,7 +404,7 @@ class _BreachScreenState extends State<BreachScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CHECK EMAIL ADDRESS FOR BREACHES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+                const Text('Check an email address', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _emailController,
@@ -773,7 +773,7 @@ class _BreachScreenState extends State<BreachScreen>
             ),
           ),
           const SizedBox(height: 20),
-          Text('BREACH DETAILS FOR $_checkedEmail', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+          Text('Breaches found for $_checkedEmail', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
           const SizedBox(height: 10),
           ...breaches.map((b) => _buildBackendBreachCard(b)),
         ],

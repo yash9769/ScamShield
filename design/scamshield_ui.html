@@ -1,0 +1,750 @@
+<!-- ScamShield UI redesign — source for design/ScamShield-UI-Redesign.pdf
+     Rendered with: python3 design/build_pdf.py
+     Every colour, size, radius and spacing value below is read from the same
+     tokens as lib/theme.dart, so this document and the app cannot drift. -->
+<meta charset="utf-8">
+<title>ScamShield — UI Redesign</title>
+<style>
+  /* __FONT_FACE__ */
+
+  /* Chromium otherwise prints onto its own default paper and every .page
+     spills a few pixels onto a second sheet — 8 designed pages became 16.
+     Pinning the page box to the same 794×1123 (A4 @96dpi) the layout uses
+     makes one .page render as exactly one sheet. */
+  @page{ size:794px 1123px; margin:0 }
+
+  :root{
+    --bg:#0C0E12; --surface:#15181F; --line:#262B35;
+    --text:#F5F6F8; --muted:#9BA3B0;
+    --primary:#5B9DFF; --accent:#7C8CFF;
+    --safe:#3DD68C; --caution:#F5B849; --danger:#FF6B6B;
+
+    --paper:#0A0C10; --ink:#F5F6F8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    margin:0; padding:0;
+    font-family:'Inter',-apple-system,system-ui,sans-serif;
+    background:var(--paper); color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    width:794px; height:1123px; padding:56px 56px 44px;
+    page-break-after:always; position:relative; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .page:last-child{page-break-after:auto}
+
+  h1{font-size:44px;font-weight:700;letter-spacing:-1.4px;line-height:1.06}
+  h2{font-size:26px;font-weight:700;letter-spacing:-.6px;margin-bottom:6px}
+  h3{font-size:15px;font-weight:600;letter-spacing:-.1px}
+  p{font-size:13.5px;line-height:1.62;color:#C6CBD4}
+  .lede{font-size:15.5px;line-height:1.6;color:#C6CBD4}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--primary)}
+  .muted{color:var(--muted)}
+  .small{font-size:11.5px;line-height:1.55;color:var(--muted)}
+  .rule{height:1px;background:var(--line);margin:22px 0}
+  .foot{margin-top:auto;padding-top:18px;border-top:1px solid var(--line);
+        display:flex;justify-content:space-between;font-size:10px;color:#5C6472;letter-spacing:.3px}
+
+  /* ── cover ── */
+  .cover{justify-content:center;background:
+     radial-gradient(760px 520px at 78% 8%, rgba(91,157,255,.16), transparent 62%),
+     radial-gradient(560px 420px at 8% 96%, rgba(124,140,255,.10), transparent 60%);}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--line);
+         border-radius:999px;font-size:11.5px;color:var(--muted);width:max-content}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--safe)}
+  .cover .foot{margin-top:56px}
+
+  /* ── layout helpers ── */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .stack{display:flex;flex-direction:column;gap:14px}
+
+  /* principles */
+  .principle{display:flex;gap:14px;align-items:flex-start}
+  .num{flex:none;width:26px;height:26px;border-radius:8px;background:rgba(91,157,255,.14);
+       color:var(--primary);font-size:12.5px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+
+  /* swatches */
+  .sw{border-radius:12px;height:66px;border:1px solid var(--line);display:flex;align-items:flex-end;padding:9px}
+  .sw span{font-size:10px;font-weight:600;background:rgba(0,0,0,.42);padding:3px 7px;border-radius:5px;letter-spacing:.2px}
+
+  /* ── phone mockup ── */
+  .phone{width:290px;min-height:596px;border:1px solid #2A303B;border-radius:26px;background:var(--bg);
+         overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 48px rgba(0,0,0,.5)}
+  .phone.wide{width:320px}
+  .status{display:flex;justify-content:space-between;padding:9px 16px 3px;font-size:9.5px;color:var(--muted);font-weight:500}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:9px 16px 12px}
+  .nav .t{font-size:16px;font-weight:600;letter-spacing:-.3px}
+  .body{padding:0 16px 14px;display:flex;flex-direction:column;gap:14px}
+  .tabbar{margin-top:auto;display:flex;justify-content:space-around;padding:9px 6px 11px;
+          background:var(--surface);border-top:1px solid var(--line)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8px;color:var(--muted);font-weight:500}
+  .tab.on{color:var(--primary);font-weight:600}
+  .ico{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  .ui-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px}
+  .ui-title{font-size:19px;font-weight:700;letter-spacing:-.5px}
+  .ui-sub{font-size:11px;color:var(--muted);line-height:1.45}
+  .ui-label{font-size:10.5px;font-weight:600;color:var(--muted)}
+  .btn{background:var(--primary);color:#08121F;font-size:11px;font-weight:600;
+       padding:6px 11px;border-radius:9px;display:inline-block}
+  .btn-full{background:var(--primary);color:#08121F;font-size:12.5px;font-weight:600;
+       padding:11px;border-radius:11px;text-align:center}
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0}
+  .tile{flex:none;width:29px;height:29px;border-radius:8px;background:rgba(38,43,53,.75);
+        display:grid;place-items:center;color:var(--text)}
+  .hair{height:1px;background:var(--line);margin-left:39px}
+  .chip{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:7px;font-size:10px;font-weight:600}
+
+  /* before/after */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+  .tag{font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;padding:4px 9px;
+       border-radius:6px;width:max-content;margin-bottom:11px}
+  .tag.b{background:rgba(255,107,107,.13);color:var(--danger)}
+  .tag.a{background:rgba(61,214,140,.13);color:var(--safe)}
+
+  /* old-style phone (before) */
+  .old-hero{background:#1E293B;border:1px solid #334155;border-radius:20px;padding:16px 12px;text-align:center;
+            box-shadow:0 0 22px rgba(6,182,212,.10)}
+  .old-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(245,158,11,.4);
+             background:rgba(245,158,11,.12);color:#F59E0B;font-size:8px;font-weight:700;letter-spacing:1.1px;
+             padding:4px 10px;border-radius:20px}
+  .old-ring{width:88px;height:88px;margin:13px auto;border-radius:50%;border:2px solid rgba(6,182,212,.6);
+            display:grid;place-items:center;box-shadow:0 0 20px rgba(6,182,212,.22)}
+  .old-caps{font-size:8px;letter-spacing:1.5px;color:#94A3B8}
+  .old-cta{background:linear-gradient(90deg,#06B6D4,#3B82F6);color:#000;font-weight:700;font-size:11px;
+           letter-spacing:.5px;padding:10px;border-radius:22px;text-align:center;margin-top:12px}
+  .old-stat{background:#1E293B;border:1px solid #334155;border-radius:13px;padding:11px}
+  .old-stat .l{font-size:7.5px;font-weight:600;letter-spacing:.5px;color:#94A3B8}
+  .old-stat .v{font-size:17px;font-weight:700;margin-top:3px}
+  .old-tile{width:44px;height:44px;border-radius:11px;background:#1E293B;border:1px solid #334155;
+            display:grid;place-items:center;color:#06B6D4}
+
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th{text-align:left;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+     font-weight:600;padding:0 10px 9px 0;border-bottom:1px solid var(--line)}
+  td{padding:11px 10px 11px 0;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5;color:#C6CBD4}
+  td b{color:var(--ink);font-weight:600}
+</style>
+
+<!-- ══════════════ 1 · COVER ══════════════ -->
+<div class="page cover">
+  <div class="badge"><span class="dot"></span> Design revision · September 2026</div>
+  <h1 style="margin:26px 0 0">Calm<br>Confidence</h1>
+  <p class="lede" style="max-width:490px;margin-top:20px">
+    A ground-up interface redesign for ScamShield — moving the app from a
+    neon security console to something a frightened person can read in five
+    seconds and act on.
+  </p>
+  <div class="rule" style="margin:34px 0 22px;max-width:490px"></div>
+  <div style="display:flex;gap:44px">
+    <div><div class="eyebrow">Scope</div><p class="small" style="margin-top:6px">Design system,<br>component kit,<br>5 core screens</p></div>
+    <div><div class="eyebrow">Principle</div><p class="small" style="margin-top:6px">Colour means<br>something.<br>Stillness is a feature.</p></div>
+    <div><div class="eyebrow">Result</div><p class="small" style="margin-top:6px">One accent,<br>zero ambient motion,<br>no shouting</p></div>
+  </div>
+  <div class="foot"><span>ScamShield · UI Redesign</span><span>01</span></div>
+</div>
+
+<!-- ══════════════ 2 · THE PROBLEM ══════════════ -->
+<div class="page">
+  <div class="eyebrow">The brief, and what was actually wrong</div>
+  <h2 style="margin-top:10px">The app was dressed as a hacking tool</h2>
+  <p class="lede" style="max-width:600px">
+    ScamShield's users are, disproportionately, the people scams actually work
+    on — someone who just got a text about their bank and whose pulse is up. The
+    old interface met them with a pulsing radar sweep, six shouted navigation
+    labels and a risk score out of 100.
+  </p>
+
+  <div class="rule"></div>
+
+  <div class="grid2" style="gap:20px">
+    <div class="card">
+      <h3 style="color:var(--danger);margin-bottom:9px">What the old Home spent its space on</h3>
+      <p class="small">A 140px pulsing shield inside an ambient radar sweep · a
+      “SHIELD ACTIVE / ECOSYSTEM” badge that read the same after 0 scans and after
+      400 · a 2×2 grid of stat cards including <b style="color:#C6CBD4">“AVG RISK
+      SCORE”</b> · and a banner listing “Androguard + YARA”, “Zero dummy data”.</p>
+      <p class="small" style="margin-top:10px">Roughly the entire first screen
+      passed before anything the user could act on appeared.</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--safe);margin-bottom:9px">What people actually open it for</h3>
+      <p class="small">One question, every time:</p>
+      <p style="font-size:17px;font-weight:600;color:var(--ink);margin:11px 0;line-height:1.35">
+        “Is this thing I just received safe?”</p>
+      <p class="small">Everything on the screen now either answers that question,
+      or gets out of the way of the thing that does.</p>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="eyebrow" style="margin-bottom:14px">Four rules the system is built on</div>
+  <div class="stack">
+    <div class="principle"><div class="num">1</div><div>
+      <h3>Colour means something</h3>
+      <p class="small">Green, amber and red belong to verdicts and nothing else.
+      When every card carries a cyan glow, a red “Scam” banner is just more colour.
+      Neutrals do the structural work; one accent marks what is interactive.</p></div></div>
+    <div class="principle"><div class="num">2</div><div>
+      <h3>Sentence case, real hierarchy</h3>
+      <p class="small">ALL-CAPS with +1.5 tracking is measurably harder to read and
+      shouts at someone already anxious. Nineteen shouted labels were removed.
+      Size, weight and colour carry hierarchy instead.</p></div></div>
+    <div class="principle"><div class="num">3</div><div>
+      <h3>Stillness is a feature</h3>
+      <p class="small">Motion happens on state change, never on a loop. The pulsing
+      CTA and the radar sweep are gone. A screen that never settles keeps taking
+      attention without giving anything back.</p></div></div>
+    <div class="principle"><div class="num">4</div><div>
+      <h3>Space over ornament</h3>
+      <p class="small">Glows, gradients and drop shadows removed until something
+      broke. Depth now comes from one surface step and a hairline border.</p></div></div>
+  </div>
+  <div class="foot"><span>The problem</span><span>02</span></div>
+</div>
+
+<!-- ══════════════ 3 · BEFORE / AFTER ══════════════ -->
+<div class="page">
+  <div class="eyebrow">Home screen</div>
+  <h2 style="margin-top:10px">Before &amp; after</h2>
+  <p class="small" style="max-width:600px;margin-bottom:22px">The same screen, the
+  same data, the same feature set — reordered around the decision the user is
+  actually trying to make.</p>
+
+  <div class="ba">
+    <div>
+      <div class="tag b">Before</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="nav" style="padding-bottom:9px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <div style="width:20px;height:20px;border-radius:5px;background:#06B6D4"></div>
+            <div class="t" style="font-weight:700">ScamShield</div></div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <div style="width:14px;height:14px;border-radius:50%;border:1.5px solid #94A3B8"></div>
+            <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid #06B6D4;background:#334155"></div></div>
+        </div>
+        <div class="body" style="gap:11px">
+          <div class="old-hero">
+            <div class="old-badge">● THREATS DETECTED</div>
+            <div class="old-ring">
+              <div>
+                <div style="font-size:19px">🛡</div>
+                <div style="font-size:12px;font-weight:700;margin-top:1px">Protected</div>
+                <div class="old-caps">ECOSYSTEM</div>
+              </div>
+            </div>
+            <div style="font-size:8.5px;color:#94A3B8;line-height:1.4">Your digital ecosystem is under
+              continuous monitoring.</div>
+            <div class="old-cta">◎ SCAN NOW</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="old-stat"><div class="l">TOTAL SCANS</div><div class="v">12</div></div>
+            <div class="old-stat"><div class="l">SCAMS CAUGHT</div><div class="v" style="color:#EF4444">3</div></div>
+            <div class="old-stat"><div class="l">SUSPICIOUS</div><div class="v" style="color:#F59E0B">2</div></div>
+            <div class="old-stat"><div class="l">AVG RISK SCORE</div><div class="v">47</div></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.5px">Quick Actions</div>
+          <div style="display:flex;justify-content:space-between">
+            <div style="text-align:center"><div class="old-tile">▭</div><div class="old-caps" style="margin-top:5px">SIM LOCK</div></div>
+            <div style="text-align:center"><div class="old-tile">✉</div><div class="old-caps" style="margin-top:5px">EMAIL</div></div>
+            <div style="text-align:center"><div class="old-tile">◍</div><div class="old-caps" style="margin-top:5px">BREACHES</div></div>
+            <div style="text-align:center"><div class="old-tile">🔒</div><div class="old-caps" style="margin-top:5px">VAULT</div></div>
+          </div>
+        </div>
+        <div class="tabbar" style="background:#1E293B;border-top-color:#334155">
+          <div class="tab on" style="color:#06B6D4">▲<span>HOME</span></div>
+          <div class="tab">◎<span>SCAN</span></div>
+          <div class="tab">✉<span>BREACH</span></div>
+          <div class="tab">◷<span>HISTORY</span></div>
+          <div class="tab">▤<span>LEARN</span></div>
+          <div class="tab">◕<span>PROFILE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="tag a">After</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="nav"><div class="t">ScamShield</div>
+          <div style="width:26px;height:26px;border-radius:50%;background:#262B35"></div></div>
+        <div class="body">
+          <div>
+            <div class="ui-title">Is this a scam?</div>
+            <div class="ui-sub" style="margin-top:4px">Paste a message, link or number
+              and get an answer in seconds.</div>
+          </div>
+          <div class="ui-card" style="display:flex;align-items:center;gap:10px">
+            <svg class="ico" style="color:var(--primary);width:17px;height:17px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <div style="flex:1;font-size:12px">Check a message or link</div>
+            <div class="btn">Check</div>
+          </div>
+          <div class="ui-card" style="display:flex;align-items:center">
+            <div><div style="font-size:21px;font-weight:700;letter-spacing:-.6px">12</div>
+                 <div style="font-size:9.5px;color:var(--muted);margin-top:1px">messages checked</div></div>
+            <div style="width:1px;height:28px;background:var(--line);margin:0 15px"></div>
+            <div><div style="font-size:21px;font-weight:700;letter-spacing:-.6px;color:var(--caution)">5</div>
+                 <div style="font-size:9.5px;color:var(--muted);margin-top:1px">threats found</div></div>
+            <div style="margin-left:auto;color:var(--muted)">›</div>
+          </div>
+          <div>
+            <div class="ui-label" style="margin-bottom:8px">Also check</div>
+            <div class="ui-card" style="padding:2px 13px">
+              <div class="row"><div class="tile">✉</div><div><div style="font-size:12px;font-weight:600">Was my email leaked?</div>
+                <div class="ui-sub">Check against known data breaches</div></div>
+                <div style="margin-left:auto;color:var(--muted)">›</div></div>
+              <div class="hair"></div>
+              <div class="row"><div class="tile">◍</div><div><div style="font-size:12px;font-weight:600">Recent breaches</div>
+                <div class="ui-sub">What has leaked lately</div></div>
+                <div style="margin-left:auto;color:var(--muted)">›</div></div>
+              <div class="hair"></div>
+              <div class="row"><div class="tile">🔒</div><div><div style="font-size:12px;font-weight:600">Safe Vault</div>
+                <div class="ui-sub">Encrypted on this device</div></div>
+                <div style="margin-left:auto;color:var(--muted)">›</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab on">⌂<span>Home</span></div>
+          <div class="tab">◌<span>Scan</span></div>
+          <div class="tab">✉<span>Breach</span></div>
+          <div class="tab">◷<span>History</span></div>
+          <div class="tab">▤<span>Learn</span></div>
+          <div class="tab">◕<span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:20px;gap:20px">
+    <p class="small"><b style="color:var(--danger)">Time to first useful control:</b>
+      after a full scroll past a radar animation, a status badge and four numbers.</p>
+    <p class="small"><b style="color:var(--safe)">Time to first useful control:</b>
+      immediately — it is the first element, and the whole card is the tap target.</p>
+  </div>
+  <div class="foot"><span>Home · before &amp; after</span><span>03</span></div>
+</div>
+
+<!-- ══════════════ 4 · TOKENS ══════════════ -->
+<div class="page">
+  <div class="eyebrow">Foundations</div>
+  <h2 style="margin-top:10px">Design tokens</h2>
+  <p class="small" style="max-width:600px">Defined once in <b style="color:#C6CBD4">lib/theme.dart</b>
+  and referenced everywhere. Retuning them restyles the whole app — including the
+  fourteen screens that were not individually rewritten.</p>
+
+  <div class="rule"></div>
+  <h3 style="margin-bottom:4px">Neutrals carry the structure</h3>
+  <p class="small" style="margin-bottom:13px">The background moved off navy to a true
+  neutral charcoal. Navy tints everything drawn on it blue, which is what forced the
+  old accent to shout to be seen at all.</p>
+  <div class="grid3" style="gap:11px">
+    <div><div class="sw" style="background:#0C0E12"><span>#0C0E12</span></div><p class="small" style="margin-top:6px">Background</p></div>
+    <div><div class="sw" style="background:#15181F"><span>#15181F</span></div><p class="small" style="margin-top:6px">Surface</p></div>
+    <div><div class="sw" style="background:#262B35"><span>#262B35</span></div><p class="small" style="margin-top:6px">Border / hairline</p></div>
+    <div><div class="sw" style="background:#F5F6F8;color:#111"><span style="background:rgba(255,255,255,.6)">#F5F6F8</span></div><p class="small" style="margin-top:6px">Text primary</p></div>
+    <div><div class="sw" style="background:#9BA3B0"><span>#9BA3B0</span></div><p class="small" style="margin-top:6px">Text secondary · 4.9:1</p></div>
+    <div><div class="sw" style="background:#5B9DFF"><span>#5B9DFF</span></div><p class="small" style="margin-top:6px">Accent — interactive only</p></div>
+  </div>
+
+  <div class="rule"></div>
+  <h3 style="margin-bottom:4px">Three colours are reserved</h3>
+  <p class="small" style="margin-bottom:13px">These never appear as decoration, section
+  headers or flavour icons. Every place they are used is also labelled in words and paired
+  with a distinct icon — roughly one in twelve men cannot separate red from green, which is
+  precisely the distinction this app exists to communicate.</p>
+  <div class="grid3" style="gap:11px">
+    <div><div class="sw" style="background:#3DD68C"><span>#3DD68C</span></div>
+      <p class="small" style="margin-top:6px"><b style="color:#C6CBD4">Safe</b> · ✓ “Looks safe”</p></div>
+    <div><div class="sw" style="background:#F5B849"><span>#F5B849</span></div>
+      <p class="small" style="margin-top:6px"><b style="color:#C6CBD4">Caution</b> · △ “Be careful”</p></div>
+    <div><div class="sw" style="background:#FF6B6B"><span>#FF6B6B</span></div>
+      <p class="small" style="margin-top:6px"><b style="color:#C6CBD4">Danger</b> · ✕ “Scam”</p></div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="grid2">
+    <div>
+      <h3 style="margin-bottom:11px">Type — Inter, optically tracked</h3>
+      <div style="font-size:29px;font-weight:700;letter-spacing:-.9px">Display · 32/700</div>
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;margin-top:9px">Title · 24/700</div>
+      <div style="font-size:17px;font-weight:600;letter-spacing:-.25px;margin-top:9px">Heading · 19/600</div>
+      <div style="font-size:14.5px;font-weight:600;margin-top:9px">Subheading · 16/600</div>
+      <div style="font-size:13.5px;margin-top:9px;color:#C6CBD4">Body · 15/400 · 1.5 leading</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:7px">Secondary · 13.5/400</div>
+      <div style="font-size:11.5px;font-weight:600;color:var(--muted);margin-top:7px">Label · 13/600 — sentence case</div>
+      <p class="small" style="margin-top:13px">Larger text is tracked tighter, small
+      text marginally looser, approximating an optical-size axis Flutter does not expose.
+      The old theme layered <i>extra positive</i> tracking on top for “tactical” labels —
+      that is the letter-spacing this redesign removes.</p>
+    </div>
+    <div>
+      <h3 style="margin-bottom:11px">Space &amp; radius</h3>
+      <p class="small" style="margin-bottom:11px">Everything is a multiple of 4 — which
+      is what stops a layout looking hand-placed. Three radii plus a pill; more than that
+      and nothing looks related.</p>
+      <div class="card" style="padding:15px">
+        <div style="display:flex;align-items:flex-end;gap:5px;margin-bottom:13px">
+          <div style="width:4px;height:16px;background:var(--primary);border-radius:2px"></div>
+          <div style="width:8px;height:22px;background:var(--primary);border-radius:2px"></div>
+          <div style="width:12px;height:28px;background:var(--primary);border-radius:2px"></div>
+          <div style="width:16px;height:34px;background:var(--primary);border-radius:2px"></div>
+          <div style="width:20px;height:40px;background:var(--primary);border-radius:2px"></div>
+          <div style="width:24px;height:46px;background:var(--primary);border-radius:2px"></div>
+        </div>
+        <p class="small">4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 &nbsp; | &nbsp; gutter 20</p>
+        <div style="display:flex;gap:9px;margin-top:15px">
+          <div style="width:44px;height:44px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;font-size:9px;color:var(--muted)">10</div>
+          <div style="width:44px;height:44px;border:1px solid var(--line);border-radius:14px;display:grid;place-items:center;font-size:9px;color:var(--muted)">14</div>
+          <div style="width:44px;height:44px;border:1px solid var(--line);border-radius:20px;display:grid;place-items:center;font-size:9px;color:var(--muted)">20</div>
+          <div style="width:44px;height:44px;border:1px solid var(--line);border-radius:999px;display:grid;place-items:center;font-size:9px;color:var(--muted)">pill</div>
+        </div>
+      </div>
+      <p class="small" style="margin-top:13px"><b style="color:#C6CBD4">Motion:</b>
+      140ms / 220ms, easeOutCubic, on state change only. No ambient loops anywhere
+      in the app.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Design tokens</span><span>04</span></div>
+</div>
+
+<!-- ══════════════ 5 · COMPONENTS ══════════════ -->
+<div class="page">
+  <div class="eyebrow">lib/widgets/ui_kit.dart</div>
+  <h2 style="margin-top:10px">Component kit</h2>
+  <p class="small" style="max-width:620px">Before this existed, every screen hand-rolled its
+  own Container with its own padding, radius and border alpha — which is why “a card” looked
+  subtly different on Home, History, Family and Profile. Six components cover essentially
+  every layout in the app; a kit that tries to cover every case stops being learnable.</p>
+
+  <div class="rule"></div>
+
+  <div class="grid2" style="gap:24px">
+    <div>
+      <h3 style="margin-bottom:9px">AppCard</h3>
+      <div class="ui-card" style="padding:15px"><div style="font-size:12.5px">One radius, one border,
+        one padding. Optional verdict tone.</div></div>
+      <div class="ui-card" style="padding:15px;margin-top:9px;background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.35)">
+        <div style="font-size:12.5px;color:var(--danger);font-weight:600">Toned — verdict only</div></div>
+      <p class="small" style="margin-top:9px">The tone variant exists for the scan result.
+      It is not used for decoration.</p>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:9px">VerdictBadge</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="chip" style="background:rgba(61,214,140,.14);color:var(--safe)">✓ Looks safe</div>
+        <div class="chip" style="background:rgba(245,184,73,.14);color:var(--caution)">△ Be careful</div>
+        <div class="chip" style="background:rgba(255,107,107,.14);color:var(--danger)">✕ Scam</div>
+      </div>
+      <p class="small" style="margin-top:11px">Always icon <i>and</i> word — never colour alone.
+      One source of truth (<span style="color:#C6CBD4">verdictStyleFor</span>) means Scan, History,
+      Home and Simple Mode cannot describe the same result three different ways, which they
+      previously did.</p>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:9px">AppListRow · AppListGroup</h3>
+      <div class="ui-card" style="padding:2px 13px">
+        <div class="row"><div class="tile">✉</div><div><div style="font-size:12px;font-weight:600">Row title</div>
+          <div class="ui-sub">Supporting sentence</div></div><div style="margin-left:auto;color:var(--muted)">›</div></div>
+        <div class="hair"></div>
+        <div class="row"><div class="tile">◍</div><div><div style="font-size:12px;font-weight:600">Another row</div>
+          <div class="ui-sub">With an inset hairline</div></div><div style="margin-left:auto;color:var(--muted)">›</div></div>
+      </div>
+      <p class="small" style="margin-top:9px">Neutral icon tiles. Fifteen accent-coloured icons
+      down a settings list is fifteen things asking to be looked at.</p>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:9px">EmptyState</h3>
+      <div class="ui-card" style="text-align:center;padding:20px 15px">
+        <div style="font-size:19px;color:var(--muted)">▢</div>
+        <div style="font-size:12.5px;font-weight:600;margin-top:7px">Nothing checked yet</div>
+        <div class="ui-sub" style="margin-top:3px">Anything you check shows up here.</div>
+        <div style="border:1px solid var(--line);border-radius:10px;padding:7px;margin-top:11px;
+                    font-size:11px;font-weight:600">Check something now</div>
+      </div>
+      <p class="small" style="margin-top:9px">Treated as a real state with an action — for a new
+      install it is the first thing most screens show.</p>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="grid2" style="gap:24px">
+    <div>
+      <h3 style="margin-bottom:9px">AppSection</h3>
+      <div class="ui-label" style="margin-bottom:7px">Recent checks <span style="float:right;color:var(--primary);font-weight:600">See all</span></div>
+      <div class="ui-card" style="height:38px"></div>
+      <p class="small" style="margin-top:9px">Sentence case, muted — replacing
+      “<span style="letter-spacing:1.5px;font-size:9px">RECENT CHECKS</span>”.</p>
+    </div>
+    <div>
+      <h3 style="margin-bottom:9px">Buttons</h3>
+      <div class="btn-full">Check this message</div>
+      <div style="border:1px solid var(--line);border-radius:11px;padding:10px;text-align:center;
+                  font-size:12.5px;font-weight:600;margin-top:8px">Secondary</div>
+      <p class="small" style="margin-top:9px">52pt tall — past the 48dp floor, because a mis-tap
+      here costs more than in most apps. Flat: the gradient is gone.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Component kit</span><span>05</span></div>
+</div>
+
+<!-- ══════════════ 6 · SCAN FLOW ══════════════ -->
+<div class="page">
+  <div class="eyebrow">The centrepiece</div>
+  <h2 style="margin-top:10px">The scan, and the answer</h2>
+  <p class="small" style="max-width:620px;margin-bottom:20px">The verdict is the single most
+  important thing this app ever renders. It now leads with what to <i>do</i>, not what was
+  measured.</p>
+
+  <div class="ba">
+    <div>
+      <div class="tag a" style="background:rgba(91,157,255,.13);color:var(--primary)">Input</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="nav"><div class="t">Check a message</div></div>
+        <div class="body">
+          <div style="display:flex;gap:3px;background:var(--surface);border:1px solid var(--line);
+                      border-radius:12px;padding:3px">
+            <div style="flex:1;text-align:center;padding:7px 0;border-radius:8px;background:var(--line)">
+              <div style="font-size:12px">◌</div><div style="font-size:9px;font-weight:600;margin-top:2px">Text</div></div>
+            <div style="flex:1;text-align:center;padding:7px 0;color:var(--muted)">
+              <div style="font-size:12px">🔗</div><div style="font-size:9px;margin-top:2px">Link</div></div>
+            <div style="flex:1;text-align:center;padding:7px 0;color:var(--muted)">
+              <div style="font-size:12px">🎙</div><div style="font-size:9px;margin-top:2px">Voice</div></div>
+            <div style="flex:1;text-align:center;padding:7px 0;color:var(--muted)">
+              <div style="font-size:12px">▣</div><div style="font-size:9px;margin-top:2px">Image</div></div>
+          </div>
+          <div class="ui-card" style="padding:13px 13px 4px">
+            <div style="font-size:11.5px;color:var(--muted);line-height:1.5;min-height:62px">
+              Paste the suspicious message here</div>
+            <div style="height:1px;background:var(--line)"></div>
+            <div style="display:flex;gap:12px;padding:7px 0">
+              <div style="font-size:10.5px;color:var(--primary);font-weight:600">⎘ Paste</div>
+              <div style="font-size:10.5px;color:var(--primary);font-weight:600">▦ Scan QR</div>
+            </div>
+          </div>
+          <div class="btn-full">Check this message</div>
+          <div class="ui-label" style="margin-top:2px">Try an example</div>
+          <div class="ui-card" style="padding:11px"><div style="font-size:11px;color:var(--muted);line-height:1.45">
+            “URGENT: your account is locked. Verify at bit.ly/…”</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="tag b" style="background:rgba(255,107,107,.13);color:var(--danger)">Verdict</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="nav"><div class="t">Check a message</div>
+          <div style="font-size:11px;color:var(--primary);font-weight:600">Clear</div></div>
+        <div class="body">
+          <div class="ui-card" style="background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.35);padding:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:22px;color:var(--danger)">⊗</div>
+              <div style="font-size:21px;font-weight:700;letter-spacing:-.5px;color:var(--danger)">Scam</div>
+            </div>
+            <div style="font-size:12.5px;line-height:1.5;margin-top:10px">
+              Do not reply, tap any link, or send money. It is safe to delete this.</div>
+            <div style="height:1px;background:var(--line);margin:13px 0"></div>
+            <div class="ui-label">What we found</div>
+            <div class="ui-sub" style="margin-top:3px">Impersonates a bank and pushes you to act
+              within minutes using a shortened link.</div>
+            <div class="ui-label" style="margin-top:12px">Why</div>
+            <div style="margin-top:6px">
+              <div style="display:flex;gap:8px;margin-bottom:6px"><div style="width:4px;height:4px;border-radius:2px;background:var(--muted);margin-top:6px;flex:none"></div>
+                <div><div style="font-size:11.5px">Urgency &amp; pressure</div>
+                <div class="ui-sub">“within 24 hours”, “account locked”</div></div></div>
+              <div style="display:flex;gap:8px"><div style="width:4px;height:4px;border-radius:2px;background:var(--muted);margin-top:6px;flex:none"></div>
+                <div><div style="font-size:11.5px">Shortened link</div>
+                <div class="ui-sub">Hides the real destination</div></div></div>
+            </div>
+            <div style="font-size:9.5px;color:var(--muted);margin-top:13px">Risk score 91/100 · AI-assisted</div>
+          </div>
+          <div class="ui-card" style="padding:13px">
+            <div class="ui-label">Was this right?</div>
+            <div style="display:flex;gap:8px;margin-top:9px">
+              <div style="flex:1;border:1px solid rgba(61,214,140,.4);color:var(--safe);border-radius:9px;
+                          padding:8px;text-align:center;font-size:11px;font-weight:600">Correct</div>
+              <div style="flex:1;border:1px solid rgba(245,184,73,.4);color:var(--caution);border-radius:9px;
+                          padding:8px;text-align:center;font-size:11px;font-weight:600">It's legitimate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3 style="margin-bottom:7px">What moved, and why it matters</h3>
+    <p class="small">The old result card opened with a coloured word, a “GEMINI AI” badge and
+    “Risk Score: 87/100” — a measurement, a vendor name and a number nobody can act on, all
+    above the advice. Someone reading this is often mid-decision about whether to tap a link or
+    send money. The instruction now comes first; the score is a footnote. The provider label was
+    also simply wrong much of the time — analysis falls back to Groq or to the on-device engine,
+    and the footnote says so honestly.</p>
+  </div>
+  <div class="foot"><span>Scan flow</span><span>06</span></div>
+</div>
+
+<!-- ══════════════ 7 · HISTORY + PROFILE ══════════════ -->
+<div class="page">
+  <div class="eyebrow">Supporting screens</div>
+  <h2 style="margin-top:10px">History &amp; Profile</h2>
+  <p class="small" style="max-width:620px;margin-bottom:20px">Both were dense grids of tinted
+  icons and shouted labels. Both are now scannable lists built from the same kit.</p>
+
+  <div class="ba">
+    <div>
+      <div class="tag a" style="background:rgba(91,157,255,.13);color:var(--primary)">History</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="nav"><div class="t">History</div>
+          <div style="display:flex;gap:10px;color:var(--muted)">⌕ ▤</div></div>
+        <div class="body">
+          <div style="display:flex;gap:3px;background:var(--surface);border:1px solid var(--line);
+                      border-radius:12px;padding:3px">
+            <div style="flex:1;text-align:center;padding:7px 0;border-radius:8px;background:var(--line);
+                        font-size:11px;font-weight:600">All</div>
+            <div style="flex:1;text-align:center;padding:7px 0;font-size:11px;color:var(--muted)">Threats</div>
+            <div style="flex:1;text-align:center;padding:7px 0;font-size:11px;color:var(--muted)">Safe</div>
+          </div>
+          <div class="ui-card">
+            <div style="display:flex;align-items:center">
+              <div class="chip" style="background:rgba(255,107,107,.14);color:var(--danger)">✕ Scam</div>
+              <div style="margin-left:auto;font-size:9.5px;color:var(--muted)">2h ago</div></div>
+            <div style="font-size:12px;line-height:1.45;margin-top:9px">URGENT: Your bank account is
+              locked. Verify now at bit.ly/…</div>
+            <div style="font-size:9.5px;color:var(--muted);margin-top:7px">◌ SMS from +91 98765…</div>
+          </div>
+          <div class="ui-card">
+            <div style="display:flex;align-items:center">
+              <div class="chip" style="background:rgba(245,184,73,.14);color:var(--caution)">△ Be careful</div>
+              <div style="margin-left:auto;font-size:9.5px;color:var(--muted)">Yesterday</div></div>
+            <div style="font-size:12px;line-height:1.45;margin-top:9px">Your parcel is held at customs,
+              pay ₹45 to release</div>
+            <div style="font-size:9.5px;color:var(--muted);margin-top:7px">🔗 Link</div>
+          </div>
+          <div class="ui-card">
+            <div style="display:flex;align-items:center">
+              <div class="chip" style="background:rgba(61,214,140,.14);color:var(--safe)">✓ Looks safe</div>
+              <div style="margin-left:auto;font-size:9.5px;color:var(--muted)">3d ago</div></div>
+            <div style="font-size:12px;line-height:1.45;margin-top:9px">Your OTP for HDFC Bank is 448212.
+              Do not share.</div>
+            <div style="font-size:9.5px;color:var(--muted);margin-top:7px">◌ SMS</div>
+          </div>
+        </div>
+      </div>
+      <p class="small" style="margin-top:11px">The message leads. It used to sit third, under a
+      repeated ALL-CAPS verdict word and a coloured icon tile — but the message is what people
+      scan the list looking for.</p>
+    </div>
+
+    <div>
+      <div class="tag a" style="background:rgba(91,157,255,.13);color:var(--primary)">Profile</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="nav"><div class="t">Profile</div></div>
+        <div class="body">
+          <div class="ui-card" style="display:flex;align-items:center;gap:12px">
+            <div style="width:42px;height:42px;border-radius:50%;background:#262B35;flex:none"></div>
+            <div><div style="font-size:14px;font-weight:600">Asha Menon</div>
+                 <div class="ui-sub">asha@example.com</div></div>
+          </div>
+          <div>
+            <div class="ui-label" style="margin-bottom:8px">Protection</div>
+            <div class="ui-card" style="padding:2px 13px">
+              <div class="row"><div class="tile">◉</div><div><div style="font-size:12px;font-weight:600">Threat alerts</div>
+                <div class="ui-sub">Real-time notifications</div></div>
+                <div style="margin-left:auto;width:30px;height:17px;border-radius:9px;background:var(--primary)"></div></div>
+              <div class="hair"></div>
+              <div class="row"><div class="tile">◌</div><div><div style="font-size:12px;font-weight:600">SMS protection</div>
+                <div class="ui-sub">Screen texts as they arrive</div></div>
+                <div style="margin-left:auto;width:30px;height:17px;border-radius:9px;background:var(--line)"></div></div>
+              <div class="hair"></div>
+              <div class="row"><div class="tile">☎</div><div><div style="font-size:12px;font-weight:600">Scam call screening</div>
+                <div class="ui-sub">Warn before you answer</div></div>
+                <div style="margin-left:auto;width:30px;height:17px;border-radius:9px;background:var(--line)"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="ui-label" style="margin-bottom:8px">Account and data</div>
+            <div class="ui-card" style="padding:2px 13px">
+              <div class="row"><div class="tile">◈</div><div><div style="font-size:12px;font-weight:600">Simple Mode</div>
+                <div class="ui-sub">One button, plain language</div></div>
+                <div style="margin-left:auto;width:30px;height:17px;border-radius:9px;background:var(--line)"></div></div>
+              <div class="hair"></div>
+              <div class="row"><div class="tile">🛡</div><div><div style="font-size:12px;font-weight:600">Privacy &amp; data</div>
+                <div class="ui-sub">Export or delete everything</div></div>
+                <div style="margin-left:auto;color:var(--muted)">›</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="small" style="margin-top:11px">“Intelligence Settings” became “Protection”.
+      Every icon tile is neutral, so the switches — the things you came to change — are what
+      the eye lands on.</p>
+    </div>
+  </div>
+  <div class="foot"><span>History &amp; Profile</span><span>07</span></div>
+</div>
+
+<!-- ══════════════ 8 · CHANGE LOG + HONESTY ══════════════ -->
+<div class="page">
+  <div class="eyebrow">Summary</div>
+  <h2 style="margin-top:10px">What changed</h2>
+
+  <table style="margin-top:16px">
+    <tr><th style="width:23%">Area</th><th style="width:38%">Before</th><th>After</th></tr>
+    <tr><td><b>Palette</b></td><td>Navy + neon cyan on everything; glows under every card</td>
+        <td>Neutral charcoal, one calm accent, three reserved verdict colours</td></tr>
+    <tr><td><b>Type</b></td><td>ALL-CAPS + 1.0–1.5px tracking on 19 labels</td>
+        <td>Sentence case throughout; hierarchy from size, weight and colour</td></tr>
+    <tr><td><b>Home</b></td><td>Radar sweep, pulsing CTA, 4 vanity stats, engineering brag banner</td>
+        <td>Scan entry first, one honest status line, labelled tool rows</td></tr>
+    <tr><td><b>Verdict</b></td><td>Coloured word → vendor badge → risk score → advice last</td>
+        <td>Verdict → what to do → detail → score as a footnote</td></tr>
+    <tr><td><b>History</b></td><td>“All Logs (12)”, icon tile + repeated verdict word, message third</td>
+        <td>Message leads, compact verdict chip, source line</td></tr>
+    <tr><td><b>Motion</b></td><td>Permanent pulse + 4s radar loop</td>
+        <td>State-change only, 140/220ms</td></tr>
+    <tr><td><b>Consistency</b></td><td>Every screen hand-rolled its own card</td>
+        <td>Six shared components in <span style="color:#C6CBD4">ui_kit.dart</span></td></tr>
+  </table>
+
+  <div class="rule"></div>
+  <h3 style="margin-bottom:9px">Reach</h3>
+  <p class="small">The token names in <span style="color:#C6CBD4">AppColors</span> were kept
+  deliberately unchanged. Around five hundred references across twenty-odd screens point at
+  them, so re-tuning the values restyles <b style="color:#C6CBD4">the entire app</b> —
+  including the fourteen screens not individually rewritten — without a single call site
+  needing to change. Five screens got the full structural redesign on top: Home, Scan,
+  History, Profile and the navigation bar.</p>
+
+  <div class="rule"></div>
+  <h3 style="margin-bottom:9px">What this document is, honestly</h3>
+  <p class="small">These are design renders built from the same tokens as
+  <span style="color:#C6CBD4">lib/theme.dart</span> — not screenshots of a running build.
+  There is no Flutter SDK in the environment this was produced in, so the Dart could not be
+  compiled or launched here. Every widget API used was checked against the real signatures in
+  the codebase, and every file was verified to have the same structural balance as its
+  committed baseline, but <b style="color:#C6CBD4">running <span style="font-family:monospace">flutter
+  analyze</span> and launching the app on a device is still the step that confirms it.</b></p>
+
+  <div class="rule"></div>
+  <h3 style="margin-bottom:9px">The obvious next move</h3>
+  <p class="small">A light theme. The system is already token-driven, so it is mostly a second
+  <span style="color:#C6CBD4">ThemeData</span> — but the fourteen un-rewritten screens hardcode
+  light-on-dark colours, and flipping the default before those are migrated would leave
+  unreadable text in places nobody would find until a user did. It is a follow-up with a real
+  migration behind it, not a switch to flip.</p>
+
+  <div class="foot"><span>Summary</span><span>08</span></div>
+</div>

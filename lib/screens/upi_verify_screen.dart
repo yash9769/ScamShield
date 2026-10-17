@@ -222,7 +222,7 @@ class _UpiVerifyScreenState extends State<UpiVerifyScreen> {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textSecondary,
-                letterSpacing: 1.1,
+                letterSpacing: 0,
               )),
           const SizedBox(height: 10),
           SelectableText(

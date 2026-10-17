@@ -234,7 +234,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
             const SizedBox(height: 28),
             Reveal(
               delay: Reveal.step(1),
-              child: const Text('DAILY SAFETY PROTOCOLS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              child: const Text('Everyday habits', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
             ),
             const SizedBox(height: 12),
             Reveal(delay: Reveal.step(2), child: _buildProtocolCard(Icons.email_outlined, 'EMAIL INTEGRITY', 'Hover over embedded links to inspect true destination URLs before clicking.', AppColors.primary)),
@@ -246,7 +246,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('SPOT THE SCAM CHALLENGE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+                  const Text('Spot the scam', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
@@ -260,7 +260,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
             const SizedBox(height: 28),
             Reveal(
               delay: Reveal.step(6),
-              child: const Text('INTERACTIVE SECURITY MODULES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+              child: const Text('Learn more', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
             ),
             const SizedBox(height: 12),
             Reveal(delay: Reveal.step(7), child: _buildExploreCard(context, _phishingModule)),
@@ -301,7 +301,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
               Column(
                 children: [
                   Text('${78 + (_score * 4)}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                  const Text('SCORE', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, letterSpacing: 1)),
+                  const Text('score', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, letterSpacing: 0)),
                 ],
               ),
             ],

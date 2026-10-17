@@ -496,7 +496,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         padding: const EdgeInsets.only(bottom: 10, left: 4),
         child: Text(
           title.toUpperCase(),
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0),
         ),
       );
 

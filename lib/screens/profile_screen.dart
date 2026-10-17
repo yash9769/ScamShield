@@ -431,7 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             Reveal(delay: Reveal.step(1), child: _buildSecurityCards()),
             const SizedBox(height: 28),
-            Reveal(delay: Reveal.step(2), child: _buildSectionHeader('Intelligence Settings')),
+            Reveal(delay: Reveal.step(2), child: _buildSectionHeader('Protection')),
             const SizedBox(height: 12),
             Reveal(
               delay: Reveal.step(3),
@@ -494,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ]),
             ),
             const SizedBox(height: 28),
-            Reveal(delay: Reveal.step(4), child: _buildSectionHeader('Account & System')),
+            Reveal(delay: Reveal.step(4), child: _buildSectionHeader('Account and data')),
             const SizedBox(height: 12),
             Reveal(
               delay: Reveal.step(5),
@@ -657,13 +657,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// Section label. Sentence case now — the old version upcased whatever it
+  /// was given and added +1 tracking, which turned "Account & System" into
+  /// "A C C O U N T   &   S Y S T E M".
   Widget _buildSectionHeader(String title) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1),
-      ),
+      child: Text(title, style: AppText.label),
     );
   }
 
@@ -671,10 +671,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.surfaceLight),
       ),
-      child: Column(children: children),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            children[i],
+            // Inset hairline: separates rows without slicing the card edge to
+            // edge. Previously the rows just stacked with no separation at all.
+            if (i != children.length - 1)
+              const Padding(
+                padding: EdgeInsets.only(left: 60, right: AppSpacing.lg),
+                child: Divider(height: 1),
+              ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -690,23 +703,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return ListTile(
       onTap: onTap,
+      // A neutral tile, not a tinted one. Fifteen accent-coloured icons down a
+      // settings list is fifteen things asking to be looked at; the icon is
+      // there to help you find a row you already know the name of.
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
-          color: (isDestructive ? AppColors.danger : AppColors.primary).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          color: isDestructive
+              ? AppColors.danger.withValues(alpha: 0.12)
+              : AppColors.surfaceLight.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        child: Icon(icon, color: isDestructive ? AppColors.danger : AppColors.primary, size: 20),
+        child: Icon(icon,
+            color: isDestructive ? AppColors.danger : AppColors.textPrimary, size: 19),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDestructive ? AppColors.danger : AppColors.textPrimary)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+      title: Text(title,
+          style: AppText.subheading.copyWith(
+              color: isDestructive ? AppColors.danger : AppColors.textPrimary)),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(subtitle, style: AppText.secondary),
+      ),
       trailing: hasSwitch
           ? Switch(
               value: switchValue,
               onChanged: onChanged,
               activeThumbColor: AppColors.primary,
             )
-          : const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+          : const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 22),
     );
   }
 }

@@ -165,7 +165,7 @@ class _TrendsScreenState extends State<TrendsScreen> {
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
-            letterSpacing: 1.1,
+            letterSpacing: 0,
           ),
         ),
       ),
