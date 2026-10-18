@@ -42,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScanRepository _repo = ScanRepository();
   ScanStatistics? _stats;
   List<ScanRecord> _recent = [];
+  bool _isTapped = false;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -79,17 +81,21 @@ class _HomeScreenState extends State<HomeScreen> {
         titleSpacing: AppSpacing.screen,
         title: const Text('ScamShield'),
         actions: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
-                  .then((_) => _loadStats());
-            },
-            child: ValueListenableBuilder<String>(
-              valueListenable: UserProfileService.avatarNotifier,
-              builder: (ctx, avatar, _) => CircleAvatar(
-                radius: 15,
-                backgroundColor: AppColors.surfaceLight,
-                backgroundImage: NetworkImage(avatar),
+          Semantics(
+            label: 'Open profile settings',
+            button: true,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
+                    .then((_) => _loadStats());
+              },
+              child: ValueListenableBuilder<String>(
+                valueListenable: UserProfileService.avatarNotifier,
+                builder: (ctx, avatar, _) => CircleAvatar(
+                  radius: 15,
+                  backgroundColor: AppColors.surfaceLight,
+                  backgroundImage: NetworkImage(avatar),
+                ),
               ),
             ),
           ),
@@ -150,35 +156,67 @@ class _HomeScreenState extends State<HomeScreen> {
           style: AppText.bodyMuted,
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppCard(
-          onTap: () => ScanNowBottomSheet.show(context),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.lg,
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text('Check a message or link', style: AppText.body),
+        StatefulBuilder(
+          builder: (context, setState) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              transformAlignment: Alignment.center,
+              transform: Matrix4.diagonal3Values(_isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0), _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0), 1.0),
+              decoration: BoxDecoration(
+                boxShadow: _isHovered 
+                  ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))]
+                  : null,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: const Text(
-                  'Check',
-                  style: TextStyle(
-                    color: Color(0xFF08121F),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+              child: Semantics(
+                label: 'Scan a message, link, or phone number for scams',
+                button: true,
+                child: MouseRegion(
+                  onEnter: (_) => setState(() => _isHovered = true),
+                  onExit: (_) => setState(() => _isHovered = false),
+                  child: GestureDetector(
+                    onTapDown: (_) => setState(() => _isTapped = true),
+                    onTapUp: (_) => setState(() => _isTapped = false),
+                    onTapCancel: () => setState(() => _isTapped = false),
+                    child: AppCard(
+                      onTap: () => ScanNowBottomSheet.show(context),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg, vertical: AppSpacing.lg,
+                      ),
+                      child: Row(
+                        children: [
+                          AnimatedScale(
+                            duration: const Duration(milliseconds: 150),
+                            scale: _isHovered ? 1.05 : 1.0,
+                            child: const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text('Check a message or link', style: AppText.body),
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: _isHovered ? AppColors.primary.withValues(alpha: 0.9) : AppColors.primary,
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: const Text(
+                              'Check',
+                              style: TextStyle(
+                                color: Color(0xFF08121F),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
@@ -213,47 +251,59 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return AppCard(
-      onTap: _openHistory,
-      child: Row(
-        children: [
-          _stat('$total', total == 1 ? 'message checked' : 'messages checked'),
-          Container(
-            width: 1,
-            height: 34,
-            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            color: AppColors.surfaceLight,
-          ),
-          _stat(
-            '$caught',
-            caught == 1 ? 'threat found' : 'threats found',
-            // The only place a verdict colour appears outside an actual
-            // verdict — and only when the number is non-zero, so it never
-            // colours a reassuring "0".
-            color: caught > 0 ? AppColors.warning : null,
-          ),
-          const Icon(Icons.chevron_right_rounded,
-              color: AppColors.textSecondary, size: 22),
-        ],
+    return Semantics(
+      label: 'View scan history: $total messages checked, $caught threats found',
+      button: true,
+      child: AppCard(
+        onTap: _openHistory,
+        child: Row(
+          children: [
+            _stat('$total', total == 1 ? 'message checked' : 'messages checked'),
+            Container(
+              width: 1,
+              height: 34,
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              color: AppColors.surfaceLight,
+            ),
+            _stat(
+              '$caught',
+              caught == 1 ? 'threat found' : 'threats found',
+              // The only place a verdict colour appears outside an actual
+              // verdict — and only when the number is non-zero, so it never
+              // colours a reassuring "0".
+              color: caught > 0 ? AppColors.warning : null,
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textSecondary, size: 22),
+          ],
+        ),
       ),
     );
   }
 
   Widget _stat(String value, String label, {Color? color}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: AppText.display.copyWith(
-            fontSize: 26,
-            color: color ?? AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: AppText.caption),
-      ],
+    final number = int.tryParse(value) ?? 0;
+    return TweenAnimationBuilder<int>(
+      tween: IntTween(begin: 0, end: number),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOutCubic,
+      builder: (context, current, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$current',
+              style: AppText.display.copyWith(
+                fontSize: 26,
+                color: color ?? AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(label, style: AppText.caption),
+          ],
+        );
+      },
     );
   }
 
@@ -309,8 +359,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return AppListGroup(
-      children: _recent.map(_recentRow).toList(),
-    );
+        children: _recent.asMap().entries.map((entry) => Reveal(
+          delay: Reveal.step(entry.key, stepMs: 35),
+          offsetY: 8,
+          child: _recentRow(entry.value),
+        )).toList(),
+      );
   }
 
   Widget _recentRow(ScanRecord r) {

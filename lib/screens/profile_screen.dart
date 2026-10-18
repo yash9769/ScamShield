@@ -144,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (ctx.mounted) Navigator.pop(ctx);
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Save & Sync', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: const Text('Save & sync', style: TextStyle(color: AppColors.background, fontWeight: FontWeight.w600)),
             ),
           ],
         ),

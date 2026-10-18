@@ -152,11 +152,10 @@ class PushNotificationService {
     );
 
     await _local.show(
-      // Stable per message so a resend replaces rather than stacks.
-      message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch.hashCode,
-      title ?? 'ScamShield alert',
-      body ?? '',
-      details,
+      id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch.hashCode,
+      title: title ?? 'ScamShield alert',
+      body: body ?? '',
+      notificationDetails: details,
     );
   }
 
@@ -165,7 +164,7 @@ class PushNotificationService {
   static Future<void> _ensureChannel() async {
     if (_channelReady) return;
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    await _local.initialize(const InitializationSettings(android: androidSettings));
+    await _local.initialize(settings: const InitializationSettings(android: androidSettings));
     _channelReady = true;
   }
 }

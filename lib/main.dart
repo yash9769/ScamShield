@@ -109,9 +109,9 @@ class _ScamShieldAppState extends State<ScamShieldApp> {
     // broken setting rather than a deliberate one.
     return ValueListenableBuilder<String>(
       valueListenable: LocalizationService.language,
-      builder: (context, _, __) => ValueListenableBuilder<bool>(
+      builder: (context, _, _) => ValueListenableBuilder<bool>(
         valueListenable: SimpleModeService.enabled,
-        builder: (context, simple, __) => MaterialApp(
+        builder: (context, simple, _) => MaterialApp(
           title: 'ScamShield',
           theme: appTheme,
           // Consent and sign-in come first in either mode — Simple Mode

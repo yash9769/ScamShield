@@ -70,7 +70,7 @@ class CommunityReportService {
             body: jsonEncode({
               'indicator_type': type.value,
               'indicator_value': value,
-              if (category != null) 'category': category,
+              'category': ?category,
             }),
           )
           .timeout(_timeout);

@@ -234,19 +234,19 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
             const SizedBox(height: 28),
             Reveal(
               delay: Reveal.step(1),
-              child: const Text('Everyday habits', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+              child: Text('Everyday habits', style: AppText.label),
             ),
             const SizedBox(height: 12),
-            Reveal(delay: Reveal.step(2), child: _buildProtocolCard(Icons.email_outlined, 'EMAIL INTEGRITY', 'Hover over embedded links to inspect true destination URLs before clicking.', AppColors.primary)),
+            Reveal(delay: Reveal.step(2), child: _buildProtocolCard(Icons.email_outlined, 'Email integrity', 'Hover over embedded links to inspect true destination URLs before clicking.', AppColors.primary)),
             const SizedBox(height: 10),
-            Reveal(delay: Reveal.step(3), child: _buildProtocolCard(Icons.phonelink_lock, 'OTP DEFENSE', 'Never share One-Time Passwords (OTP) with anyone claiming to be from customer support.', AppColors.success)),
+            Reveal(delay: Reveal.step(3), child: _buildProtocolCard(Icons.phonelink_lock, 'OTP defense', 'Never share One-Time Passwords (OTP) with anyone claiming to be from customer support.', AppColors.success)),
             const SizedBox(height: 28),
             Reveal(
               delay: Reveal.step(4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Spot the scam', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+                  Text('Spot the scam', style: AppText.label),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
@@ -260,7 +260,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
             const SizedBox(height: 28),
             Reveal(
               delay: Reveal.step(6),
-              child: const Text('Learn more', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+              child: Text('Learn more', style: AppText.label),
             ),
             const SizedBox(height: 12),
             Reveal(delay: Reveal.step(7), child: _buildExploreCard(context, _phishingModule)),

@@ -178,11 +178,11 @@ class _MyDataScreenState extends State<MyDataScreen> {
         children: [
           SizedBox(
             width: 160,
-            child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
+            child: Text(label, style: AppText.caption),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
-          ),
+          child: Text(value, style: AppText.caption.copyWith(fontWeight: FontWeight.w600)),
+        ),
         ],
       ),
     );

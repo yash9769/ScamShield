@@ -316,7 +316,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.black,
         icon: const Icon(Icons.shield_outlined),
-        label: const Text("NEW SCAN", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        label: const Text("New scan", style: TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -403,11 +403,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         AppSpacing.screen, 0, AppSpacing.screen, 96,
       ),
       itemCount: records.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (ctx, index) {
         final r = records[index];
-        final v = verdictStyleFor(r.classification);
-
         final diff = DateTime.now().difference(r.timestamp);
         final timeStr = diff.inMinutes < 1
             ? 'Just now'

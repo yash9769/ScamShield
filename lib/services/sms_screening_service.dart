@@ -194,7 +194,7 @@ class SmsScreeningService {
     if (_notificationsReady) return;
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _notifications.initialize(
-      const InitializationSettings(android: androidSettings),
+      settings: const InitializationSettings(android: androidSettings),
     );
     _notificationsReady = true;
   }
@@ -224,10 +224,10 @@ class SmsScreeningService {
     // record anyone needs to address by a stable id later.
     _notificationSeq = (_notificationSeq + 1) % 100000;
     await _notifications.show(
-      _notificationSeq,
-      '$title$from',
-      result.summary,
-      details,
+      id: _notificationSeq,
+      title: '$title$from',
+      body: result.summary,
+      notificationDetails: details,
     );
   }
 }

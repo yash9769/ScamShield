@@ -140,7 +140,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
             ElevatedButton(
               onPressed: openAppSettings,
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('OPEN SETTINGS', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: const Text('Open settings', style: TextStyle(color: AppColors.background, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
