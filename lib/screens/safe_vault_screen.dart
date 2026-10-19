@@ -21,20 +21,20 @@ class VaultNote {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'content': content,
-        'category': category,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'content': content,
+    'category': category,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory VaultNote.fromJson(Map<String, dynamic> json) => VaultNote(
-        id: json['id'],
-        title: json['title'],
-        content: json['content'],
-        category: json['category'] ?? 'General',
-        createdAt: DateTime.parse(json['createdAt']),
-      );
+    id: json['id'],
+    title: json['title'],
+    content: json['content'],
+    category: json['category'] ?? 'General',
+    createdAt: DateTime.parse(json['createdAt']),
+  );
 }
 
 class SafeVaultScreen extends StatefulWidget {
@@ -74,7 +74,9 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to read from secure vault storage. Decryption failed.'),
+            content: Text(
+              'Failed to read from secure vault storage. Decryption failed.',
+            ),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -95,15 +97,24 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: AppColors.surface,
-            title: const Text('Storage Error', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
+            title: const Text(
+              'Storage Error',
+              style: TextStyle(
+                color: AppColors.danger,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: const Text(
               'Secure storage is unavailable on this device. '
-              'To protect your privacy, this vault item cannot be saved in plaintext.'
+              'To protect your privacy, this vault item cannot be saved in plaintext.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
             ],
           ),
@@ -123,12 +134,20 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
-              Icon(Icons.enhanced_encryption_outlined, color: AppColors.primary),
+              Icon(
+                Icons.enhanced_encryption_outlined,
+                color: AppColors.primary,
+              ),
               SizedBox(width: 8),
-              Text('New Vault Item', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                'New Vault Item',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -138,7 +157,10 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
                 TextField(
                   controller: titleController,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Title / Service Name', hintText: 'e.g. Banking Passcode'),
+                  decoration: const InputDecoration(
+                    labelText: 'Title / Service Name',
+                    hintText: 'e.g. Banking Passcode',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -146,9 +168,12 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
                   dropdownColor: AppColors.surface,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(labelText: 'Category'),
-                  items: ['Passwords', 'Bank PIN', 'Recovery Keys', 'Private Note']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
+                  items:
+                      ['Passwords', 'Bank PIN', 'Recovery Keys', 'Private Note']
+                          .map(
+                            (c) => DropdownMenuItem(value: c, child: Text(c)),
+                          )
+                          .toList(),
                   onChanged: (v) => setDialogState(() => category = v!),
                 ),
                 const SizedBox(height: 12),
@@ -156,7 +181,10 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
                   controller: contentController,
                   maxLines: 3,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Encrypted Content / Key', hintText: 'Stored encrypted on device only'),
+                  decoration: const InputDecoration(
+                    labelText: 'Encrypted Content / Key',
+                    hintText: 'Stored encrypted on device only',
+                  ),
                 ),
               ],
             ),
@@ -164,7 +192,10 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -180,8 +211,16 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Encrypt & Save', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text(
+                'Encrypt & Save',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -219,7 +258,10 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
           children: [
             Icon(Icons.warning_amber_rounded, color: AppColors.danger),
             SizedBox(width: 8),
-            Text('Delete All Vault Items?', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Delete All Vault Items?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Text(
@@ -228,12 +270,21 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text('Delete All', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete All',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -252,17 +303,26 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Encrypted Safe Vault', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text(
+          'Encrypted Safe Vault',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         centerTitle: false,
         actions: [
           IconButton(
-            icon: Icon(_isVisible ? Icons.visibility : Icons.visibility_off, color: AppColors.primary),
+            icon: Icon(
+              _isVisible ? Icons.visibility : Icons.visibility_off,
+              color: AppColors.primary,
+            ),
             onPressed: () => setState(() => _isVisible = !_isVisible),
             tooltip: _isVisible ? 'Hide Content' : 'Show Content',
           ),
           if (_notes.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.danger),
+              icon: const Icon(
+                Icons.delete_sweep_outlined,
+                color: AppColors.danger,
+              ),
               onPressed: _deleteAllNotes,
               tooltip: 'Delete All Vault Items',
             ),
@@ -280,7 +340,10 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.black,
         icon: const Icon(Icons.lock_clock_outlined),
-        label: const Text('NEW VAULT ITEM', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        label: const Text(
+          'NEW VAULT ITEM',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
     );
   }
@@ -294,14 +357,20 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         boxShadow: [
-          BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 16),
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 16,
+          ),
         ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: const Icon(Icons.shield, color: AppColors.primary, size: 28),
           ),
           const SizedBox(width: 14),
@@ -309,12 +378,18 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Device Keystore Storage', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text(
+                  'Device Keystore Storage',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '${_notes.length} item(s) stored via your device\'s secure keystore '
                   '(Android Keystore / iOS Keychain). Never leaves this device.',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -326,7 +401,9 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
 
   Widget _buildVaultBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     if (_notes.isEmpty) {
@@ -338,11 +415,24 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5))),
-                child: const Icon(Icons.lock_clock_outlined, size: 54, color: AppColors.textSecondary),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.lock_clock_outlined,
+                  size: 54,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 20),
-              const Text('Safe Vault Empty', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Safe Vault Empty',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               const Text(
                 'No encrypted keys or credentials stored yet. Tap NEW VAULT ITEM below to secure your first secret.',
@@ -364,91 +454,146 @@ class _SafeVaultScreenState extends State<SafeVaultScreen> {
           delay: Reveal.step(i, stepMs: 45),
           offsetY: 16,
           child: Dismissible(
-          key: Key('note_${note.id}'),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (direction) async {
-            return await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: AppColors.surface,
-                title: const Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-                    SizedBox(width: 8),
-                    Text('Confirm Deletion', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                content: Text('Are you sure you want to permanently delete "${note.title}" from your secure vault?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            key: Key('note_${note.id}'),
+            direction: DismissDirection.endToStart,
+            confirmDismiss: (direction) async {
+              return await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppColors.surface,
+                  title: const Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.warning,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Confirm Deletion',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-                    child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  content: Text(
+                    'Are you sure you want to permanently delete "${note.title}" from your secure vault?',
                   ),
-                ],
-              ),
-            );
-          },
-          onDismissed: (_) => _deleteNote(note),
-          background: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.only(right: 20),
-            alignment: Alignment.centerRight,
-            decoration: BoxDecoration(color: AppColors.danger, borderRadius: BorderRadius.circular(18)),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(note.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                      child: Text(note.category, style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isVisible ? note.content : '••••••••••••••••••••',
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                      ),
+                      child: const Text(
+                        'Delete',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: _isVisible ? 'monospace' : null,
-                          color: _isVisible ? AppColors.textPrimary : AppColors.textSecondary,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.copy, color: AppColors.primary, size: 18),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: note.content));
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied encrypted secret to clipboard.')));
-                      },
-                    ),
                   ],
                 ),
-              ],
+              );
+            },
+            onDismissed: (_) => _deleteNote(note),
+            background: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(right: 20),
+              alignment: Alignment.centerRight,
+              decoration: BoxDecoration(
+                color: AppColors.danger,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        note.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          note.category,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _isVisible ? note.content : '••••••••••••••••••••',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontFamily: _isVisible ? 'monospace' : null,
+                            color: _isVisible
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.copy,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: note.content));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Copied encrypted secret to clipboard.',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         );
       },
     );

@@ -105,13 +105,17 @@ class BreachWatchService {
   /// the interval hasn't elapsed, or the network is unavailable: a failed
   /// lookup must not be reported to the user as "no new breaches", it is
   /// simply "not checked".
-  static Future<List<BreachAlert>> checkForNewBreaches({bool force = false}) async {
+  static Future<List<BreachAlert>> checkForNewBreaches({
+    bool force = false,
+  }) async {
     final watchlist = await _readWatchlist();
     if (watchlist.isEmpty) return const [];
 
     final prefs = await SharedPreferences.getInstance();
     final lastMs = prefs.getInt(_lastCheckedKey) ?? 0;
-    final since = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(lastMs));
+    final since = DateTime.now().difference(
+      DateTime.fromMillisecondsSinceEpoch(lastMs),
+    );
     if (!force && since < _minInterval) return const [];
 
     final alerts = <BreachAlert>[];
@@ -123,11 +127,13 @@ class BreachWatchService {
         anySucceeded = true;
 
         if (result.breachCount > entry.value) {
-          alerts.add(BreachAlert(
-            email: entry.key,
-            previousCount: entry.value,
-            currentCount: result.breachCount,
-          ));
+          alerts.add(
+            BreachAlert(
+              email: entry.key,
+              previousCount: entry.value,
+              currentCount: result.breachCount,
+            ),
+          );
         }
         // Store the new count either way, so a count that goes up by one
         // isn't re-reported on every subsequent launch.
@@ -140,7 +146,10 @@ class BreachWatchService {
 
     if (anySucceeded) {
       await _writeWatchlist(watchlist);
-      await prefs.setInt(_lastCheckedKey, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+        _lastCheckedKey,
+        DateTime.now().millisecondsSinceEpoch,
+      );
     }
 
     return alerts;

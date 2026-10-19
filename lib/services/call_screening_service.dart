@@ -38,8 +38,9 @@ import '../data/repositories/scan_repository.dart';
 class CallScreeningService {
   CallScreeningService._();
 
-  static const MethodChannel _channel =
-      MethodChannel('com.example.scamshield/call_screening');
+  static const MethodChannel _channel = MethodChannel(
+    'com.example.scamshield/call_screening',
+  );
 
   // These keys are read by CallScreeningServiceImpl.kt, which prefixes them
   // with "flutter." — the prefix shared_preferences adds on Android. Renaming
@@ -62,7 +63,9 @@ class CallScreeningService {
   static String get _baseUrl {
     const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://localhost:8000';
   }
 
   /// Android 10+ only. Anything else reports unsupported rather than showing
@@ -202,7 +205,10 @@ class CallScreeningService {
 
       // Manual entries first so a user's own explicit additions survive the
       // cap when history is long.
-      final merged = <String>{...manual, ...fromHistory}.take(_maxBlocklist).toList();
+      final merged = <String>{
+        ...manual,
+        ...fromHistory,
+      }.take(_maxBlocklist).toList();
       await prefs.setString(_blocklistKey, jsonEncode(merged));
     } catch (e) {
       debugPrint('CallScreeningService.refreshBlocklist failed: $e');
@@ -241,8 +247,10 @@ class CallScreeningService {
   /// as +919876543210, 09876543210 or 9876543210 depending on the caller.
   static String normalize(String raw) {
     final digits = raw.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 12 && digits.startsWith('91')) return digits.substring(2);
-    if (digits.length == 11 && digits.startsWith('0')) return digits.substring(1);
+    if (digits.length == 12 && digits.startsWith('91'))
+      return digits.substring(2);
+    if (digits.length == 11 && digits.startsWith('0'))
+      return digits.substring(1);
     return digits;
   }
 

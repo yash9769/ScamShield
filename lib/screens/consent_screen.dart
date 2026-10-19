@@ -44,7 +44,11 @@ class _ConsentScreenState extends State<ConsentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-              const Icon(Icons.privacy_tip_outlined, color: AppColors.primary, size: 42),
+              const Icon(
+                Icons.privacy_tip_outlined,
+                color: AppColors.primary,
+                size: 42,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Before you continue',
@@ -56,21 +60,36 @@ class _ConsentScreenState extends State<ConsentScreen> {
                 'give you a scam/safety verdict, and stores your scan history and account '
                 'locally on this device. Please review how your data is handled before you '
                 'continue.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 16),
               InkWell(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen(showAcceptedVersion: false)),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const PrivacyPolicyScreen(showAcceptedVersion: false),
+                  ),
                 ),
                 child: Row(
                   children: const [
-                    Icon(Icons.article_outlined, color: AppColors.primary, size: 18),
+                    Icon(
+                      Icons.article_outlined,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Read the full Privacy Policy',
-                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -81,7 +100,9 @@ class _ConsentScreenState extends State<ConsentScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,19 +137,28 @@ class _ConsentScreenState extends State<ConsentScreen> {
                   onPressed: _agreed && !_saving ? _continue : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.surfaceLight.withValues(alpha: 0.4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    disabledBackgroundColor: AppColors.surfaceLight.withValues(
+                      alpha: 0.4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: _saving
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
                         )
                       : Text(
                           'I Agree & Continue',
                           style: TextStyle(
-                            color: _agreed ? Colors.black : AppColors.textSecondary,
+                            color: _agreed
+                                ? Colors.black
+                                : AppColors.textSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),

@@ -37,13 +37,22 @@ class _SimLockScreenState extends State<SimLockScreen> {
         info['Security Patch'] = d.version.securityPatch ?? 'Unknown';
         info['Brand'] = d.brand;
         info['Hardware'] = d.hardware;
-        info['Is Physical Device'] = d.isPhysicalDevice ? 'Yes' : 'No (Emulator)';
+        info['Is Physical Device'] = d.isPhysicalDevice
+            ? 'Yes'
+            : 'No (Emulator)';
         try {
           const channel = MethodChannel('com.example.scamshield/security');
-          final nativeRes = await channel.invokeMethod<Map>('checkDeviceIntegrity');
+          final nativeRes = await channel.invokeMethod<Map>(
+            'checkDeviceIntegrity',
+          );
           if (nativeRes != null) {
-            info['Root Status'] = nativeRes['isRooted'] == true ? 'Rooted / Modified' : 'Clean (Not Rooted)';
-            info['Hardware Encryption'] = nativeRes['isHardwareEncrypted'] == true ? 'Active (Verified)' : 'Disabled';
+            info['Root Status'] = nativeRes['isRooted'] == true
+                ? 'Rooted / Modified'
+                : 'Clean (Not Rooted)';
+            info['Hardware Encryption'] =
+                nativeRes['isHardwareEncrypted'] == true
+                ? 'Active (Verified)'
+                : 'Disabled';
           } else {
             info['Root Status'] = 'Not verified';
             info['Hardware Encryption'] = 'Not verified';
@@ -58,7 +67,9 @@ class _SimLockScreenState extends State<SimLockScreen> {
         info['Model'] = d.model;
         info['iOS Version'] = d.systemVersion;
         info['System Name'] = d.systemName;
-        info['Is Physical Device'] = d.isPhysicalDevice ? 'Yes' : 'No (Simulator)';
+        info['Is Physical Device'] = d.isPhysicalDevice
+            ? 'Yes'
+            : 'No (Simulator)';
         info['Root / Jailbreak Status'] = 'Not verified';
         info['Hardware Encryption'] = 'Not verified';
       }
@@ -78,11 +89,16 @@ class _SimLockScreenState extends State<SimLockScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SIM & Device Hardware Guard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text(
+          'SIM & Device Hardware Guard',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         centerTitle: false,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -108,23 +124,40 @@ class _SimLockScreenState extends State<SimLockScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
         boxShadow: [
-          BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 16),
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 16,
+          ),
         ],
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.15), shape: BoxShape.circle),
-            child: const Icon(Icons.sd_card, color: AppColors.primary, size: 36),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.sd_card,
+              color: AppColors.primary,
+              size: 36,
+            ),
           ),
           const SizedBox(height: 14),
-          const Text('SIM Swap & Port Security', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'SIM Swap & Port Security',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 6),
           const Text(
             'Protects your phone number from unauthorized carrier transfer and SMS 2FA interception.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -137,7 +170,9 @@ class _SimLockScreenState extends State<SimLockScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,20 +181,43 @@ class _SimLockScreenState extends State<SimLockScreen> {
             children: [
               Icon(Icons.phone_android, color: AppColors.primary, size: 18),
               SizedBox(width: 8),
-              Text('Device status', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+              Text(
+                'Device status',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          ..._deviceInfo.entries.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(e.key, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                Text(e.value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary)),
-              ],
+          ..._deviceInfo.entries.map(
+            (e) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    e.key,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    e.value,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -178,9 +236,20 @@ class _SimLockScreenState extends State<SimLockScreen> {
         children: const [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.warning,
+                size: 20,
+              ),
               SizedBox(width: 8),
-              Text('SIM SWAP THREAT INDICATORS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.warning)),
+              Text(
+                'SIM SWAP THREAT INDICATORS',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: AppColors.warning,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 10),
@@ -188,7 +257,11 @@ class _SimLockScreenState extends State<SimLockScreen> {
             '• Unexpected "No Service" status when in normal coverage.\n'
             '• Unrequested SMS from your mobile carrier about SIM change.\n'
             '• Sudden loss of mobile data & 2FA SMS messages.',
-            style: TextStyle(fontSize: 12, height: 1.5, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -201,16 +274,30 @@ class _SimLockScreenState extends State<SimLockScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
           Row(
             children: [
-              Icon(Icons.verified_user_outlined, color: AppColors.success, size: 18),
+              Icon(
+                Icons.verified_user_outlined,
+                color: AppColors.success,
+                size: 18,
+              ),
               SizedBox(width: 8),
-              Text('What you can do', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+              Text(
+                'What you can do',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 10),
@@ -218,7 +305,11 @@ class _SimLockScreenState extends State<SimLockScreen> {
             '1. Enable SIM PIN in device security settings.\n'
             '2. Contact your mobile operator and request a Verbal Passcode for porting.\n'
             '3. Migrate 2FA from SMS to Authenticator App or FIDO2 keys.',
-            style: TextStyle(fontSize: 12, height: 1.5, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -237,7 +328,10 @@ class _SimLockScreenState extends State<SimLockScreen> {
           }
         },
         icon: const Icon(Icons.settings, color: Colors.black),
-        label: const Text('OPEN DEVICE SECURITY SETTINGS', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        label: const Text(
+          'OPEN DEVICE SECURITY SETTINGS',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
       ),
     );

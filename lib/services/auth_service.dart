@@ -35,6 +35,7 @@ enum AuthResult {
   noAccount,
   weakPassword,
   invalidEmail,
+
   /// The account on this device was created with Google, so there is no
   /// password to check — the user has to come back through Google.
   useGoogleSignIn,
@@ -73,7 +74,8 @@ class AuthService {
     if (password.length < _minPasswordLength) {
       return 'Password must be at least $_minPasswordLength characters.';
     }
-    if (!password.contains(RegExp(r'[A-Za-z]')) || !password.contains(RegExp(r'[0-9]'))) {
+    if (!password.contains(RegExp(r'[A-Za-z]')) ||
+        !password.contains(RegExp(r'[0-9]'))) {
       return 'Password must contain both letters and numbers.';
     }
     return null;
@@ -98,7 +100,9 @@ class AuthService {
 
   static Uint8List _randomSalt([int length = 16]) {
     final rng = Random.secure();
-    return Uint8List.fromList(List<int>.generate(length, (_) => rng.nextInt(256)));
+    return Uint8List.fromList(
+      List<int>.generate(length, (_) => rng.nextInt(256)),
+    );
   }
 
   /// Length-constant comparison so verification time does not leak how much of
@@ -129,8 +133,8 @@ class AuthService {
 
   static Future<AuthProvider> currentProvider() async =>
       (await _storage.read(key: _providerKey)) == 'google'
-          ? AuthProvider.google
-          : AuthProvider.password;
+      ? AuthProvider.google
+      : AuthProvider.password;
 
   /// Records a completed Google sign-in as the device's account.
   ///

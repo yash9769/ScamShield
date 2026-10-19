@@ -26,8 +26,8 @@ class ScanRepository {
   ScanRepository({
     DatabaseHelper? dbHelper,
     LocalCache<List<ScanRecord>>? cache,
-  })  : _dbHelper = dbHelper ?? DatabaseHelper.instance,
-        _cache = cache ?? _sharedCache;
+  }) : _dbHelper = dbHelper ?? DatabaseHelper.instance,
+       _cache = cache ?? _sharedCache;
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -82,8 +82,7 @@ class ScanRepository {
   // ── Filter ────────────────────────────────────────────────────────────────
 
   /// Returns scans filtered by [classification] ('scam', 'suspicious', 'safe').
-  Future<List<ScanRecord>> filterByClassification(
-      String classification) async {
+  Future<List<ScanRecord>> filterByClassification(String classification) async {
     if (classification == 'all') return loadHistory();
     final db = await _dbHelper.database;
     final maps = await db.query(
@@ -119,8 +118,9 @@ class ScanRepository {
 
   /// Deletes records older than [days] days. Called by auto-delete job.
   Future<int> deleteOlderThan(int days) async {
-    final cutoff =
-        DateTime.now().subtract(Duration(days: days)).toIso8601String();
+    final cutoff = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
     final db = await _dbHelper.database;
     final count = await db.delete(
       DatabaseHelper.tableScanRecords,
@@ -131,7 +131,6 @@ class ScanRepository {
     if (count > 0) DataChangeNotifier.notifyChanged();
     return count;
   }
-
 
   // ── Aliases used by HistoryScreen ─────────────────────────────────────────
 
@@ -148,7 +147,8 @@ class ScanRepository {
     final db = await _dbHelper.database;
 
     final totalResult = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM ${DatabaseHelper.tableScanRecords}');
+      'SELECT COUNT(*) as count FROM ${DatabaseHelper.tableScanRecords}',
+    );
     final total = (totalResult.first['count'] as int?) ?? 0;
 
     if (total == 0) {
@@ -183,7 +183,8 @@ class ScanRepository {
     }
 
     final avgResult = await db.rawQuery(
-        'SELECT AVG(${DatabaseHelper.colRiskScore}) as avg FROM ${DatabaseHelper.tableScanRecords}');
+      'SELECT AVG(${DatabaseHelper.colRiskScore}) as avg FROM ${DatabaseHelper.tableScanRecords}',
+    );
     final avg = (avgResult.first['avg'] as double?) ?? 0.0;
 
     return ScanStatistics(

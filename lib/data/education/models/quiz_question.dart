@@ -17,8 +17,7 @@ class QuizQuestion {
   });
 
   /// Index of the correct option.
-  int get correctIndex =>
-      options.indexWhere((o) => o.isCorrect);
+  int get correctIndex => options.indexWhere((o) => o.isCorrect);
 }
 
 /// A single option within a [QuizQuestion].

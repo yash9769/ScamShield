@@ -82,7 +82,7 @@ class AppColors {
   // distinct icon, so the meaning survives colour blindness and greyscale.
   static const Color success = Color(0xFF3DD68C); // safe
   static const Color warning = Color(0xFFF5B849); // be careful
-  static const Color danger = Color(0xFFFF6B6B);  // scam
+  static const Color danger = Color(0xFFFF6B6B); // scam
 
   // `cardGlow` used to live here — the tint painted under every card to give
   // it a halo. It is gone rather than retuned: nothing referenced it outside
@@ -168,13 +168,16 @@ TextStyle _style(
 /// ("this is a section header") rather than picking a font size by eye.
 class AppText {
   /// Big numbers and verdicts. Used once per screen at most.
-  static TextStyle get display => _style(32, weight: FontWeight.w700, height: 1.12);
+  static TextStyle get display =>
+      _style(32, weight: FontWeight.w700, height: 1.12);
 
   /// Screen titles.
-  static TextStyle get title => _style(24, weight: FontWeight.w700, height: 1.2);
+  static TextStyle get title =>
+      _style(24, weight: FontWeight.w700, height: 1.2);
 
   /// Card and section titles.
-  static TextStyle get heading => _style(19, weight: FontWeight.w600, height: 1.25);
+  static TextStyle get heading =>
+      _style(19, weight: FontWeight.w600, height: 1.25);
 
   /// Row titles, button labels.
   static TextStyle get subheading => _style(16, weight: FontWeight.w600);
@@ -215,8 +218,16 @@ TextTheme _interTextTheme() {
     bodyMedium: _style(15, height: 1.5),
     bodySmall: _style(13, color: AppColors.textSecondary, height: 1.45),
     labelLarge: _style(15, weight: FontWeight.w600),
-    labelMedium: _style(13, weight: FontWeight.w500, color: AppColors.textSecondary),
-    labelSmall: _style(12, weight: FontWeight.w500, color: AppColors.textSecondary),
+    labelMedium: _style(
+      13,
+      weight: FontWeight.w500,
+      color: AppColors.textSecondary,
+    ),
+    labelSmall: _style(
+      12,
+      weight: FontWeight.w500,
+      color: AppColors.textSecondary,
+    ),
   );
 }
 
@@ -271,7 +282,9 @@ ThemeData appTheme = _baseDark.copyWith(
     // Flat. Depth comes from the surface step and a hairline border, not from
     // a drop shadow under every element.
     elevation: 0,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+    ),
   ),
   dividerTheme: const DividerThemeData(
     color: AppColors.surfaceLight,
@@ -305,7 +318,9 @@ ThemeData appTheme = _baseDark.copyWith(
       // 52pt: comfortably past the 48dp floor, because a mis-tap here costs
       // more than it does in most apps.
       minimumSize: const Size.fromHeight(52),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       textStyle: _style(16, weight: FontWeight.w600),
     ),
   ),
@@ -314,7 +329,9 @@ ThemeData appTheme = _baseDark.copyWith(
       foregroundColor: AppColors.textPrimary,
       minimumSize: const Size.fromHeight(52),
       side: const BorderSide(color: AppColors.surfaceLight),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       textStyle: _style(16, weight: FontWeight.w600),
     ),
   ),
@@ -328,12 +345,16 @@ ThemeData appTheme = _baseDark.copyWith(
     backgroundColor: AppColors.surfaceLight,
     contentTextStyle: _style(14),
     behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+    ),
   ),
   dialogTheme: DialogThemeData(
     backgroundColor: AppColors.surface,
     surfaceTintColor: Colors.transparent,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+    ),
     titleTextStyle: _style(19, weight: FontWeight.w600),
     contentTextStyle: _style(15, color: AppColors.textSecondary, height: 1.5),
   ),
@@ -349,6 +370,8 @@ ThemeData appTheme = _baseDark.copyWith(
     selectedColor: AppColors.primary,
     side: const BorderSide(color: AppColors.surfaceLight),
     labelStyle: _style(13, weight: FontWeight.w500),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+    ),
   ),
 );

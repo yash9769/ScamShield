@@ -47,7 +47,9 @@ class ApkAnalyzerService {
     try {
       archive = ZipDecoder().decodeBytes(bytes);
     } catch (e) {
-      throw Exception('Invalid or corrupted APK file. Could not read ZIP archive. Ensure it is a valid APK and not password-protected.');
+      throw Exception(
+        'Invalid or corrupted APK file. Could not read ZIP archive. Ensure it is a valid APK and not password-protected.',
+      );
     }
 
     if (archive.isEmpty) {
@@ -70,8 +72,10 @@ class ApkAnalyzerService {
       }
 
       // b. Certificates
-      if (file.name.startsWith('META-INF/') && 
-          (file.name.endsWith('.RSA') || file.name.endsWith('.DSA') || file.name.endsWith('.SF'))) {
+      if (file.name.startsWith('META-INF/') &&
+          (file.name.endsWith('.RSA') ||
+              file.name.endsWith('.DSA') ||
+              file.name.endsWith('.SF'))) {
         certificates.add(file.name);
         try {
           final certBytes = file.content as List<int>;
@@ -90,7 +94,7 @@ class ApkAnalyzerService {
         try {
           final manifestBytes = file.content as List<int>;
           final manifestStrings = _extractPrintableStrings(manifestBytes);
-          
+
           for (final s in manifestStrings) {
             // Permissions
             final permRegex = RegExp(r'android\.permission\.([A-Z_]+)');
@@ -101,7 +105,9 @@ class ApkAnalyzerService {
               }
             }
             // Approximation for package name (usually com.something.something)
-            if (s.startsWith('com.') && s.split('.').length >= 3 && !s.contains('/')) {
+            if (s.startsWith('com.') &&
+                s.split('.').length >= 3 &&
+                !s.contains('/')) {
               if (!metadata.containsKey('Package')) {
                 metadata['Package'] = s;
               }
@@ -111,27 +117,52 @@ class ApkAnalyzerService {
       }
 
       // d. classes.dex & native libs for URLs and Secrets
-      if (file.name.endsWith('.dex') || file.name.endsWith('.so') || file.name.endsWith('.bin')) {
+      if (file.name.endsWith('.dex') ||
+          file.name.endsWith('.so') ||
+          file.name.endsWith('.bin')) {
         try {
           final contentBytes = file.content as List<int>;
           final strings = _extractPrintableStrings(contentBytes);
-          
+
           // Regexes for URLs and Secrets
-          final urlRegex = RegExp(r'https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[/\w.-]*');
+          final urlRegex = RegExp(
+            r'https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[/\w.-]*',
+          );
           final ignoreDomains = {
-            'developer.android.com', 'github.com', 'w3.org', 'flutter.dev',
-            'apache.org', 'adobe.com', 'apple.com', 'google.com', 'fonts.googleapis.com',
-            'schemas.android.com', 'ns.adobe.com', 'youtrack.jetbrains.com',
-            'kotlinlang.org', 'java.sun.com', 'xmlpull.org', 'play.google.com',
-            'plus.google.com', 'fonts.gstatic.com', 'www.w3.org', 'www.google.com',
+            'developer.android.com',
+            'github.com',
+            'w3.org',
+            'flutter.dev',
+            'apache.org',
+            'adobe.com',
+            'apple.com',
+            'google.com',
+            'fonts.googleapis.com',
+            'schemas.android.com',
+            'ns.adobe.com',
+            'youtrack.jetbrains.com',
+            'kotlinlang.org',
+            'java.sun.com',
+            'xmlpull.org',
+            'play.google.com',
+            'plus.google.com',
+            'fonts.gstatic.com',
+            'www.w3.org',
+            'www.google.com',
           };
-          
+
           final awsKeyRegex = RegExp(r'(AKIA[0-9A-Z]{16})');
           final googleApiKeyRegex = RegExp(r'(AIza[0-9A-Za-z-_]{35})');
-          final stripeKeyRegex = RegExp(r'((?:sk|pk)_(?:test|live)_[0-9a-zA-Z]{24})');
-          final supabaseUrlRegex = RegExp(r'(https://[a-zA-Z0-9-]+\.supabase\.co)');
-          final jwtRegex = RegExp(r'(eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)');
-          
+          final stripeKeyRegex = RegExp(
+            r'((?:sk|pk)_(?:test|live)_[0-9a-zA-Z]{24})',
+          );
+          final supabaseUrlRegex = RegExp(
+            r'(https://[a-zA-Z0-9-]+\.supabase\.co)',
+          );
+          final jwtRegex = RegExp(
+            r'(eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)',
+          );
+
           for (final s in strings) {
             // Check URLs
             final urlMatches = urlRegex.allMatches(s);
@@ -146,18 +177,29 @@ class ApkAnalyzerService {
                 }
               }
             }
-            
+
             // Check Secrets
-            if (awsKeyRegex.hasMatch(s)) secrets.add('AWS Key: ${awsKeyRegex.firstMatch(s)?.group(0)}');
-            if (googleApiKeyRegex.hasMatch(s)) secrets.add('Google API Key: ${googleApiKeyRegex.firstMatch(s)?.group(0)}');
-            if (stripeKeyRegex.hasMatch(s)) secrets.add('Stripe Key: ${stripeKeyRegex.firstMatch(s)?.group(0)}');
-            if (supabaseUrlRegex.hasMatch(s)) secrets.add('Supabase URL: ${supabaseUrlRegex.firstMatch(s)?.group(0)}');
-            if (jwtRegex.hasMatch(s)) secrets.add('JWT Token: ${jwtRegex.firstMatch(s)?.group(0)}');
+            if (awsKeyRegex.hasMatch(s))
+              secrets.add('AWS Key: ${awsKeyRegex.firstMatch(s)?.group(0)}');
+            if (googleApiKeyRegex.hasMatch(s))
+              secrets.add(
+                'Google API Key: ${googleApiKeyRegex.firstMatch(s)?.group(0)}',
+              );
+            if (stripeKeyRegex.hasMatch(s))
+              secrets.add(
+                'Stripe Key: ${stripeKeyRegex.firstMatch(s)?.group(0)}',
+              );
+            if (supabaseUrlRegex.hasMatch(s))
+              secrets.add(
+                'Supabase URL: ${supabaseUrlRegex.firstMatch(s)?.group(0)}',
+              );
+            if (jwtRegex.hasMatch(s))
+              secrets.add('JWT Token: ${jwtRegex.firstMatch(s)?.group(0)}');
             if (s.toLowerCase().contains('bearer ') && s.length > 20) {
-               // Heuristic for hardcoded bearer tokens
-               if (!s.contains(' ') || s.split(' ').length <= 3) {
-                 secrets.add('Possible Bearer Token: $s');
-               }
+              // Heuristic for hardcoded bearer tokens
+              if (!s.contains(' ') || s.split(' ').length <= 3) {
+                secrets.add('Possible Bearer Token: $s');
+              }
             }
           }
         } catch (_) {}
@@ -181,11 +223,11 @@ class ApkAnalyzerService {
   static List<String> _extractPrintableStrings(List<int> bytes) {
     final strings = <String>[];
     final buffer = StringBuffer();
-    
+
     for (int i = 0; i < bytes.length; i++) {
       final b = bytes[i];
       if (b == 0) continue; // Ignore null bytes to merge UTF-16LE characters
-      
+
       // Basic printable ASCII range
       if (b >= 32 && b <= 126) {
         buffer.writeCharCode(b);

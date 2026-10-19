@@ -29,27 +29,37 @@ class _LanguageScreenState extends State<LanguageScreen> {
         children: [
           Text(
             LocalizationService.tr('language_subtitle'),
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.4),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 18),
           ...LocalizationService.supported.asMap().entries.map(
-                (e) => Reveal(
-                  delay: Reveal.step(e.key, stepMs: 45),
-                  child: _buildOption(e.value),
-                ),
-              ),
+            (e) => Reveal(
+              delay: Reveal.step(e.key, stepMs: 45),
+              child: _buildOption(e.value),
+            ),
+          ),
           const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline, color: AppColors.warning, size: 18),
+                const Icon(
+                  Icons.info_outline,
+                  color: AppColors.warning,
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   // Says plainly what is and isn't translated. A user who
@@ -58,7 +68,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   // is broken.
                   child: Text(
                     LocalizationService.tr('language_partial'),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5, height: 1.45),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11.5,
+                      height: 1.45,
+                    ),
                   ),
                 ),
               ],
@@ -100,7 +114,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: selected ? AppColors.primary : AppColors.textPrimary,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
                     ),
                   ),
                   // Skipped for English, where it would just repeat itself.
@@ -108,14 +124,21 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     const SizedBox(height: 2),
                     Text(
                       lang.englishName,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
             if (selected)
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 20,
+              ),
           ],
         ),
       ),

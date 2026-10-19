@@ -97,11 +97,13 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
     }
 
     try {
-      await _repo.saveScan(ScanRecord.fromAnalysisResult(
-        inputText: text,
-        result: result,
-        source: 'Simple Mode',
-      ));
+      await _repo.saveScan(
+        ScanRecord.fromAnalysisResult(
+          inputText: text,
+          result: result,
+          source: 'Simple Mode',
+        ),
+      );
     } catch (_) {}
 
     // Same family relay as the standard app: in this mode especially, the
@@ -211,7 +213,10 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
         style: const TextStyle(fontSize: _bodySize, height: 1.4),
         decoration: const InputDecoration(
           hintText: 'The message goes here',
-          hintStyle: TextStyle(fontSize: _bodySize, color: AppColors.textSecondary),
+          hintStyle: TextStyle(
+            fontSize: _bodySize,
+            color: AppColors.textSecondary,
+          ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(14),
         ),
@@ -252,7 +257,9 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
               onPressed: onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: child,
             )
@@ -260,7 +267,9 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: child,
             ),
@@ -271,30 +280,34 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
     // The verdict, and what to do about it. No score, no percentage, no
     // "confidence" — those are things to think about, and someone mid-scam
     // does not need more to think about.
-    final (Color color, IconData icon, String headline, String advice) =
-        switch (result.classification) {
+    final (
+      Color color,
+      IconData icon,
+      String headline,
+      String advice,
+    ) = switch (result.classification) {
       ScamClassification.scam => (
-          AppColors.danger,
-          Icons.dangerous,
-          'This is a scam',
-          'Do not reply. Do not click any link. Do not send money or share any '
-              'code. It is safe to delete this message.',
-        ),
+        AppColors.danger,
+        Icons.dangerous,
+        'This is a scam',
+        'Do not reply. Do not click any link. Do not send money or share any '
+            'code. It is safe to delete this message.',
+      ),
       ScamClassification.suspicious => (
-          AppColors.warning,
-          Icons.warning_amber_rounded,
-          'Be careful',
-          'This may not be genuine. Do not send money or share any code. If it '
-              'claims to be your bank, hang up and call the number printed on '
-              'your card.',
-        ),
+        AppColors.warning,
+        Icons.warning_amber_rounded,
+        'Be careful',
+        'This may not be genuine. Do not send money or share any code. If it '
+            'claims to be your bank, hang up and call the number printed on '
+            'your card.',
+      ),
       ScamClassification.safe => (
-          AppColors.success,
-          Icons.check_circle,
-          'This looks safe',
-          'Nothing dangerous was found. Still never share a code or password '
-              'with anyone who contacts you first.',
-        ),
+        AppColors.success,
+        Icons.check_circle,
+        'This looks safe',
+        'Nothing dangerous was found. Still never share a code or password '
+            'with anyone who contacts you first.',
+      ),
     };
 
     return Container(

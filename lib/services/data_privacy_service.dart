@@ -69,10 +69,10 @@ class DataPrivacyService {
     ScanRepository? scanRepository,
     PreferencesRepository? preferencesRepository,
     ProgressService? progressService,
-  })  : _scanRepository = scanRepository ?? ScanRepository(),
-        _preferencesRepository =
-            preferencesRepository ?? PreferencesRepository(),
-        _progressService = progressService ?? ProgressService();
+  }) : _scanRepository = scanRepository ?? ScanRepository(),
+       _preferencesRepository =
+           preferencesRepository ?? PreferencesRepository(),
+       _progressService = progressService ?? ProgressService();
 
   final ScanRepository _scanRepository;
   final PreferencesRepository _preferencesRepository;
@@ -96,8 +96,9 @@ class DataPrivacyService {
   /// user-retained saved report and is only removed by an explicit erasure
   /// action ([deleteAllGeneratedReports]) so a report the user meant to keep
   /// is never silently deleted by a background job.
-  Future<int> cleanupStaleTempReports(
-      {Duration maxAge = const Duration(days: 7)}) async {
+  Future<int> cleanupStaleTempReports({
+    Duration maxAge = const Duration(days: 7),
+  }) async {
     try {
       final dir = await getTemporaryDirectory();
       if (!await dir.exists()) return 0;
@@ -184,10 +185,15 @@ class DataPrivacyService {
     // streak is not actually done.
     await _progressService.resetProgress();
     if (CloudAccountService.signedIn.value) {
-      unawaited(CloudAccountService.pushLearningProgress(
-        totalPoints: 0, streakDays: 0, badgesEarned: 0,
-        quizzesPassed: 0, articlesRead: 0,
-      ));
+      unawaited(
+        CloudAccountService.pushLearningProgress(
+          totalPoints: 0,
+          streakDays: 0,
+          badgesEarned: 0,
+          quizzesPassed: 0,
+          articlesRead: 0,
+        ),
+      );
     }
 
     // The local phone-number blocklist call screening uses is partly derived
@@ -220,8 +226,9 @@ class DataPrivacyService {
   /// same way it already resets every other setting to its default.
   Future<AccountDeletionResult> deleteAccountAndAllData() async {
     final hadCloudAccount = CloudAccountService.signedIn.value;
-    final cloudAccountDeleted =
-        hadCloudAccount ? await CloudAccountService.deleteAccount() : true;
+    final cloudAccountDeleted = hadCloudAccount
+        ? await CloudAccountService.deleteAccount()
+        : true;
     await CloudSyncService.resetCursor();
 
     await deleteAllScanAndVaultData();
@@ -243,8 +250,7 @@ class DataPrivacyService {
     UserProfileService.nameNotifier.value = 'Alex Chen';
     UserProfileService.titleNotifier.value =
         'Intelligence Level: Advanced Protector';
-    UserProfileService.avatarNotifier.value =
-        UserProfileService.defaultAvatar;
+    UserProfileService.avatarNotifier.value = UserProfileService.defaultAvatar;
     SettingsService.threatAlerts.value = true;
     SettingsService.autoScanClipboard.value = false;
 
@@ -281,11 +287,13 @@ class DataPrivacyService {
       if (raw != null && raw.isNotEmpty) {
         final decoded = jsonDecode(raw) as List<dynamic>;
         vaultSummary = decoded
-            .map((e) => {
-                  'title': e['title'],
-                  'category': e['category'],
-                  'createdAt': e['createdAt'],
-                })
+            .map(
+              (e) => {
+                'title': e['title'],
+                'category': e['category'],
+                'createdAt': e['createdAt'],
+              },
+            )
             .toList()
             .cast<Map<String, dynamic>>();
       }
@@ -296,22 +304,22 @@ class DataPrivacyService {
       final serverData = await CloudAccountService.exportAccountData();
       cloudAccountSection = {
         'signedIn': true,
-        'note': 'This section covers data held on the ScamShield sync server — a '
+        'note':
+            'This section covers data held on the ScamShield sync server — a '
             'separate, optional account from the one above, created only if you '
             'set up cross-device sync or family protection.',
         if (serverData != null)
           'data': serverData
         else
-          'error': 'Could not reach the server just now to fetch this section. '
+          'error':
+              'Could not reach the server just now to fetch this section. '
               'Try exporting again while online.',
       };
     }
 
     return {
       'exportedAt': DateTime.now().toIso8601String(),
-      'account': {
-        'email': await AuthService.registeredEmail(),
-      },
+      'account': {'email': await AuthService.registeredEmail()},
       'cloudSyncAccount': cloudAccountSection,
       'profile': {
         'name': UserProfileService.nameNotifier.value,
@@ -324,21 +332,24 @@ class DataPrivacyService {
         'autoDeleteDays': prefs.autoDeleteDays,
       },
       'consent': {
-        'privacyPolicyVersionAgreed':
-            prefs.consentVersion.isEmpty ? null : prefs.consentVersion,
+        'privacyPolicyVersionAgreed': prefs.consentVersion.isEmpty
+            ? null
+            : prefs.consentVersion,
         'agreedAt': prefs.consentTimestamp,
         'aiProcessingConsent': prefs.aiProcessingEnabled,
       },
       'scanHistory': scans
-          .map((s) => {
-                'id': s.id,
-                'inputText': s.inputText,
-                'classification': s.classification,
-                'riskScore': s.riskScore,
-                'summary': s.summary,
-                'timestamp': s.timestamp.toIso8601String(),
-                'source': s.source,
-              })
+          .map(
+            (s) => {
+              'id': s.id,
+              'inputText': s.inputText,
+              'classification': s.classification,
+              'riskScore': s.riskScore,
+              'summary': s.summary,
+              'timestamp': s.timestamp.toIso8601String(),
+              'source': s.source,
+            },
+          )
           .toList(),
       'safeVaultItems (titles/categories only — see note)': vaultSummary,
       'learningProgress': {
@@ -352,16 +363,17 @@ class DataPrivacyService {
       },
       'callScreening': {
         'enabled': await CallScreeningService.isEnabled(),
-        'silenceKnownScamCallers': await CallScreeningService.silenceKnownScams(),
-        'onlineReputationLookupEnabled': await CallScreeningService.onlineLookup(),
+        'silenceKnownScamCallers':
+            await CallScreeningService.silenceKnownScams(),
+        'onlineReputationLookupEnabled':
+            await CallScreeningService.onlineLookup(),
         'manuallyAddedNumbers': await CallScreeningService.manualNumbers(),
-        'note': 'The rest of this feature\'s blocklist is computed from your scan '
+        'note':
+            'The rest of this feature\'s blocklist is computed from your scan '
             'history each time it runs, rather than stored separately, so it is '
             'already covered by scanHistory above.',
       },
-      'smsScreening': {
-        'enabled': await SmsScreeningService.isEnabled(),
-      },
+      'smsScreening': {'enabled': await SmsScreeningService.isEnabled()},
     };
   }
 }

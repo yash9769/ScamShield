@@ -172,7 +172,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(
                       'Sign in to keep your scans, vault and\nbreach alerts in one place.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary, height: 1.45),
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: AppColors.textSecondary,
+                        height: 1.45,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -199,7 +203,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: busy ? null : _continueAsGuest,
                       child: const Text(
                         'Continue without an account',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -211,18 +218,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const Text(
                           "Don't have an account?",
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                         TextButton(
                           onPressed: busy
                               ? null
                               : () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const RegisterScreen(),
                                   ),
+                                ),
                           child: const Text(
                             'Create one',
-                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -244,10 +260,18 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.10),
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1.5),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.35),
+            width: 1.5,
+          ),
         ),
         child: ClipOval(
-          child: Image.asset('assets/icon.png', width: 84, height: 84, fit: BoxFit.cover),
+          child: Image.asset(
+            'assets/icon.png',
+            width: 84,
+            height: 84,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -259,7 +283,9 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         children: [
@@ -273,7 +299,11 @@ class _LoginScreenState extends State<LoginScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 14.5),
             decoration: const InputDecoration(
               labelText: 'Email',
-              prefixIcon: Icon(Icons.alternate_email, color: AppColors.primary, size: 20),
+              prefixIcon: Icon(
+                Icons.alternate_email,
+                color: AppColors.primary,
+                size: 20,
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -288,14 +318,21 @@ class _LoginScreenState extends State<LoginScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 14.5),
             decoration: InputDecoration(
               labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary, size: 20),
+              prefixIcon: const Icon(
+                Icons.lock_outline,
+                color: AppColors.primary,
+                size: 20,
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppColors.textSecondary,
                   size: 20,
                 ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
           ),
@@ -307,17 +344,26 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: busy ? null : _login,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: _isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.black),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Colors.black,
+                      ),
                     )
                   : const Text(
                       'Sign in',
-                      style: TextStyle(color: Colors.black, fontSize: 15.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
             ),
           ),

@@ -135,8 +135,10 @@ Route<T> fadeThroughRoute<T>(Widget page) {
     reverseTransitionDuration: const Duration(milliseconds: 320),
     pageBuilder: (_, _, _) => page,
     transitionsBuilder: (_, animation, _, child) {
-      final curved =
-          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
       return FadeTransition(
         opacity: curved,
         child: SlideTransition(
@@ -262,13 +264,15 @@ class _LivePulseState extends State<LivePulse>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: Tween<double>(begin: widget.minOpacity, end: 1.0).animate(
-        CurvedAnimation(parent: _c, curve: Curves.easeInOut),
-      ),
+      opacity: Tween<double>(
+        begin: widget.minOpacity,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut)),
       child: ScaleTransition(
-        scale: Tween<double>(begin: widget.minScale, end: 1.0).animate(
-          CurvedAnimation(parent: _c, curve: Curves.easeInOut),
-        ),
+        scale: Tween<double>(
+          begin: widget.minScale,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut)),
         child: widget.child,
       ),
     );

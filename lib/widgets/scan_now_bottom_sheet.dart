@@ -33,7 +33,10 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
   FileScanResult? _result;
   final ScanRepository _repo = ScanRepository();
 
-  Future<void> _runScan(Future<FileScanResult?> Function() scanner, String label) async {
+  Future<void> _runScan(
+    Future<FileScanResult?> Function() scanner,
+    String label,
+  ) async {
     setState(() {
       _isScanning = true;
       _scanStatus = 'Scanning $label...';
@@ -50,12 +53,16 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(label == 'Clipboard'
-                ? 'Clipboard is empty.'
-                : 'No file selected or permission denied.'),
+            content: Text(
+              label == 'Clipboard'
+                  ? 'Clipboard is empty.'
+                  : 'No file selected or permission denied.',
+            ),
             backgroundColor: AppColors.surface,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         return;
@@ -72,7 +79,9 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
             content: Text('Could not scan: ${result.error}'),
             backgroundColor: AppColors.danger,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         return;
@@ -85,8 +94,8 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
         source: result.source == ScanSource.file
             ? 'File: ${result.fileName}'
             : result.source == ScanSource.image
-                ? 'Image: ${result.fileName}'
-                : 'Clipboard',
+            ? 'Image: ${result.fileName}'
+            : 'Clipboard',
       );
       await _repo.saveScan(record);
       if (!mounted) return;
@@ -111,9 +120,9 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
   /// screen so the user gets the complete multi-section report UI.
   void _openApkScanner() {
     Navigator.of(context).pop(); // close the bottom sheet
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ApkScanScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ApkScanScreen()));
   }
 
   @override
@@ -154,7 +163,10 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                 const SizedBox(height: 16),
                 const CircularProgressIndicator(color: AppColors.primary),
                 const SizedBox(height: 16),
-                Text(_scanStatus, style: const TextStyle(color: AppColors.textSecondary)),
+                Text(
+                  _scanStatus,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
                 const SizedBox(height: 16),
               ] else if (_result != null) ...[
                 _buildResult(_result!),
@@ -164,7 +176,9 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text('Scan Another'),
                 ),
@@ -176,8 +190,10 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                     icon: Icons.folder_open_rounded,
                     color: AppColors.primary,
                     title: 'Scan File',
-                    subtitle: 'Pick a .txt, .pdf, .doc, .csv, or other file from your device',
-                    onTap: () => _runScan(FileScannerService.pickAndScanFile, 'File'),
+                    subtitle:
+                        'Pick a .txt, .pdf, .doc, .csv, or other file from your device',
+                    onTap: () =>
+                        _runScan(FileScannerService.pickAndScanFile, 'File'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -189,7 +205,8 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                     color: AppColors.accent,
                     title: 'Scan Image',
                     subtitle: 'Pick a screenshot or photo from your gallery',
-                    onTap: () => _runScan(FileScannerService.pickAndScanImage, 'Image'),
+                    onTap: () =>
+                        _runScan(FileScannerService.pickAndScanImage, 'Image'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -200,8 +217,10 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                     icon: Icons.content_paste_rounded,
                     color: AppColors.success,
                     title: 'Scan Clipboard',
-                    subtitle: 'Instantly scan whatever text is copied on your clipboard',
-                    onTap: () => _runScan(FileScannerService.scanClipboard, 'Clipboard'),
+                    subtitle:
+                        'Instantly scan whatever text is copied on your clipboard',
+                    onTap: () =>
+                        _runScan(FileScannerService.scanClipboard, 'Clipboard'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -212,7 +231,8 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                     icon: Icons.android_rounded,
                     color: AppColors.warning,
                     title: 'Scan APK / App',
-                    subtitle: 'Deep static analysis of an Android .apk — permissions, secrets, YARA & OSINT',
+                    subtitle:
+                        'Deep static analysis of an Android .apk — permissions, secrets, YARA & OSINT',
                     onTap: _openApkScanner,
                   ),
                 ),
@@ -256,10 +276,21 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -309,17 +340,30 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label,
-                        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(result.fileName,
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 11),
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      result.fileName,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -327,29 +371,49 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                 child: Text(
                   '${analysis.riskScore}',
                   style: TextStyle(
-                      color: color, fontWeight: FontWeight.bold, fontSize: 20),
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(analysis.summary,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
-          
+          Text(
+            analysis.summary,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+
           if (result.apkAnalysis != null) ...[
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
-            const Text('Static Analysis Complete', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Text(
+              'Static Analysis Complete',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.verified_user, color: AppColors.primary, size: 16),
+                const Icon(
+                  Icons.verified_user,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
                 const SizedBox(width: 6),
-                Text('${result.apkAnalysis!.permissions.length} Permissions | ${result.apkAnalysis!.urls.length} Endpoints', 
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  '${result.apkAnalysis!.permissions.length} Permissions | ${result.apkAnalysis!.urls.length} Endpoints',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -359,7 +423,9 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: () async {
                 try {
@@ -383,7 +449,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                 }
               },
             ),
-          ]
+          ],
         ],
       ),
     );

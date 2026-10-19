@@ -6,7 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PermissionService {
-  static const String _permissionsGrantedKey = 'scamshield_all_permissions_granted';
+  static const String _permissionsGrantedKey =
+      'scamshield_all_permissions_granted';
 
   /// Check if permissions have already been requested & granted once.
   static Future<bool> hasGrantedPermissions() async {
@@ -29,7 +30,9 @@ class PermissionService {
           Permission.notification,
         ].request();
 
-        final isGranted = statuses.values.any((s) => s.isGranted || s.isLimited);
+        final isGranted = statuses.values.any(
+          (s) => s.isGranted || s.isLimited,
+        );
         if (isGranted) {
           await prefs.setBool(_permissionsGrantedKey, true);
         }
@@ -40,7 +43,9 @@ class PermissionService {
           Permission.notification,
         ].request();
 
-        final isGranted = statuses.values.any((s) => s.isGranted || s.isLimited);
+        final isGranted = statuses.values.any(
+          (s) => s.isGranted || s.isLimited,
+        );
         if (isGranted) {
           await prefs.setBool(_permissionsGrantedKey, true);
         }

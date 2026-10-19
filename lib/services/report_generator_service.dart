@@ -51,8 +51,9 @@ class _RC {
   static PdfColor forLabel(String label) =>
       _isHigh(label) ? danger : (_isMedium(label) ? warning : success);
 
-  static PdfColor darkForLabel(String label) =>
-      _isHigh(label) ? dangerDark : (_isMedium(label) ? warningDark : successDark);
+  static PdfColor darkForLabel(String label) => _isHigh(label)
+      ? dangerDark
+      : (_isMedium(label) ? warningDark : successDark);
 
   static PdfColor bgForLabel(String label) =>
       _isHigh(label) ? dangerBg : (_isMedium(label) ? warningBg : successBg);
@@ -92,10 +93,18 @@ class _ReportAssets {
   });
 
   static Future<_ReportAssets> load() async {
-    final regular = pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-Regular.ttf'));
-    final medium = pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-Medium.ttf'));
-    final semiBold = pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-SemiBold.ttf'));
-    final bold = pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-Bold.ttf'));
+    final regular = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/Inter-Regular.ttf'),
+    );
+    final medium = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/Inter-Medium.ttf'),
+    );
+    final semiBold = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/Inter-SemiBold.ttf'),
+    );
+    final bold = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/Inter-Bold.ttf'),
+    );
     final logoBytes = await rootBundle.load('assets/icon.png');
     return _ReportAssets(
       theme: pw.ThemeData.withFont(base: regular, bold: bold),
@@ -117,7 +126,10 @@ class ReportGeneratorService {
   }) async {
     final assets = await _ReportAssets.load();
     final label = analysis.classification.name.toUpperCase();
-    final pdf = pw.Document(theme: assets.theme, title: 'ScamShield Report — $fileName');
+    final pdf = pw.Document(
+      theme: assets.theme,
+      title: 'ScamShield Report — $fileName',
+    );
 
     pdf.addPage(
       pw.MultiPage(
@@ -133,7 +145,11 @@ class ReportGeneratorService {
           ),
           pw.SizedBox(height: 22),
           _sectionLabel('EXECUTIVE VERDICT', assets),
-          _verdictHero(label: label, score: analysis.riskScore, summary: analysis.summary),
+          _verdictHero(
+            label: label,
+            score: analysis.riskScore,
+            summary: analysis.summary,
+          ),
           pw.SizedBox(height: 22),
           _sectionLabel('FILE HASHES', assets),
           _kvCard([
@@ -144,8 +160,12 @@ class ReportGeneratorService {
           pw.SizedBox(height: 22),
           _sectionLabel('PACKAGE METADATA', assets),
           apk.metadata.isNotEmpty
-              ? _kvCard(apk.metadata.entries.map((e) => _KV(e.key, e.value)).toList())
-              : _emptyNote('No package metadata extracted (AXML parsing disabled or failed).'),
+              ? _kvCard(
+                  apk.metadata.entries.map((e) => _KV(e.key, e.value)).toList(),
+                )
+              : _emptyNote(
+                  'No package metadata extracted (AXML parsing disabled or failed).',
+                ),
           if (apk.certificates.isNotEmpty) ...[
             pw.SizedBox(height: 14),
             _subLabel('Signer Certificates', assets),
@@ -156,14 +176,26 @@ class ReportGeneratorService {
             pw.SizedBox(height: 14),
             _subLabel('Native Libraries', assets),
             pw.SizedBox(height: 6),
-            pw.Text(apk.nativeLibraries.join(', '), style: const pw.TextStyle(fontSize: 9, color: _RC.textMuted)),
+            pw.Text(
+              apk.nativeLibraries.join(', '),
+              style: const pw.TextStyle(fontSize: 9, color: _RC.textMuted),
+            ),
           ],
           pw.SizedBox(height: 22),
-          _sectionLabel('REQUESTED PERMISSIONS (${apk.permissions.length})', assets),
-          apk.permissions.isEmpty ? _emptyNote('No permissions declared.') : _chipWrap(apk.permissions),
+          _sectionLabel(
+            'REQUESTED PERMISSIONS (${apk.permissions.length})',
+            assets,
+          ),
+          apk.permissions.isEmpty
+              ? _emptyNote('No permissions declared.')
+              : _chipWrap(apk.permissions),
           if (apk.secrets.isNotEmpty) ...[
             pw.SizedBox(height: 22),
-            _sectionLabel('EXPOSED SECRETS (${apk.secrets.length})', assets, accent: _RC.danger),
+            _sectionLabel(
+              'EXPOSED SECRETS (${apk.secrets.length})',
+              assets,
+              accent: _RC.danger,
+            ),
             ...apk.secrets.map((s) => _findingCard(s, _RC.danger)),
           ],
           if (osintResults.isNotEmpty) ...[
@@ -181,7 +213,9 @@ class ReportGeneratorService {
     );
 
     final outputDir = await getApplicationDocumentsDirectory();
-    final file = File('${outputDir.path}/ScamShield_Report_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    final file = File(
+      '${outputDir.path}/ScamShield_Report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
     await file.writeAsBytes(await pdf.save());
     return file;
   }
@@ -196,27 +230,52 @@ class ReportGeneratorService {
 
     final fileInfo = report['file_info'] as Map<String, dynamic>? ?? {};
     final risk = report['risk'] as Map<String, dynamic>? ?? {};
-    final aiExplanation = report['ai_explanation'] as String? ?? 'Analysis complete.';
+    final aiExplanation =
+        report['ai_explanation'] as String? ?? 'Analysis complete.';
 
     final level = (risk['level'] as String? ?? 'UNKNOWN').toUpperCase();
     final score = risk['score'] as int? ?? 0;
-    final riskDetails = (risk['details'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-    final riskBreakdown = (risk['breakdown'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final riskDetails =
+        (risk['details'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    final riskBreakdown =
+        (risk['breakdown'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+        [];
 
     final androguard = report['androguard'] as Map<String, dynamic>? ?? {};
-    final permissions = (androguard['permissions'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final permissions =
+        (androguard['permissions'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
     final dangerousPerms =
-        (androguard['dangerous_permissions'] as List<dynamic>?)?.map((e) => e.toString().toUpperCase()).toSet() ?? {};
+        (androguard['dangerous_permissions'] as List<dynamic>?)
+            ?.map((e) => e.toString().toUpperCase())
+            .toSet() ??
+        {};
     final packageName = androguard['package_name'] as String? ?? 'Unknown';
     final androguardStatus = androguard['status'] as String? ?? 'unavailable';
-    final certificates = (androguard['certificates'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final certificates =
+        (androguard['certificates'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
 
     final secrets = report['secrets'] as Map<String, dynamic>? ?? {};
     final secretsFindings = secrets['findings'] as Map<String, dynamic>? ?? {};
-    final suspiciousUrls = (secrets['suspicious_urls'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final suspiciousUrls =
+        (secrets['suspicious_urls'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
 
     final yara = report['yara'] as Map<String, dynamic>? ?? {};
-    final yaraMatches = (yara['matches'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final yaraMatches =
+        (yara['matches'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
 
     final osint = report['osint'] as Map<String, dynamic>? ?? {};
     final vt = osint['virustotal'] as Map<String, dynamic>? ?? {};
@@ -227,12 +286,16 @@ class ReportGeneratorService {
 
     final sb = osint['safe_browsing'] as Map<String, dynamic>? ?? {};
     final sbChecked = sb['checked'] as bool? ?? false;
-    final sbResults = (sb['results'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final sbResults =
+        (sb['results'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
     final sbFlagged = sbResults.where((r) => r['malicious'] == true).toList();
 
     final scanMode = report['scan_mode'] as String? ?? 'local';
 
-    final pdf = pw.Document(theme: assets.theme, title: 'ScamShield Security Audit — $fileName');
+    final pdf = pw.Document(
+      theme: assets.theme,
+      title: 'ScamShield Security Audit — $fileName',
+    );
 
     pdf.addPage(
       pw.MultiPage(
@@ -258,7 +321,10 @@ class ReportGeneratorService {
           _kvCard([
             _KV('Filename', fileName),
             _KV('Package', packageName),
-            _KV('Size', '${((fileInfo['size'] as num? ?? 0) / 1024 / 1024).toStringAsFixed(2)} MB'),
+            _KV(
+              'Size',
+              '${((fileInfo['size'] as num? ?? 0) / 1024 / 1024).toStringAsFixed(2)} MB',
+            ),
             _KV('MD5', fileInfo['md5']?.toString() ?? 'N/A'),
             _KV('SHA-1', fileInfo['sha1']?.toString() ?? 'N/A'),
             _KV('SHA-256', fileInfo['sha256']?.toString() ?? 'N/A'),
@@ -270,7 +336,9 @@ class ReportGeneratorService {
               ? _emptyNote('No threat patterns found.', color: _RC.success)
               : pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-                  children: riskDetails.map((d) => _findingCard(d, _RC.forLabel(level))).toList(),
+                  children: riskDetails
+                      .map((d) => _findingCard(d, _RC.forLabel(level)))
+                      .toList(),
                 ),
           pw.SizedBox(height: 22),
 
@@ -279,7 +347,10 @@ class ReportGeneratorService {
             _KV('Androguard Status', androguardStatus),
             _KV('Package Name', packageName),
             _KV('Total Permissions', '${permissions.length}'),
-            _KV('Dangerous Permissions', dangerousPerms.isNotEmpty ? dangerousPerms.join(', ') : 'None'),
+            _KV(
+              'Dangerous Permissions',
+              dangerousPerms.isNotEmpty ? dangerousPerms.join(', ') : 'None',
+            ),
           ]),
           if (certificates.isNotEmpty) ...[
             pw.SizedBox(height: 12),
@@ -297,14 +368,23 @@ class ReportGeneratorService {
 
           _sectionLabel('5. YARA ANALYSIS', assets),
           yaraMatches.isEmpty
-              ? _emptyNote('No configured YARA signatures matched.', color: _RC.success)
+              ? _emptyNote(
+                  'No configured YARA signatures matched.',
+                  color: _RC.success,
+                )
               : pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                   children: [
                     pw.Padding(
                       padding: const pw.EdgeInsets.only(bottom: 6),
-                      child: pw.Text('${yaraMatches.length} rule(s) matched — HIGH RISK',
-                          style: pw.TextStyle(color: _RC.dangerDark, fontWeight: pw.FontWeight.bold, fontSize: 10.5)),
+                      child: pw.Text(
+                        '${yaraMatches.length} rule(s) matched — HIGH RISK',
+                        style: pw.TextStyle(
+                          color: _RC.dangerDark,
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 10.5,
+                        ),
+                      ),
                     ),
                     ...yaraMatches.map((m) => _findingCard(m, _RC.danger)),
                   ],
@@ -325,40 +405,59 @@ class ReportGeneratorService {
           !sbChecked
               ? _emptyNote('Not configured — no URLs were checked.')
               : sbResults.isEmpty
-                  ? _emptyNote('No URLs found in APK to check.')
-                  : pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          sbFlagged.isNotEmpty
-                              ? '${sbFlagged.length} URL(s) flagged as dangerous'
-                              : 'All ${sbResults.length} URL(s) checked — clean',
-                          style: pw.TextStyle(
-                            color: sbFlagged.isNotEmpty ? _RC.dangerDark : _RC.successDark,
-                            fontWeight: pw.FontWeight.bold,
-                            fontSize: 10.5,
-                          ),
-                        ),
-                        if (sbFlagged.isNotEmpty) ...[
-                          pw.SizedBox(height: 6),
-                          ...sbFlagged.take(5).map((r) => _monoLine(r['url']?.toString() ?? '', color: _RC.dangerDark)),
-                        ],
-                      ],
+              ? _emptyNote('No URLs found in APK to check.')
+              : pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      sbFlagged.isNotEmpty
+                          ? '${sbFlagged.length} URL(s) flagged as dangerous'
+                          : 'All ${sbResults.length} URL(s) checked — clean',
+                      style: pw.TextStyle(
+                        color: sbFlagged.isNotEmpty
+                            ? _RC.dangerDark
+                            : _RC.successDark,
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10.5,
+                      ),
                     ),
+                    if (sbFlagged.isNotEmpty) ...[
+                      pw.SizedBox(height: 6),
+                      ...sbFlagged
+                          .take(5)
+                          .map(
+                            (r) => _monoLine(
+                              r['url']?.toString() ?? '',
+                              color: _RC.dangerDark,
+                            ),
+                          ),
+                    ],
+                  ],
+                ),
           pw.SizedBox(height: 22),
 
           if (secretsFindings.isNotEmpty || suspiciousUrls.isNotEmpty) ...[
-            _sectionLabel('8. SECRETS & SUSPICIOUS STRINGS', assets, accent: _RC.danger),
+            _sectionLabel(
+              '8. SECRETS & SUSPICIOUS STRINGS',
+              assets,
+              accent: _RC.danger,
+            ),
             if (secretsFindings.isNotEmpty) ...[
               _subLabel('Hardcoded Secrets Found', assets),
               pw.SizedBox(height: 6),
-              _kvCard(secretsFindings.entries.map((e) => _KV(e.key, '${e.value} occurrence(s)')).toList()),
+              _kvCard(
+                secretsFindings.entries
+                    .map((e) => _KV(e.key, '${e.value} occurrence(s)'))
+                    .toList(),
+              ),
             ],
             if (suspiciousUrls.isNotEmpty) ...[
               pw.SizedBox(height: 12),
               _subLabel('Suspicious URLs', assets),
               pw.SizedBox(height: 6),
-              ...suspiciousUrls.take(10).map((u) => _monoLine(u, color: _RC.warningDark)),
+              ...suspiciousUrls
+                  .take(10)
+                  .map((u) => _monoLine(u, color: _RC.warningDark)),
             ],
             pw.SizedBox(height: 22),
           ],
@@ -375,8 +474,8 @@ class ReportGeneratorService {
             level == 'CRITICAL' || level == 'HIGH'
                 ? 'DO NOT install this APK. Multiple high-severity threat indicators were detected. Delete the file immediately.'
                 : level == 'MEDIUM'
-                    ? 'Exercise caution. Install only if you trust the source. Review the flagged permissions before proceeding.'
-                    : 'Low risk detected based on available analysis. Ensure the APK is from an official, trusted source before installing.',
+                ? 'Exercise caution. Install only if you trust the source. Review the flagged permissions before proceeding.'
+                : 'Low risk detected based on available analysis. Ensure the APK is from an official, trusted source before installing.',
           ),
           pw.SizedBox(height: 18),
 
@@ -391,7 +490,9 @@ class ReportGeneratorService {
     );
 
     final output = await getTemporaryDirectory();
-    final file = File('${output.path}/ScamShield_AuditReport_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    final file = File(
+      '${output.path}/ScamShield_AuditReport_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
     await file.writeAsBytes(await pdf.save());
     return file.path;
   }
@@ -406,7 +507,9 @@ class ReportGeneratorService {
   /// ScamShield cannot file on the user's behalf (India's NCRP has no public
   /// filing API), so the last section is the filing checklist and the report
   /// is written to be attached to that filing.
-  static Future<File> generateComplaintReport({required ScanRecord record}) async {
+  static Future<File> generateComplaintReport({
+    required ScanRecord record,
+  }) async {
     final assets = await _ReportAssets.load();
     final label = record.classification.toUpperCase();
     final indicators = extractIndicators(record.inputText);
@@ -440,7 +543,11 @@ class ReportGeneratorService {
           pw.SizedBox(height: 22),
 
           _sectionLabel('2. ASSESSMENT', assets),
-          _verdictHero(label: label, score: record.riskScore, summary: record.summary),
+          _verdictHero(
+            label: label,
+            score: record.riskScore,
+            summary: record.summary,
+          ),
           pw.SizedBox(height: 22),
 
           _sectionLabel('3. MESSAGE CONTENT (VERBATIM)', assets),
@@ -453,17 +560,27 @@ class ReportGeneratorService {
               borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
             ),
             child: pw.Text(
-              record.inputText.isEmpty ? '(no text captured)' : record.inputText,
-              style: pw.TextStyle(fontSize: 9.5, color: _RC.ink, lineSpacing: 2.5),
+              record.inputText.isEmpty
+                  ? '(no text captured)'
+                  : record.inputText,
+              style: pw.TextStyle(
+                fontSize: 9.5,
+                color: _RC.ink,
+                lineSpacing: 2.5,
+              ),
             ),
           ),
           pw.SizedBox(height: 6),
-          _emptyNote('Reproduced exactly as scanned. Do not open any link listed below.'),
+          _emptyNote(
+            'Reproduced exactly as scanned. Do not open any link listed below.',
+          ),
           pw.SizedBox(height: 22),
 
           _sectionLabel('4. EXTRACTED INDICATORS', assets, accent: _RC.danger),
           indicators.isEmpty
-              ? _emptyNote('No links, phone numbers or UPI handles were found in the message text.')
+              ? _emptyNote(
+                  'No links, phone numbers or UPI handles were found in the message text.',
+                )
               : _kvCard(indicators.map((i) => _KV(i.type, i.value)).toList()),
           pw.SizedBox(height: 22),
 
@@ -471,14 +588,26 @@ class ReportGeneratorService {
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
-              _complaintStep(assets, '1',
-                  'Report online at cybercrime.gov.in (India\'s National Cyber Crime Reporting Portal), or call the cybercrime helpline 1930.'),
-              _complaintStep(assets, '2',
-                  'If money was transferred, call your bank immediately and request a transaction freeze — the first hours matter most.'),
-              _complaintStep(assets, '3',
-                  'Attach this PDF along with your own screenshots of the message and any payment receipts.'),
-              _complaintStep(assets, '4',
-                  'Keep the original message on your device until the complaint is registered; do not delete it.'),
+              _complaintStep(
+                assets,
+                '1',
+                'Report online at cybercrime.gov.in (India\'s National Cyber Crime Reporting Portal), or call the cybercrime helpline 1930.',
+              ),
+              _complaintStep(
+                assets,
+                '2',
+                'If money was transferred, call your bank immediately and request a transaction freeze — the first hours matter most.',
+              ),
+              _complaintStep(
+                assets,
+                '3',
+                'Attach this PDF along with your own screenshots of the message and any payment receipts.',
+              ),
+              _complaintStep(
+                assets,
+                '4',
+                'Keep the original message on your device until the complaint is registered; do not delete it.',
+              ),
             ],
           ),
           pw.SizedBox(height: 18),
@@ -519,7 +648,10 @@ class ReportGeneratorService {
       if (seen.add(key)) found.add(ScanIndicator(type, value));
     }
 
-    for (final m in RegExp(r'https?://[^\s<>"]+', caseSensitive: false).allMatches(text)) {
+    for (final m in RegExp(
+      r'https?://[^\s<>"]+',
+      caseSensitive: false,
+    ).allMatches(text)) {
       add('Link', m.group(0)!);
     }
     for (final m in RegExp(r'\b[\w.\-]{2,}@[\w\-]{2,}\b').allMatches(text)) {
@@ -529,7 +661,9 @@ class ReportGeneratorService {
       final domain = value.split('@').last;
       add(domain.contains('.') ? 'Email address' : 'UPI handle', value);
     }
-    for (final m in RegExp(r'(?:\+91[\s-]?|\b0)?[6-9]\d{9}\b').allMatches(text)) {
+    for (final m in RegExp(
+      r'(?:\+91[\s-]?|\b0)?[6-9]\d{9}\b',
+    ).allMatches(text)) {
       add('Phone number', m.group(0)!.trim());
     }
 
@@ -545,7 +679,8 @@ class ReportGeneratorService {
     required String engineLabel,
   }) {
     final now = DateTime.now();
-    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
+    final dateStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     return pw.Container(
       width: double.infinity,
@@ -567,22 +702,47 @@ class ReportGeneratorService {
               pw.SizedBox(width: 12),
               pw.Text(
                 'SCAMSHIELD',
-                style: pw.TextStyle(font: assets.semiBold, fontSize: 10, color: _RC.cyan, letterSpacing: 3),
+                style: pw.TextStyle(
+                  font: assets.semiBold,
+                  fontSize: 10,
+                  color: _RC.cyan,
+                  letterSpacing: 3,
+                ),
               ),
             ],
           ),
           pw.SizedBox(height: 12),
-          pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 20, color: PdfColors.white)),
+          pw.Text(
+            title,
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 20,
+              color: PdfColors.white,
+            ),
+          ),
           pw.SizedBox(height: 8),
-          pw.Text('Target: $target', style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey300)),
-          pw.Text('Generated: $dateStr', style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey300)),
-          pw.Text('Engine: $engineLabel', style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey300)),
+          pw.Text(
+            'Target: $target',
+            style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey300),
+          ),
+          pw.Text(
+            'Generated: $dateStr',
+            style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey300),
+          ),
+          pw.Text(
+            'Engine: $engineLabel',
+            style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey300),
+          ),
         ],
       ),
     );
   }
 
-  static pw.Widget _sectionLabel(String title, _ReportAssets assets, {PdfColor accent = _RC.cyan}) {
+  static pw.Widget _sectionLabel(
+    String title,
+    _ReportAssets assets, {
+    PdfColor accent = _RC.cyan,
+  }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 10),
       child: pw.Row(
@@ -591,7 +751,12 @@ class ReportGeneratorService {
           pw.SizedBox(width: 8),
           pw.Text(
             title,
-            style: pw.TextStyle(font: assets.semiBold, fontSize: 11, color: _RC.ink, letterSpacing: 0.5),
+            style: pw.TextStyle(
+              font: assets.semiBold,
+              fontSize: 11,
+              color: _RC.ink,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),
@@ -599,11 +764,21 @@ class ReportGeneratorService {
   }
 
   static pw.Widget _subLabel(String title, _ReportAssets assets) {
-    return pw.Text(title, style: pw.TextStyle(font: assets.semiBold, fontSize: 10, color: _RC.ink));
+    return pw.Text(
+      title,
+      style: pw.TextStyle(font: assets.semiBold, fontSize: 10, color: _RC.ink),
+    );
   }
 
   static pw.Widget _emptyNote(String text, {PdfColor color = _RC.textMuted}) {
-    return pw.Text(text, style: pw.TextStyle(fontSize: 9.5, color: color, fontStyle: pw.FontStyle.italic));
+    return pw.Text(
+      text,
+      style: pw.TextStyle(
+        fontSize: 9.5,
+        color: color,
+        fontStyle: pw.FontStyle.italic,
+      ),
+    );
   }
 
   static pw.Widget _monoLine(String text, {PdfColor color = _RC.textMuted}) {
@@ -634,16 +809,31 @@ class ReportGeneratorService {
             for (var i = 0; i < data.length; i++)
               pw.Container(
                 color: i.isEven ? PdfColors.white : _RC.rowAlt,
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.SizedBox(
                       width: 130,
-                      child: pw.Text(data[i].label, style: const pw.TextStyle(fontSize: 9, color: _RC.textMuted)),
+                      child: pw.Text(
+                        data[i].label,
+                        style: const pw.TextStyle(
+                          fontSize: 9,
+                          color: _RC.textMuted,
+                        ),
+                      ),
                     ),
                     pw.Expanded(
-                      child: pw.Text(data[i].value, style: const pw.TextStyle(fontSize: 9.5, color: _RC.ink)),
+                      child: pw.Text(
+                        data[i].value,
+                        style: const pw.TextStyle(
+                          fontSize: 9.5,
+                          color: _RC.ink,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -654,18 +844,26 @@ class ReportGeneratorService {
     );
   }
 
-  static pw.Widget _chipWrap(List<String> items, {Set<String> highlight = const {}}) {
+  static pw.Widget _chipWrap(
+    List<String> items, {
+    Set<String> highlight = const {},
+  }) {
     return pw.Wrap(
       spacing: 5,
       runSpacing: 5,
       children: items.map((p) {
         final isDangerous = highlight.any((d) => p.toUpperCase().contains(d));
-        final shortP = p.replaceAll('android.permission.', '').replaceAll('android.', '');
+        final shortP = p
+            .replaceAll('android.permission.', '')
+            .replaceAll('android.', '');
         return pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 3),
           decoration: pw.BoxDecoration(
             color: isDangerous ? _RC.dangerBg : _RC.chipBg,
-            border: pw.Border.all(color: isDangerous ? _RC.danger : _RC.border, width: 0.5),
+            border: pw.Border.all(
+              color: isDangerous ? _RC.danger : _RC.border,
+              width: 0.5,
+            ),
             borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
           ),
           child: pw.Text(
@@ -673,7 +871,9 @@ class ReportGeneratorService {
             style: pw.TextStyle(
               fontSize: 7.5,
               color: isDangerous ? _RC.dangerDark : _RC.textMuted,
-              fontWeight: isDangerous ? pw.FontWeight.bold : pw.FontWeight.normal,
+              fontWeight: isDangerous
+                  ? pw.FontWeight.bold
+                  : pw.FontWeight.normal,
             ),
           ),
         );
@@ -695,7 +895,10 @@ class ReportGeneratorService {
           bottomRight: pw.Radius.circular(4),
         ),
       ),
-      child: pw.Text(text, style: const pw.TextStyle(fontSize: 9.5, color: _RC.ink)),
+      child: pw.Text(
+        text,
+        style: const pw.TextStyle(fontSize: 9.5, color: _RC.ink),
+      ),
     );
   }
 
@@ -719,13 +922,29 @@ class ReportGeneratorService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text(r.label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9.5, color: _RC.ink)),
-              pw.Text('+${r.scoreContribution}',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: color)),
+              pw.Text(
+                r.label,
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9.5,
+                  color: _RC.ink,
+                ),
+              ),
+              pw.Text(
+                '+${r.scoreContribution}',
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                  color: color,
+                ),
+              ),
             ],
           ),
           pw.SizedBox(height: 3),
-          pw.Text(r.description, style: const pw.TextStyle(fontSize: 9, color: _RC.textMuted)),
+          pw.Text(
+            r.description,
+            style: const pw.TextStyle(fontSize: 9, color: _RC.textMuted),
+          ),
         ],
       ),
     );
@@ -734,7 +953,9 @@ class ReportGeneratorService {
   static pw.Widget _osintRow(OsintResult o) {
     // An unreachable provider must not be rendered green: "we could not
     // check" is not the same as "verified clean".
-    final color = o.isMalicious ? _RC.danger : (o.available ? _RC.success : _RC.textFaint);
+    final color = o.isMalicious
+        ? _RC.danger
+        : (o.available ? _RC.success : _RC.textFaint);
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 6),
       child: pw.Row(
@@ -744,17 +965,32 @@ class ReportGeneratorService {
             margin: const pw.EdgeInsets.only(top: 3, right: 7),
             width: 6,
             height: 6,
-            decoration: pw.BoxDecoration(color: color, shape: pw.BoxShape.circle),
+            decoration: pw.BoxDecoration(
+              color: color,
+              shape: pw.BoxShape.circle,
+            ),
           ),
           pw.Expanded(
             child: pw.RichText(
-              text: pw.TextSpan(children: [
-                pw.TextSpan(
-                  text: '${o.provider}: ',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9.5, color: _RC.ink),
-                ),
-                pw.TextSpan(text: o.details, style: const pw.TextStyle(fontSize: 9.5, color: _RC.textMuted)),
-              ]),
+              text: pw.TextSpan(
+                children: [
+                  pw.TextSpan(
+                    text: '${o.provider}: ',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 9.5,
+                      color: _RC.ink,
+                    ),
+                  ),
+                  pw.TextSpan(
+                    text: o.details,
+                    style: const pw.TextStyle(
+                      fontSize: 9.5,
+                      color: _RC.textMuted,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -767,16 +1003,28 @@ class ReportGeneratorService {
       width: double.infinity,
       margin: const pw.EdgeInsets.only(bottom: 6),
       padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(color: _RC.chipBg, borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5))),
+      decoration: pw.BoxDecoration(
+        color: _RC.chipBg,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+      ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
           if (c['subject'] != null)
-            pw.Text('Subject: ${c['subject']}', style: const pw.TextStyle(fontSize: 8.5, color: _RC.ink)),
+            pw.Text(
+              'Subject: ${c['subject']}',
+              style: const pw.TextStyle(fontSize: 8.5, color: _RC.ink),
+            ),
           if (c['issuer'] != null)
-            pw.Text('Issuer: ${c['issuer']}', style: const pw.TextStyle(fontSize: 8.5, color: _RC.textMuted)),
+            pw.Text(
+              'Issuer: ${c['issuer']}',
+              style: const pw.TextStyle(fontSize: 8.5, color: _RC.textMuted),
+            ),
           if (c['sha256'] != null)
-            pw.Text('SHA-256: ${c['sha256']}', style: const pw.TextStyle(fontSize: 7.5, color: _RC.textFaint)),
+            pw.Text(
+              'SHA-256: ${c['sha256']}',
+              style: const pw.TextStyle(fontSize: 7.5, color: _RC.textFaint),
+            ),
         ],
       ),
     );
@@ -812,8 +1060,22 @@ class ReportGeneratorService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 22, color: dark)),
-              pw.Text('$score/100', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 15, color: dark)),
+              pw.Text(
+                label,
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 22,
+                  color: dark,
+                ),
+              ),
+              pw.Text(
+                '$score/100',
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 15,
+                  color: dark,
+                ),
+              ),
             ],
           ),
           pw.SizedBox(height: 10),
@@ -822,13 +1084,22 @@ class ReportGeneratorService {
             verticalRadius: 5,
             child: pw.Row(
               children: [
-                pw.Expanded(flex: filled, child: pw.Container(height: 9, color: color)),
-                pw.Expanded(flex: 100 - filled, child: pw.Container(height: 9, color: PdfColors.white)),
+                pw.Expanded(
+                  flex: filled,
+                  child: pw.Container(height: 9, color: color),
+                ),
+                pw.Expanded(
+                  flex: 100 - filled,
+                  child: pw.Container(height: 9, color: PdfColors.white),
+                ),
               ],
             ),
           ),
           pw.SizedBox(height: 12),
-          pw.Text(summary, style: pw.TextStyle(fontSize: 10, color: _RC.ink, lineSpacing: 3)),
+          pw.Text(
+            summary,
+            style: pw.TextStyle(fontSize: 10, color: _RC.ink, lineSpacing: 3),
+          ),
         ],
       ),
     );
@@ -846,7 +1117,14 @@ class ReportGeneratorService {
         border: pw.Border.all(color: color, width: 1),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
       ),
-      child: pw.Text(text, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10.5, color: dark)),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontWeight: pw.FontWeight.bold,
+          fontSize: 10.5,
+          color: dark,
+        ),
+      ),
     );
   }
 
@@ -860,37 +1138,76 @@ class ReportGeneratorService {
       horizontalRadius: 6,
       verticalRadius: 6,
       child: pw.Table(
-        border: pw.TableBorder.symmetric(inside: const pw.BorderSide(color: _RC.border, width: 0.5)),
-        columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FlexColumnWidth(1)},
+        border: pw.TableBorder.symmetric(
+          inside: const pw.BorderSide(color: _RC.border, width: 0.5),
+        ),
+        columnWidths: const {
+          0: pw.FlexColumnWidth(3),
+          1: pw.FlexColumnWidth(1),
+        },
         children: [
           pw.TableRow(
             decoration: const pw.BoxDecoration(color: _RC.ink),
             children: [
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                child: pw.Text('Factor',
-                    style: pw.TextStyle(font: assets.semiBold, fontSize: 9.5, color: PdfColors.white)),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 7,
+                ),
+                child: pw.Text(
+                  'Factor',
+                  style: pw.TextStyle(
+                    font: assets.semiBold,
+                    fontSize: 9.5,
+                    color: PdfColors.white,
+                  ),
+                ),
               ),
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                child: pw.Text('Points',
-                    style: pw.TextStyle(font: assets.semiBold, fontSize: 9.5, color: PdfColors.white)),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 7,
+                ),
+                child: pw.Text(
+                  'Points',
+                  style: pw.TextStyle(
+                    font: assets.semiBold,
+                    fontSize: 9.5,
+                    color: PdfColors.white,
+                  ),
+                ),
               ),
             ],
           ),
           for (var i = 0; i < items.length; i++)
             pw.TableRow(
-              decoration: pw.BoxDecoration(color: i.isEven ? PdfColors.white : _RC.rowAlt),
+              decoration: pw.BoxDecoration(
+                color: i.isEven ? PdfColors.white : _RC.rowAlt,
+              ),
               children: [
                 pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: pw.Text(items[i]['factor']?.toString() ?? '',
-                      style: const pw.TextStyle(fontSize: 9.5, color: _RC.ink)),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: pw.Text(
+                    items[i]['factor']?.toString() ?? '',
+                    style: const pw.TextStyle(fontSize: 9.5, color: _RC.ink),
+                  ),
                 ),
                 pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: pw.Text('+${items[i]['points']}',
-                      style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: _RC.dangerDark)),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: pw.Text(
+                    '+${items[i]['points']}',
+                    style: pw.TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _RC.dangerDark,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -898,13 +1215,32 @@ class ReportGeneratorService {
             decoration: const pw.BoxDecoration(color: _RC.chipBg),
             children: [
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                child: pw.Text('TOTAL', style: pw.TextStyle(font: assets.semiBold, fontSize: 10, color: _RC.ink)),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 7,
+                ),
+                child: pw.Text(
+                  'TOTAL',
+                  style: pw.TextStyle(
+                    font: assets.semiBold,
+                    fontSize: 10,
+                    color: _RC.ink,
+                  ),
+                ),
               ),
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                child: pw.Text('$score / 100',
-                    style: pw.TextStyle(font: assets.semiBold, fontSize: 10, color: _RC.forLabel(level))),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 7,
+                ),
+                child: pw.Text(
+                  '$score / 100',
+                  style: pw.TextStyle(
+                    font: assets.semiBold,
+                    fontSize: 10,
+                    color: _RC.forLabel(level),
+                  ),
+                ),
               ),
             ],
           ),
@@ -913,7 +1249,11 @@ class ReportGeneratorService {
     );
   }
 
-  static pw.Widget _complaintStep(_ReportAssets assets, String number, String text) {
+  static pw.Widget _complaintStep(
+    _ReportAssets assets,
+    String number,
+    String text,
+  ) {
     return pw.Container(
       width: double.infinity,
       margin: const pw.EdgeInsets.only(bottom: 8),
@@ -925,14 +1265,28 @@ class ReportGeneratorService {
             height: 18,
             alignment: pw.Alignment.center,
             margin: const pw.EdgeInsets.only(right: 10),
-            decoration: const pw.BoxDecoration(color: _RC.cyan, shape: pw.BoxShape.circle),
+            decoration: const pw.BoxDecoration(
+              color: _RC.cyan,
+              shape: pw.BoxShape.circle,
+            ),
             child: pw.Text(
               number,
-              style: pw.TextStyle(font: assets.semiBold, fontSize: 9, color: PdfColors.white),
+              style: pw.TextStyle(
+                font: assets.semiBold,
+                fontSize: 9,
+                color: PdfColors.white,
+              ),
             ),
           ),
           pw.Expanded(
-            child: pw.Text(text, style: pw.TextStyle(fontSize: 9.5, color: _RC.ink, lineSpacing: 2)),
+            child: pw.Text(
+              text,
+              style: pw.TextStyle(
+                fontSize: 9.5,
+                color: _RC.ink,
+                lineSpacing: 2,
+              ),
+            ),
           ),
         ],
       ),
@@ -947,10 +1301,14 @@ class ReportGeneratorService {
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('ScamShield — Confidential Security Report',
-                style: const pw.TextStyle(fontSize: 7.5, color: _RC.textFaint)),
-            pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
-                style: const pw.TextStyle(fontSize: 7.5, color: _RC.textFaint)),
+            pw.Text(
+              'ScamShield — Confidential Security Report',
+              style: const pw.TextStyle(fontSize: 7.5, color: _RC.textFaint),
+            ),
+            pw.Text(
+              'Page ${context.pageNumber} of ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 7.5, color: _RC.textFaint),
+            ),
           ],
         ),
       ],

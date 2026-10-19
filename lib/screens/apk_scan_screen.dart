@@ -64,19 +64,21 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
           final classification = (level == 'CRITICAL' || level == 'HIGH')
               ? 'scam'
               : level == 'MEDIUM'
-                  ? 'suspicious'
-                  : 'safe';
+              ? 'suspicious'
+              : 'safe';
           final summary =
               report['ai_explanation'] ?? 'APK static analysis completed.';
 
-          await ScanRepository().saveScan(ScanRecord(
-            inputText: 'APK: ${_fileName ?? "application.apk"}',
-            classification: classification,
-            riskScore: riskScore,
-            summary: summary,
-            timestamp: DateTime.now(),
-            source: 'APK Scan',
-          ));
+          await ScanRepository().saveScan(
+            ScanRecord(
+              inputText: 'APK: ${_fileName ?? "application.apk"}',
+              classification: classification,
+              riskScore: riskScore,
+              summary: summary,
+              timestamp: DateTime.now(),
+              source: 'APK Scan',
+            ),
+          );
         } catch (_) {}
 
         if (mounted && thisScanId == _scanId) {
@@ -116,15 +118,18 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2.5, color: AppColors.primary),
+                  strokeWidth: 2.5,
+                  color: AppColors.primary,
+                ),
               ),
               SizedBox(width: 16),
               Text(
                 'Static Analysis Pipeline',
                 style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: AppColors.primary),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: AppColors.primary,
+                ),
               ),
             ],
           ),
@@ -170,8 +175,8 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                         color: isCompleted
                             ? Colors.white
                             : (isCurrent
-                                ? AppColors.primary
-                                : AppColors.textSecondary),
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary),
                         fontWeight: isCurrent || isCompleted
                             ? FontWeight.bold
                             : FontWeight.normal,
@@ -201,18 +206,21 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 color: AppColors.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.android, color: AppColors.primary, size: 20),
+              child: const Icon(
+                Icons.android,
+                color: AppColors.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
-            const Text('APK Security Scanner',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            const Text(
+              'APK Security Scanner',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            ),
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _buildBody(),
-      ),
+      body: Padding(padding: const EdgeInsets.all(16.0), child: _buildBody()),
     );
   }
 
@@ -243,10 +251,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       children: [
         _buildPickerCard(),
         const SizedBox(height: 20),
-        if (_isScanning)
-          Expanded(
-            child: Center(child: _buildProgressSteps()),
-          ),
+        if (_isScanning) Expanded(child: Center(child: _buildProgressSteps())),
         if (_error != null && !_isScanning)
           Expanded(
             child: Center(
@@ -257,10 +262,13 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.danger),
                 ),
-                child: Text('Error: $_error',
-                    style: const TextStyle(
-                        color: AppColors.danger,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Error: $_error',
+                  style: const TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),
@@ -275,32 +283,42 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.6),
+        ),
       ),
       child: Column(
         children: [
-          const Icon(Icons.cloud_upload_outlined,
-              color: AppColors.primary, size: 44),
+          const Icon(
+            Icons.cloud_upload_outlined,
+            color: AppColors.primary,
+            size: 44,
+          ),
           const SizedBox(height: 12),
-          const Text('Select Android APK Binary',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Select Android APK Binary',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 6),
           const Text(
-              'Extract permissions, secrets, YARA signatures & OSINT metrics',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            'Extract permissions, secrets, YARA signatures & OSINT metrics',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _isScanning ? null : _pickAndScanApk,
             icon: const Icon(Icons.file_open_outlined, color: Colors.black),
             label: Text(
-                _fileName != null ? 'Select different APK' : 'Choose APK file',
-                style: const TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.w600)),
+              _fileName != null ? 'Select different APK' : 'Choose APK file',
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
         ],
@@ -317,7 +335,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.6),
+        ),
       ),
       child: Row(
         children: [
@@ -327,29 +347,36 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.insert_drive_file_outlined,
-                color: AppColors.primary, size: 20),
+            child: const Icon(
+              Icons.insert_drive_file_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('SCANNED FILE',
-                    style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0)),
+                const Text(
+                  'SCANNED FILE',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   _fileName ?? 'application.apk',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ],
             ),
@@ -358,11 +385,14 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
           TextButton.icon(
             onPressed: _isScanning ? null : _pickAndScanApk,
             icon: const Icon(Icons.refresh, size: 16, color: AppColors.primary),
-            label: const Text('New scan',
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13)),
+            label: const Text(
+              'New scan',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
           ),
         ],
       ),
@@ -377,16 +407,22 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     final level = risk['level'] as String? ?? 'UNKNOWN';
     final score = risk['score'] as int? ?? 0;
     final riskDetails =
-        (risk['details'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-    final riskBreakdown =
-        (risk['breakdown'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
-
-    final androguard = report['androguard'] as Map<String, dynamic>? ?? {};
-    final permissions = (androguard['permissions'] as List<dynamic>?)
+        (risk['details'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         [];
-    final dangerousPermissions = (androguard['dangerous_permissions'] as List<dynamic>?)
+    final riskBreakdown =
+        (risk['breakdown'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+        [];
+
+    final androguard = report['androguard'] as Map<String, dynamic>? ?? {};
+    final permissions =
+        (androguard['permissions'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    final dangerousPermissions =
+        (androguard['dangerous_permissions'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toSet() ??
         {};
@@ -396,20 +432,29 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
 
     final secrets = report['secrets'] as Map<String, dynamic>? ?? {};
     final secretsFindings = secrets['findings'] as Map<String, dynamic>? ?? {};
-    final urls = (secrets['urls'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-    final suspiciousUrls = (secrets['suspicious_urls'] as List<dynamic>?)
+    final urls =
+        (secrets['urls'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    final suspiciousUrls =
+        (secrets['suspicious_urls'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         [];
 
     final yara = report['yara'] as Map<String, dynamic>? ?? {};
     final yaraMatches =
-        (yara['matches'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        (yara['matches'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
 
     final osint = report['osint'] as Map<String, dynamic>? ?? {};
     final vt = osint['virustotal'] as Map<String, dynamic>? ?? {};
     final sb = osint['safe_browsing'] as Map<String, dynamic>? ?? {};
-    final sbResults = (sb['results'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final sbResults =
+        (sb['results'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
 
     final fileInfo = report['file_info'] as Map<String, dynamic>? ?? {};
     final scanMode = report['scan_mode'] as String? ?? 'local';
@@ -432,7 +477,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         if (riskDetails.isNotEmpty) ...[
           _buildSectionHeader('SECURITY FINDINGS', Icons.security),
           const SizedBox(height: 8),
-          ...riskDetails.map((finding) => _buildFindingCard(finding, levelColor)),
+          ...riskDetails.map(
+            (finding) => _buildFindingCard(finding, levelColor),
+          ),
           const SizedBox(height: 20),
         ],
 
@@ -458,7 +505,12 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         _buildSectionHeader('Android analysis', Icons.android),
         const SizedBox(height: 8),
         _buildAndroidCard(
-            packageName, androguardStatus, permissions, dangerousPermissions, certificates),
+          packageName,
+          androguardStatus,
+          permissions,
+          dangerousPermissions,
+          certificates,
+        ),
         const SizedBox(height: 20),
 
         // ── 7. Secrets & suspicious strings ──────────────────────────────
@@ -476,8 +528,10 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
           _buildHashRow('MD5', fileInfo['md5']?.toString() ?? 'N/A'),
           _buildHashRow('SHA-1', fileInfo['sha1']?.toString() ?? 'N/A'),
           _buildHashRow('SHA-256', fileInfo['sha256']?.toString() ?? 'N/A'),
-          _buildInfoRow('Size',
-              '${((fileInfo['size'] as num? ?? 0) / 1024 / 1024).toStringAsFixed(2)} MB'),
+          _buildInfoRow(
+            'Size',
+            '${((fileInfo['size'] as num? ?? 0) / 1024 / 1024).toStringAsFixed(2)} MB',
+          ),
         ]),
         const SizedBox(height: 20),
 
@@ -497,19 +551,26 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             onPressed: () async {
               try {
                 final pdfPath = await ReportGeneratorService.generatePdf(
-                    report,
-                    fileName: _fileName ?? 'scan.apk');
+                  report,
+                  fileName: _fileName ?? 'scan.apk',
+                );
                 await OpenFilex.open(pdfPath);
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Export failed: $e')));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
                 }
               }
             },
             icon: const Icon(Icons.picture_as_pdf, color: Colors.black),
-            label: const Text('EXPORT SECURITY AUDIT PDF',
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'EXPORT SECURITY AUDIT PDF',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
           ),
         ),
@@ -520,8 +581,13 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
 
   // ── Section Builders ───────────────────────────────────────────────────────
 
-  Widget _buildVerdictCard(String level, int score, Color levelColor,
-      List<String> riskDetails, String scanMode) {
+  Widget _buildVerdictCard(
+    String level,
+    int score,
+    Color levelColor,
+    List<String> riskDetails,
+    String scanMode,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -538,23 +604,30 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('RISK LEVEL: $level',
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: levelColor)),
+                  Text(
+                    'RISK LEVEL: $level',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: levelColor,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('Score: $score / 100',
-                      style: const TextStyle(
-                          fontSize: 16, color: AppColors.textPrimary)),
+                  Text(
+                    'Score: $score / 100',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
               Icon(
                 level == 'LOW'
                     ? Icons.verified_user
                     : level == 'MEDIUM'
-                        ? Icons.warning_amber_rounded
-                        : Icons.dangerous_outlined,
+                    ? Icons.warning_amber_rounded
+                    : Icons.dangerous_outlined,
                 color: levelColor,
                 size: 48,
               ),
@@ -564,29 +637,40 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             const SizedBox(height: 12),
             const Divider(color: Colors.white24),
             const SizedBox(height: 8),
-            const Text('Why this score?',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: AppColors.textSecondary)),
+            const Text(
+              'Why this score?',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 6),
             ...riskDetails
                 .take(3)
-                .map((d) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('• ',
-                              style: TextStyle(color: AppColors.textSecondary)),
-                          Expanded(
-                              child: Text(d,
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textPrimary))),
-                        ],
-                      ),
-                    )),
+                .map(
+                  (d) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '• ',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                        Expanded(
+                          child: Text(
+                            d,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
           ],
           const SizedBox(height: 8),
           Container(
@@ -596,9 +680,13 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              scanMode == 'server' ? '🛡 Full Server Analysis' : '📱 On-Device Analysis',
-              style:
-                  const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              scanMode == 'server'
+                  ? '🛡 Full Server Analysis'
+                  : '📱 On-Device Analysis',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -621,8 +709,11 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
           Icon(Icons.warning_amber_rounded, color: levelColor, size: 18),
           const SizedBox(width: 10),
           Expanded(
-              child: Text(finding,
-                  style: const TextStyle(fontSize: 13, height: 1.4))),
+            child: Text(
+              finding,
+              style: const TextStyle(fontSize: 13, height: 1.4),
+            ),
+          ),
         ],
       ),
     );
@@ -657,11 +748,14 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         children: [
           Icon(statusIcon, color: statusColor, size: 20),
           const SizedBox(width: 8),
-          Text(statusText,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: statusColor,
-                  fontSize: 14)),
+          Text(
+            statusText,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: statusColor,
+              fontSize: 14,
+            ),
+          ),
         ],
       ),
       const SizedBox(height: 8),
@@ -674,7 +768,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
   }
 
   Widget _buildSafeBrowsingCard(
-      Map<String, dynamic> sb, List<Map<String, dynamic>> results) {
+    Map<String, dynamic> sb,
+    List<Map<String, dynamic>> results,
+  ) {
     final checked = sb['checked'] as bool? ?? false;
 
     if (!checked) {
@@ -684,8 +780,11 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.cloud_off_outlined,
-                color: AppColors.textSecondary, size: 18),
+            const Icon(
+              Icons.cloud_off_outlined,
+              color: AppColors.textSecondary,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -694,7 +793,10 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                         ? 'No URLs were extracted from this APK, so there was nothing to check.'
                         : '$urlsFound URL(s) extracted. Reconnect to the ScamShield backend to screen them live.'),
                 style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
               ),
             ),
           ],
@@ -708,7 +810,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       Row(
         children: [
           Icon(
-            flagged.isNotEmpty ? Icons.dangerous_outlined : Icons.check_circle_outline,
+            flagged.isNotEmpty
+                ? Icons.dangerous_outlined
+                : Icons.check_circle_outline,
             color: flagged.isNotEmpty ? AppColors.danger : AppColors.success,
             size: 20,
           ),
@@ -718,34 +822,45 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 ? '${flagged.length} URL(s) flagged as dangerous'
                 : 'All ${results.length} checked URL(s) clean',
             style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: flagged.isNotEmpty ? AppColors.danger : AppColors.success,
-                fontSize: 14),
+              fontWeight: FontWeight.bold,
+              color: flagged.isNotEmpty ? AppColors.danger : AppColors.success,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
       if (flagged.isNotEmpty) ...[
         const SizedBox(height: 8),
-        const Text('Flagged URLs:',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: AppColors.danger)),
+        const Text(
+          'Flagged URLs:',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: AppColors.danger,
+          ),
+        ),
         const SizedBox(height: 4),
-        ...flagged.take(5).map((r) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: SelectableText(
-                r['url']?.toString() ?? '',
-                style: const TextStyle(
+        ...flagged
+            .take(5)
+            .map(
+              (r) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: SelectableText(
+                  r['url']?.toString() ?? '',
+                  style: const TextStyle(
                     fontSize: 10,
                     color: AppColors.danger,
-                    fontFamily: 'monospace'),
+                    fontFamily: 'monospace',
+                  ),
+                ),
               ),
-            )),
+            ),
       ],
       if (results.isEmpty)
-        const Text('No URLs found in APK to check.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        const Text(
+          'No URLs found in APK to check.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
     ]);
   }
 
@@ -754,11 +869,16 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       return _buildInfoCard([
         const Row(
           children: [
-            Icon(Icons.check_circle_outline,
-                color: AppColors.success, size: 18),
+            Icon(
+              Icons.check_circle_outline,
+              color: AppColors.success,
+              size: 18,
+            ),
             SizedBox(width: 8),
-            Text('No configured YARA signatures matched.',
-                style: TextStyle(color: AppColors.success, fontSize: 13)),
+            Text(
+              'No configured YARA signatures matched.',
+              style: TextStyle(color: AppColors.success, fontSize: 13),
+            ),
           ],
         ),
       ]);
@@ -767,53 +887,74 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     return _buildInfoCard([
       Row(
         children: [
-          const Icon(Icons.dangerous_outlined, color: AppColors.danger, size: 18),
+          const Icon(
+            Icons.dangerous_outlined,
+            color: AppColors.danger,
+            size: 18,
+          ),
           const SizedBox(width: 8),
-          Text('${matches.length} rule(s) matched — HIGH RISK',
-              style: const TextStyle(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
+          Text(
+            '${matches.length} rule(s) matched — HIGH RISK',
+            style: const TextStyle(
+              color: AppColors.danger,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
       const SizedBox(height: 8),
-      ...matches.map((m) => Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+      ...matches.map(
+        (m) => Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.danger.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+          ),
+          child: Text(
+            m,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.danger,
+              fontSize: 13,
             ),
-            child: Text(m,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.danger,
-                    fontSize: 13)),
-          )),
+          ),
+        ),
+      ),
     ]);
   }
 
   Widget _buildAndroidCard(
-      String packageName,
-      String status,
-      List<String> permissions,
-      Set<String> dangerousPerms,
-      List<dynamic> certificates) {
+    String packageName,
+    String status,
+    List<String> permissions,
+    Set<String> dangerousPerms,
+    List<dynamic> certificates,
+  ) {
     final isStatusOk = status == 'success';
 
     return _buildInfoCard([
       _buildInfoRow('Package', packageName),
-      _buildInfoRow('Androguard', isStatusOk ? '✓ Analysis complete' : '⚠ $status'),
       _buildInfoRow(
-          'Permissions', '${permissions.length} total, ${dangerousPerms.length} dangerous'),
+        'Androguard',
+        isStatusOk ? '✓ Analysis complete' : '⚠ $status',
+      ),
+      _buildInfoRow(
+        'Permissions',
+        '${permissions.length} total, ${dangerousPerms.length} dangerous',
+      ),
       if (certificates.isNotEmpty) ...[
         const SizedBox(height: 8),
-        const Text('Certificate(s):',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: AppColors.textSecondary)),
+        const Text(
+          'Certificate(s):',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 4),
         ...(certificates.take(3)).map((cert) {
           final c = cert as Map<String, dynamic>? ?? {};
@@ -828,35 +969,51 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (c['subject'] != null)
-                  Text('Subject: ${c['subject']}',
-                      style: const TextStyle(
-                          fontSize: 10, color: AppColors.textPrimary)),
+                  Text(
+                    'Subject: ${c['subject']}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 if (c['issuer'] != null)
-                  Text('Issuer: ${c['issuer']}',
-                      style: const TextStyle(
-                          fontSize: 10, color: AppColors.textSecondary)),
+                  Text(
+                    'Issuer: ${c['issuer']}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 if (c['sha256'] != null)
-                  SelectableText('SHA-256: ${c['sha256']}',
-                      style: const TextStyle(
-                          fontSize: 9,
-                          fontFamily: 'monospace',
-                          color: AppColors.textSecondary)),
+                  SelectableText(
+                    'SHA-256: ${c['sha256']}',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontFamily: 'monospace',
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
               ],
             ),
           );
         }),
       ] else ...[
         const SizedBox(height: 4),
-        const Text('No certificate data extracted.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        const Text(
+          'No certificate data extracted.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
       ],
       if (permissions.isNotEmpty) ...[
         const SizedBox(height: 12),
-        const Text('Permissions:',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: AppColors.textSecondary)),
+        const Text(
+          'Permissions:',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 6),
         Wrap(
           spacing: 6,
@@ -865,7 +1022,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
             final shortP = p
                 .replaceAll('android.permission.', '')
                 .replaceAll('android.', '');
-            final isDangerous = dangerousPerms.any((d) => p.toUpperCase().contains(d));
+            final isDangerous = dangerousPerms.any(
+              (d) => p.toUpperCase().contains(d),
+            );
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -874,16 +1033,18 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                     : AppColors.surfaceLight.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                    color: isDangerous
-                        ? AppColors.danger.withValues(alpha: 0.5)
-                        : Colors.transparent),
+                  color: isDangerous
+                      ? AppColors.danger.withValues(alpha: 0.5)
+                      : Colors.transparent,
+                ),
               ),
               child: Text(
                 shortP,
                 style: TextStyle(
-                    fontSize: 10,
-                    color: isDangerous ? AppColors.danger : AppColors.textPrimary,
-                    fontWeight: isDangerous ? FontWeight.bold : FontWeight.normal),
+                  fontSize: 10,
+                  color: isDangerous ? AppColors.danger : AppColors.textPrimary,
+                  fontWeight: isDangerous ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             );
           }).toList(),
@@ -891,51 +1052,76 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         if (permissions.length > 30)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text('+${permissions.length - 30} more permissions',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 11)),
+            child: Text(
+              '+${permissions.length - 30} more permissions',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
           ),
       ],
     ]);
   }
 
-  Widget _buildSecretsCard(Map<String, dynamic> findings,
-      List<String> suspiciousUrls, List<String> allUrls) {
+  Widget _buildSecretsCard(
+    Map<String, dynamic> findings,
+    List<String> suspiciousUrls,
+    List<String> allUrls,
+  ) {
     return _buildInfoCard([
       if (findings.isNotEmpty) ...[
         Row(
           children: [
             const Icon(Icons.vpn_key, color: AppColors.danger, size: 18),
             const SizedBox(width: 8),
-            Text('${findings.length} secret type(s) found',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.danger,
-                    fontSize: 13)),
+            Text(
+              '${findings.length} secret type(s) found',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.danger,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
-        ...findings.entries.map((e) => _buildInfoRow(e.key, '${e.value} occurrence(s)')),
+        ...findings.entries.map(
+          (e) => _buildInfoRow(e.key, '${e.value} occurrence(s)'),
+        ),
       ],
       if (suspiciousUrls.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Text('${suspiciousUrls.length} suspicious URL(s):',
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.warning,
-                fontSize: 12)),
+        Text(
+          '${suspiciousUrls.length} suspicious URL(s):',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.warning,
+            fontSize: 12,
+          ),
+        ),
         const SizedBox(height: 4),
-        ...suspiciousUrls.take(5).map((u) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: SelectableText(u,
+        ...suspiciousUrls
+            .take(5)
+            .map(
+              (u) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: SelectableText(
+                  u,
                   style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.warning,
-                      fontFamily: 'monospace')),
-            )),
+                    fontSize: 10,
+                    color: AppColors.warning,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ),
       ],
       if (allUrls.isNotEmpty && suspiciousUrls.isEmpty)
-        _buildInfoRow('URLs extracted', '${allUrls.length} (none flagged suspicious)'),
+        _buildInfoRow(
+          'URLs extracted',
+          '${allUrls.length} (none flagged suspicious)',
+        ),
     ]);
   }
 
@@ -963,14 +1149,22 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                      child: Text(factor,
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.textPrimary))),
-                  Text('+$pts pts',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: barColor,
-                          fontSize: 12)),
+                    child: Text(
+                      factor,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '+$pts pts',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: barColor,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -991,13 +1185,18 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('TOTAL RISK SCORE',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text('$total / 100',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppColors.primary)),
+          const Text(
+            'TOTAL RISK SCORE',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          Text(
+            '$total / 100',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: AppColors.primary,
+            ),
+          ),
         ],
       ),
     ]);
@@ -1022,7 +1221,9 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1038,16 +1239,25 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-              width: 80,
-              child: Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold))),
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           Expanded(
-              child: Text(value,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textPrimary))),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1060,27 +1270,33 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-              width: 60,
-              child: Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold))),
+            width: 60,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           Expanded(
             child: GestureDetector(
               onLongPress: () {
                 Clipboard.setData(ClipboardData(text: value));
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('$label copied to clipboard')));
+                    SnackBar(content: Text('$label copied to clipboard')),
+                  );
                 }
               },
               child: SelectableText(
                 value,
                 style: const TextStyle(
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                    color: AppColors.textPrimary),
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
           ),

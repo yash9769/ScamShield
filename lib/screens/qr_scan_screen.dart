@@ -62,7 +62,10 @@ class _QrScanScreenState extends State<QrScanScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('Scan QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Scan QR Code',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           if (!_checkingPermission && !_permissionDenied)
             IconButton(
@@ -70,7 +73,9 @@ class _QrScanScreenState extends State<QrScanScreen> {
                 valueListenable: _controller,
                 builder: (context, state, child) {
                   return Icon(
-                    state.torchState == TorchState.on ? Icons.flash_on : Icons.flash_off,
+                    state.torchState == TorchState.on
+                        ? Icons.flash_on
+                        : Icons.flash_off,
                     color: Colors.white,
                   );
                 },
@@ -80,10 +85,12 @@ class _QrScanScreenState extends State<QrScanScreen> {
         ],
       ),
       body: _checkingPermission
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : _permissionDenied
-              ? _buildPermissionDenied()
-              : _buildScanner(),
+          ? _buildPermissionDenied()
+          : _buildScanner(),
     );
   }
 
@@ -115,7 +122,11 @@ class _QrScanScreenState extends State<QrScanScreen> {
             'or codes shared in messages. We\'ll scan it for scam signals '
             'before you open or pay anything.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
         ),
       ],
@@ -129,18 +140,34 @@ class _QrScanScreenState extends State<QrScanScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.camera_alt_outlined, color: Colors.white54, size: 56),
+            const Icon(
+              Icons.camera_alt_outlined,
+              color: Colors.white54,
+              size: 56,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Camera access is needed to scan QR codes.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: openAppSettings,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Open settings', style: TextStyle(color: AppColors.background, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text(
+                'Open settings',
+                style: TextStyle(
+                  color: AppColors.background,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),

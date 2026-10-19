@@ -44,10 +44,10 @@ enum VerdictAgreement {
 
 extension VerdictAgreementWire on VerdictAgreement {
   String get wireValue => switch (this) {
-        VerdictAgreement.correct => 'correct',
-        VerdictAgreement.falsePositive => 'false_positive',
-        VerdictAgreement.missed => 'missed',
-      };
+    VerdictAgreement.correct => 'correct',
+    VerdictAgreement.falsePositive => 'false_positive',
+    VerdictAgreement.missed => 'missed',
+  };
 }
 
 class VerdictAccuracy {
@@ -66,12 +66,12 @@ class VerdictAccuracy {
   });
 
   factory VerdictAccuracy.fromJson(Map<String, dynamic> j) => VerdictAccuracy(
-        total: j['total'] ?? 0,
-        correct: j['correct'] ?? 0,
-        falsePositives: j['false_positives'] ?? 0,
-        missed: j['missed'] ?? 0,
-        accuracyPercent: (j['accuracy_percent'] as num?)?.toDouble() ?? 0.0,
-      );
+    total: j['total'] ?? 0,
+    correct: j['correct'] ?? 0,
+    falsePositives: j['false_positives'] ?? 0,
+    missed: j['missed'] ?? 0,
+    accuracyPercent: (j['accuracy_percent'] as num?)?.toDouble() ?? 0.0,
+  );
 }
 
 class VerdictFeedbackService {
@@ -82,7 +82,9 @@ class VerdictFeedbackService {
   static String get _baseUrl {
     const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://localhost:8000';
   }
 
   static const Duration _timeout = Duration(seconds: 8);
@@ -138,7 +140,8 @@ class VerdictFeedbackService {
           .timeout(_timeout);
       if (resp.statusCode != 200) return null;
       return VerdictAccuracy.fromJson(
-          jsonDecode(resp.body) as Map<String, dynamic>);
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
     } catch (e) {
       debugPrint('VerdictFeedbackService.fetchAccuracy failed: $e');
       return null;

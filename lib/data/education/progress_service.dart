@@ -12,19 +12,97 @@ class ProgressService {
 
   // All available badges
   static const List<Badge> allBadges = [
-    Badge(id: 'badge_phishing', name: 'Phish Buster', description: 'Read the Phishing 101 article', emoji: '🎣', pointsRequired: 10),
-    Badge(id: 'badge_smishing', name: 'SMS Guardian', description: 'Read the Smishing guide', emoji: '📱', pointsRequired: 10),
-    Badge(id: 'badge_vishing', name: 'Call Blocker', description: 'Read the Vishing article', emoji: '📞', pointsRequired: 10),
-    Badge(id: 'badge_lottery', name: 'No Free Lunch', description: 'Read the Lottery Scams article', emoji: '🎰', pointsRequired: 10),
-    Badge(id: 'badge_job', name: 'Offer Detector', description: 'Read the Fake Job Offers article', emoji: '💼', pointsRequired: 10),
-    Badge(id: 'badge_romance', name: 'Heart Shield', description: 'Read the Romance Scams article', emoji: '💔', pointsRequired: 10),
-    Badge(id: 'badge_tech', name: 'Tech Detective', description: 'Read the Tech Support Scams article', emoji: '💻', pointsRequired: 10),
-    Badge(id: 'badge_invest', name: 'Smart Investor', description: 'Read the Investment Fraud article', emoji: '📈', pointsRequired: 10),
-    Badge(id: 'badge_url', name: 'Link Analyst', description: 'Read the URL Deep Dive article', emoji: '🔗', pointsRequired: 10),
-    Badge(id: 'badge_bank', name: 'Bank Protector', description: 'Read the Banking Fraud article', emoji: '🏦', pointsRequired: 10),
-    Badge(id: 'badge_quiz_pass', name: 'Quiz Master', description: 'Pass a quiz with 70%+ score', emoji: '🏆', pointsRequired: 50),
-    Badge(id: 'badge_streak_7', name: 'Week Warrior', description: 'Maintain a 7-day learning streak', emoji: '🔥', pointsRequired: 70),
-    Badge(id: 'badge_elite', name: 'Elite Defender', description: 'Reach 90+ vigilance score', emoji: '🛡️', pointsRequired: 100),
+    Badge(
+      id: 'badge_phishing',
+      name: 'Phish Buster',
+      description: 'Read the Phishing 101 article',
+      emoji: '🎣',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_smishing',
+      name: 'SMS Guardian',
+      description: 'Read the Smishing guide',
+      emoji: '📱',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_vishing',
+      name: 'Call Blocker',
+      description: 'Read the Vishing article',
+      emoji: '📞',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_lottery',
+      name: 'No Free Lunch',
+      description: 'Read the Lottery Scams article',
+      emoji: '🎰',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_job',
+      name: 'Offer Detector',
+      description: 'Read the Fake Job Offers article',
+      emoji: '💼',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_romance',
+      name: 'Heart Shield',
+      description: 'Read the Romance Scams article',
+      emoji: '💔',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_tech',
+      name: 'Tech Detective',
+      description: 'Read the Tech Support Scams article',
+      emoji: '💻',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_invest',
+      name: 'Smart Investor',
+      description: 'Read the Investment Fraud article',
+      emoji: '📈',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_url',
+      name: 'Link Analyst',
+      description: 'Read the URL Deep Dive article',
+      emoji: '🔗',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_bank',
+      name: 'Bank Protector',
+      description: 'Read the Banking Fraud article',
+      emoji: '🏦',
+      pointsRequired: 10,
+    ),
+    Badge(
+      id: 'badge_quiz_pass',
+      name: 'Quiz Master',
+      description: 'Pass a quiz with 70%+ score',
+      emoji: '🏆',
+      pointsRequired: 50,
+    ),
+    Badge(
+      id: 'badge_streak_7',
+      name: 'Week Warrior',
+      description: 'Maintain a 7-day learning streak',
+      emoji: '🔥',
+      pointsRequired: 70,
+    ),
+    Badge(
+      id: 'badge_elite',
+      name: 'Elite Defender',
+      description: 'Reach 90+ vigilance score',
+      emoji: '🛡️',
+      pointsRequired: 100,
+    ),
   ];
 
   // ── Load & Save ─────────────────────────────────────────────────────────
@@ -102,8 +180,9 @@ class ProgressService {
 
     final updated = progress.copyWith(
       quizzesTaken: progress.quizzesTaken + 1,
-      quizzesPassedCount:
-          result.passed ? progress.quizzesPassedCount + 1 : progress.quizzesPassedCount,
+      quizzesPassedCount: result.passed
+          ? progress.quizzesPassedCount + 1
+          : progress.quizzesPassedCount,
       badgesEarned: newBadges,
       totalPoints: progress.totalPoints + pointsEarned,
     );

@@ -98,7 +98,8 @@ Hang up and call back the organisation using the official number from their webs
     ScamArticle(
       id: 'lottery_scam',
       title: 'Lottery & Prize Scams',
-      shortDescription: "You didn't win — but you might lose money believing you did.",
+      shortDescription:
+          "You didn't win — but you might lose money believing you did.",
       category: 'lottery',
       difficulty: Difficulty.beginner,
       badgeId: 'badge_lottery',
@@ -125,7 +126,8 @@ Legitimate lotteries never ask winners to pay money to receive their prize. If y
     ScamArticle(
       id: 'job_scam',
       title: 'Fake Job Offers',
-      shortDescription: 'Protect yourself from employment fraud and work-from-home traps.',
+      shortDescription:
+          'Protect yourself from employment fraud and work-from-home traps.',
       category: 'job',
       difficulty: Difficulty.intermediate,
       badgeId: 'badge_job',
@@ -158,7 +160,8 @@ Some scams ask victims to receive and reship packages — these are stolen goods
     ScamArticle(
       id: 'romance_scam',
       title: 'Romance Scams',
-      shortDescription: 'How scammers exploit emotional connections to steal money.',
+      shortDescription:
+          'How scammers exploit emotional connections to steal money.',
       category: 'romance',
       difficulty: Difficulty.advanced,
       badgeId: 'badge_romance',
@@ -219,7 +222,8 @@ Change all your passwords immediately. Run a legitimate antivirus scan. Contact 
     ScamArticle(
       id: 'investment_fraud',
       title: 'Investment & Crypto Fraud',
-      shortDescription: 'Spot Ponzi schemes and fake trading platforms before you lose savings.',
+      shortDescription:
+          'Spot Ponzi schemes and fake trading platforms before you lose savings.',
       category: 'investment',
       difficulty: Difficulty.advanced,
       badgeId: 'badge_invest',
@@ -281,7 +285,8 @@ URLs like bit.ly/xyz hide the real destination. Always expand them using a URL e
     ScamArticle(
       id: 'bank_fraud',
       title: 'Banking & UPI Fraud',
-      shortDescription: 'Protect your UPI, net banking, and debit/credit cards.',
+      shortDescription:
+          'Protect your UPI, net banking, and debit/credit cards.',
       category: 'phishing',
       difficulty: Difficulty.intermediate,
       badgeId: 'badge_bank',

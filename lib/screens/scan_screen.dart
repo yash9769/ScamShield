@@ -75,7 +75,9 @@ class _ScanScreenState extends State<ScanScreen>
 
     switch (request.kind) {
       case SharedScanKind.text:
-        final isLink = request.value.startsWith('http://') || request.value.startsWith('https://');
+        final isLink =
+            request.value.startsWith('http://') ||
+            request.value.startsWith('https://');
         setState(() {
           _activeTab = isLink ? 1 : 0;
           _controller.text = request.value;
@@ -141,8 +143,10 @@ class _ScanScreenState extends State<ScanScreen>
     AnalysisResult result;
     try {
       result = await ApiService.analyzeMessage(text);
-      if (result.riskScore == 0 && !result.aiPowered &&
-          (result.reasons.isEmpty || result.reasons.first.label == 'Analysis Unavailable')) {
+      if (result.riskScore == 0 &&
+          !result.aiPowered &&
+          (result.reasons.isEmpty ||
+              result.reasons.first.label == 'Analysis Unavailable')) {
         result = ScamDetector.analyze(text);
       }
     } catch (_) {
@@ -181,8 +185,10 @@ class _ScanScreenState extends State<ScanScreen>
   /// never delay or fail the scan the user is standing there waiting for. Only
   /// the verdict and summary go out — never the message itself.
   void _maybeAlertFamily(AnalysisResult result) {
-    final isDangerous = result.classification == ScamClassification.scam ||
-        (result.classification == ScamClassification.suspicious && result.riskScore >= 60);
+    final isDangerous =
+        result.classification == ScamClassification.scam ||
+        (result.classification == ScamClassification.suspicious &&
+            result.riskScore >= 60);
     if (!isDangerous) return;
 
     CloudAccountService.raiseAlert(
@@ -196,12 +202,18 @@ class _ScanScreenState extends State<ScanScreen>
   /// text isn't (two people rarely type the exact same scam message), so
   /// community reporting is scoped to the Link/URL tab.
   void _maybeCheckCommunityReputation(String text) {
-    final looksLikeUrl = _activeTab == 1 || text.startsWith('http://') || text.startsWith('https://');
+    final looksLikeUrl =
+        _activeTab == 1 ||
+        text.startsWith('http://') ||
+        text.startsWith('https://');
     if (!looksLikeUrl) return;
 
     final url = text;
     setState(() => _reportableUrl = url);
-    CommunityReportService.checkReputation(type: IndicatorType.url, value: url).then((result) {
+    CommunityReportService.checkReputation(
+      type: IndicatorType.url,
+      value: url,
+    ).then((result) {
       if (mounted && _reportableUrl == url) {
         setState(() => _reputation = result);
       }
@@ -224,7 +236,9 @@ class _ScanScreenState extends State<ScanScreen>
       _reportSubmitted = ok;
     });
     _showSnackBar(
-      ok ? 'Thanks — reported to help protect other users.' : 'Could not submit the report. Check your connection.',
+      ok
+          ? 'Thanks — reported to help protect other users.'
+          : 'Could not submit the report. Check your connection.',
       isError: !ok,
     );
   }
@@ -255,9 +269,9 @@ class _ScanScreenState extends State<ScanScreen>
   }
 
   Future<void> _scanQrCode() async {
-    final decoded = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const QrScanScreen()),
-    );
+    final decoded = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
     if (!mounted || decoded == null || decoded.isEmpty) return;
 
     // A UPI payment QR gets the dedicated pre-payment check rather than being
@@ -298,14 +312,28 @@ class _ScanScreenState extends State<ScanScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(LocalizationService.tr('scan_title'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: Text(
+          LocalizationService.tr('scan_title'),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         centerTitle: false,
         actions: [
           if (_result != null || _controller.text.isNotEmpty)
             TextButton.icon(
               onPressed: _clearAll,
-              icon: const Icon(Icons.refresh, color: AppColors.primary, size: 16),
-              label: Text(LocalizationService.tr('scan_clear'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+              icon: const Icon(
+                Icons.refresh,
+                color: AppColors.primary,
+                size: 16,
+              ),
+              label: Text(
+                LocalizationService.tr('scan_clear'),
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
             ),
           const SizedBox(width: 8),
         ],
@@ -322,7 +350,8 @@ class _ScanScreenState extends State<ScanScreen>
             Reveal(delay: Reveal.step(2), child: _buildActionButton()),
             const SizedBox(height: 20),
             if (_isAnalyzing) _buildAnalyzingWidget(),
-            if (_result != null && !_isAnalyzing) Reveal(child: _buildResultCard()),
+            if (_result != null && !_isAnalyzing)
+              Reveal(child: _buildResultCard()),
             if (_result != null && !_isAnalyzing && _analyzedText != null) ...[
               const SizedBox(height: 12),
               Reveal(child: _buildFeedbackSection()),
@@ -354,7 +383,13 @@ class _ScanScreenState extends State<ScanScreen>
       ),
       child: Row(
         children: [
-          Expanded(child: _buildTabButton(0, 'Text', Icons.chat_bubble_outline_rounded)),
+          Expanded(
+            child: _buildTabButton(
+              0,
+              'Text',
+              Icons.chat_bubble_outline_rounded,
+            ),
+          ),
           Expanded(child: _buildTabButton(1, 'Link', Icons.link_rounded)),
           Expanded(child: _buildTabButton(2, 'Voice', Icons.mic_none_rounded)),
           Expanded(child: _buildTabButton(3, 'Image', Icons.image_outlined)),
@@ -378,8 +413,11 @@ class _ScanScreenState extends State<ScanScreen>
         ),
         child: Column(
           children: [
-            Icon(icon,
-                color: isSel ? AppColors.primary : AppColors.textSecondary, size: 18),
+            Icon(
+              icon,
+              color: isSel ? AppColors.primary : AppColors.textSecondary,
+              size: 18,
+            ),
             const SizedBox(height: 3),
             Text(
               label,
@@ -409,7 +447,10 @@ class _ScanScreenState extends State<ScanScreen>
         border: Border.all(color: AppColors.surfaceLight),
       ),
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,14 +465,16 @@ class _ScanScreenState extends State<ScanScreen>
               hintText: _activeTab == 0
                   ? LocalizationService.tr('scan_hint')
                   : _activeTab == 1
-                      ? 'Paste the link here'
-                      : _activeTab == 2
-                          ? 'Paste what the caller said, or the voicemail text'
-                          : 'Paste the text from the screenshot',
+                  ? 'Paste the link here'
+                  : _activeTab == 2
+                  ? 'Paste what the caller said, or the voicemail text'
+                  : 'Paste the text from the screenshot',
               hintStyle: AppText.bodyMuted,
               filled: false,
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm,
+              ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -440,11 +483,22 @@ class _ScanScreenState extends State<ScanScreen>
           const Divider(height: 1),
           Row(
             children: [
-              _inputAction(Icons.content_paste_rounded, 'Paste', _pasteFromClipboard),
-              _inputAction(Icons.qr_code_scanner_rounded, 'Scan QR', _scanQrCode),
+              _inputAction(
+                Icons.content_paste_rounded,
+                'Paste',
+                _pasteFromClipboard,
+              ),
+              _inputAction(
+                Icons.qr_code_scanner_rounded,
+                'Scan QR',
+                _scanQrCode,
+              ),
               const Spacer(),
               if (_controller.text.isNotEmpty)
-                Text('${_controller.text.trim().length}', style: AppText.caption),
+                Text(
+                  '${_controller.text.trim().length}',
+                  style: AppText.caption,
+                ),
             ],
           ),
         ],
@@ -489,14 +543,18 @@ class _ScanScreenState extends State<ScanScreen>
   Widget _buildAnalyzingWidget() {
     return AppCard(
       padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.xxl, horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xxl,
+        horizontal: AppSpacing.lg,
       ),
       child: Row(
         children: [
           const SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Text(LocalizationService.tr('scan_analyzing'), style: AppText.body),
@@ -554,37 +612,41 @@ class _ScanScreenState extends State<ScanScreen>
             const SizedBox(height: AppSpacing.lg),
             Text(LocalizationService.tr('scan_factors'), style: AppText.label),
             const SizedBox(height: AppSpacing.sm),
-            ...r.reasons.map((reason) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // A small dot, not a warning triangle per row. Ten
-                      // triangles below a verdict the user has already read
-                      // adds alarm without adding information.
-                      Container(
-                        margin: const EdgeInsets.only(top: 7),
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: AppColors.textSecondary,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
+            ...r.reasons.map(
+              (reason) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // A small dot, not a warning triangle per row. Ten
+                    // triangles below a verdict the user has already read
+                    // adds alarm without adding information.
+                    Container(
+                      margin: const EdgeInsets.only(top: 7),
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.textSecondary,
+                        borderRadius: BorderRadius.circular(3),
                       ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(reason.label,
-                                style: AppText.body.copyWith(fontSize: 14)),
-                            Text(reason.description, style: AppText.secondary),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            reason.label,
+                            style: AppText.body.copyWith(fontSize: 14),
+                          ),
+                          Text(reason.description, style: AppText.secondary),
+                        ],
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
           const SizedBox(height: AppSpacing.md),
           // Score and provenance, kept but demoted to a footnote — useful to
@@ -620,7 +682,10 @@ class _ScanScreenState extends State<ScanScreen>
       _feedbackGiven = ok ? agreement : null;
     });
     if (!ok) {
-      _showSnackBar("Couldn't send that just now. Your scan is unaffected.", isError: true);
+      _showSnackBar(
+        "Couldn't send that just now. Your scan is unaffected.",
+        isError: true,
+      );
     }
   }
 
@@ -637,17 +702,27 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: _feedbackGiven != null
           ? Row(
               children: [
-                const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.success,
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     LocalizationService.tr('feedback_thanks'),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
@@ -657,12 +732,21 @@ class _ScanScreenState extends State<ScanScreen>
               children: [
                 Text(
                   LocalizationService.tr('feedback_prompt'),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   LocalizationService.tr('feedback_privacy'),
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -690,7 +774,9 @@ class _ScanScreenState extends State<ScanScreen>
                               agreement: VerdictAgreement.falsePositive,
                             )
                           : _feedbackButton(
-                              label: LocalizationService.tr('feedback_was_scam'),
+                              label: LocalizationService.tr(
+                                'feedback_was_scam',
+                              ),
                               icon: Icons.report_gmailerrorred_outlined,
                               color: AppColors.danger,
                               agreement: VerdictAgreement.missed,
@@ -714,7 +800,11 @@ class _ScanScreenState extends State<ScanScreen>
       icon: Icon(icon, size: 16, color: color),
       label: Text(
         label,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
         overflow: TextOverflow.ellipsis,
       ),
       style: OutlinedButton.styleFrom(
@@ -733,27 +823,51 @@ class _ScanScreenState extends State<ScanScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.groups_outlined, color: AppColors.textSecondary, size: 16),
+              Icon(
+                Icons.groups_outlined,
+                color: AppColors.textSecondary,
+                size: 16,
+              ),
               SizedBox(width: 8),
-              Text('Community reports', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+              Text(
+                'Community reports',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           if (reputation == null)
-            const Text('Checking community reports...', style: TextStyle(color: AppColors.textSecondary, fontSize: 12))
+            const Text(
+              'Checking community reports...',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            )
           else if (!reputation.checked)
-            const Text('Could not reach the community database right now.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12))
+            const Text(
+              'Could not reach the community database right now.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            )
           else if (reputation.reported)
             Text(
               'Flagged by ${reputation.reportCount} user(s) as a scam${reputation.category != null ? " (${reputation.category})" : ""}.',
-              style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             )
           else if (reputation.reportCount > 0)
             Text(
@@ -761,25 +875,38 @@ class _ScanScreenState extends State<ScanScreen>
               style: const TextStyle(color: AppColors.warning, fontSize: 12),
             )
           else
-            const Text('No prior reports for this link.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            const Text(
+              'No prior reports for this link.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: (_reportSubmitting || _reportSubmitted) ? null : _reportCurrentUrlAsScam,
+              onPressed: (_reportSubmitting || _reportSubmitted)
+                  ? null
+                  : _reportCurrentUrlAsScam,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.danger),
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
               icon: Icon(
-                _reportSubmitted ? Icons.check_circle_outline : Icons.flag_outlined,
+                _reportSubmitted
+                    ? Icons.check_circle_outline
+                    : Icons.flag_outlined,
                 color: AppColors.danger,
                 size: 16,
               ),
               label: Text(
-            _reportSubmitted ? 'Reported — thank you' : 'Report this link as a scam',
-            style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, fontSize: 13),
-          ),
+                _reportSubmitted
+                    ? 'Reported — thank you'
+                    : 'Report this link as a scam',
+                style: const TextStyle(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -797,34 +924,59 @@ class _ScanScreenState extends State<ScanScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Try an example', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0)),
+        const Text(
+          'Try an example',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 0,
+          ),
+        ),
         const SizedBox(height: 10),
-        ...samples.asMap().entries.map((entry) => Reveal(
-          delay: Reveal.step(entry.key, baseMs: 90),
-          child: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Pressable(
-            onTap: () {
-              _controller.text = entry.value;
-              _analyze();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.touch_app_outlined, color: AppColors.primary, size: 16),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(entry.value, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
-                ],
+        ...samples.asMap().entries.map(
+          (entry) => Reveal(
+            delay: Reveal.step(entry.key, baseMs: 90),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Pressable(
+                onTap: () {
+                  _controller.text = entry.value;
+                  _analyze();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.surfaceLight.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.touch_app_outlined,
+                        color: AppColors.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ))),
+        ),
       ],
     );
   }

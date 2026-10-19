@@ -144,7 +144,8 @@ class PushNotificationService {
       android: AndroidNotificationDetails(
         _channelId,
         'Family Alerts',
-        channelDescription: 'Warns when someone in your family group is targeted.',
+        channelDescription:
+            'Warns when someone in your family group is targeted.',
         importance: Importance.high,
         priority: Priority.high,
         category: AndroidNotificationCategory.recommendation,
@@ -152,7 +153,9 @@ class PushNotificationService {
     );
 
     await _local.show(
-      id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch.hashCode,
+      id:
+          message.messageId?.hashCode ??
+          DateTime.now().millisecondsSinceEpoch.hashCode,
       title: title ?? 'ScamShield alert',
       body: body ?? '',
       notificationDetails: details,
@@ -163,8 +166,12 @@ class PushNotificationService {
 
   static Future<void> _ensureChannel() async {
     if (_channelReady) return;
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    await _local.initialize(settings: const InitializationSettings(android: androidSettings));
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+    await _local.initialize(
+      settings: const InitializationSettings(android: androidSettings),
+    );
     _channelReady = true;
   }
 }

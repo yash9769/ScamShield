@@ -6,7 +6,8 @@ class ScamArticle {
   final String title;
   final String shortDescription;
   final String content;
-  final String category; // 'phishing' | 'vishing' | 'smishing' | 'lottery' | 'job' | 'romance' | 'tech_support' | 'investment'
+  final String
+  category; // 'phishing' | 'vishing' | 'smishing' | 'lottery' | 'job' | 'romance' | 'tech_support' | 'investment'
   final Difficulty difficulty;
   final String badgeId;
   final String iconEmoji;

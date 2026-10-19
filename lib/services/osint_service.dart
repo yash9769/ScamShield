@@ -48,7 +48,9 @@ class OsintService {
   static String get _backendBaseUrl {
     const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
     if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://localhost:8000';
   }
 
   static const Duration _timeout = Duration(seconds: 6);
@@ -69,7 +71,8 @@ class OsintService {
         return OsintResult(
           provider: 'VirusTotal',
           isMalicious: malicious > 0,
-          details: (data['note'] as String?) ??
+          details:
+              (data['note'] as String?) ??
               '$malicious security vendor(s) flagged this file as malicious.',
         );
       }
@@ -87,22 +90,26 @@ class OsintService {
   /// query directly from the client. That way a missing Safe Browsing key
   /// degrades to a real secondary verdict rather than an empty "no URLs
   /// checked" result.
-  static Future<List<OsintResult>> checkUrlsGoogleSafeBrowsing(List<String> urls) async {
+  static Future<List<OsintResult>> checkUrlsGoogleSafeBrowsing(
+    List<String> urls,
+  ) async {
     if (urls.isEmpty) return [];
     try {
       final endpoint = Uri.parse('$_backendBaseUrl/osint/urls');
       final response = await http
-          .post(endpoint,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({'urls': urls}))
+          .post(
+            endpoint,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'urls': urls}),
+          )
           .timeout(_timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final results = data['results'] as List<dynamic>? ?? [];
         // The backend echoes a `checked` flag per URL. When it is false the
         // provider key is not configured server-side, so fall back to URLhaus.
-        final allUnchecked = results.isNotEmpty &&
-            results.every((r) => r['checked'] == false);
+        final allUnchecked =
+            results.isNotEmpty && results.every((r) => r['checked'] == false);
         if (!allUnchecked && results.isNotEmpty) {
           return results.map((r) {
             final isMalicious = r['malicious'] == true;
@@ -127,18 +134,20 @@ class OsintService {
   /// Screen each URL against the keyless URLhaus database as a fallback when
   /// Google Safe Browsing could not be reached or is not configured.
   static Future<List<OsintResult>> _urlhausFallback(List<String> urls) async {
-    return Future.wait(urls.map((u) async {
-      final r = await checkUrlhaus(u);
-      if (!r.available) return r;
-      return OsintResult(
-        provider: 'URLhaus (fallback)',
-        isMalicious: r.isMalicious,
-        details: r.isMalicious
-            ? 'Listed in the URLhaus malware-URL database.'
-            : 'Not listed in URLhaus. Google Safe Browsing was unavailable, so '
-                'this is a secondary check, not a full clean bill of health.',
-      );
-    }));
+    return Future.wait(
+      urls.map((u) async {
+        final r = await checkUrlhaus(u);
+        if (!r.available) return r;
+        return OsintResult(
+          provider: 'URLhaus (fallback)',
+          isMalicious: r.isMalicious,
+          details: r.isMalicious
+              ? 'Listed in the URLhaus malware-URL database.'
+              : 'Not listed in URLhaus. Google Safe Browsing was unavailable, so '
+                    'this is a secondary check, not a full clean bill of health.',
+        );
+      }),
+    );
   }
 
   /// Check an IP address against AbuseIPDB via the backend.
@@ -172,8 +181,9 @@ class OsintService {
   static Future<OsintResult> checkUrlhaus(String urlToCheck) async {
     try {
       final endpoint = Uri.parse('https://urlhaus-api.abuse.ch/v1/url/');
-      final response =
-          await http.post(endpoint, body: {'url': urlToCheck}).timeout(_timeout);
+      final response = await http
+          .post(endpoint, body: {'url': urlToCheck})
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -203,7 +213,8 @@ class OsintService {
       provider: provider,
       isMalicious: false,
       available: false,
-      details: 'Could not reach $provider (backend offline or not configured). '
+      details:
+          'Could not reach $provider (backend offline or not configured). '
           'This result is unverified — it is NOT a confirmation of safety.',
     );
   }

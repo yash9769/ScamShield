@@ -84,23 +84,32 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         content: Text(
           CloudAccountService.signedIn.value
               ? 'This permanently deletes your scan history, all Safe Vault items, all '
-                  'generated reports, and your learning progress — on this device and on the '
-                  'server copy from cross-device sync. Your account stays signed in. This '
-                  'cannot be undone.'
+                    'generated reports, and your learning progress — on this device and on the '
+                    'server copy from cross-device sync. Your account stays signed in. This '
+                    'cannot be undone.'
               : 'This permanently deletes your scan history, all Safe Vault items, all '
-                  'generated reports, and your learning progress on this device. Your account '
-                  'stays signed in. This cannot be undone.',
+                    'generated reports, and your learning progress on this device. Your account '
+                    'stays signed in. This cannot be undone.',
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text('Delete Data', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete Data',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -128,7 +137,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.cloud_off, color: AppColors.warning),
@@ -143,13 +154,25 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
             'actually deleted there — most likely no connection right now.\n\n'
             'To finish: sign back in with the same email or Google account from Family '
             'Protection, then delete the account again from here.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.45,
+            ),
           ),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Understood', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text(
+                'Understood',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -194,7 +217,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: AppColors.danger),
@@ -211,11 +236,20 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   'This permanently deletes your account, profile, scan history, Safe Vault '
                   'and all local data on this device. This cannot be undone.\n\n'
                   'Confirm with Google to continue as ${registeredEmail ?? 'your account'}.',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                  Text(
+                    error!,
+                    style: const TextStyle(
+                      color: AppColors.danger,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -223,7 +257,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           actions: [
             TextButton(
               onPressed: verifying ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
               onPressed: verifying
@@ -240,29 +277,43 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                         setDialogState(() {
                           verifying = false;
                           if (result.status != GoogleAuthStatus.cancelled) {
-                            error = result.message ?? 'Verification failed. Try again.';
+                            error =
+                                result.message ??
+                                'Verification failed. Try again.';
                           }
                         });
                         return;
                       }
-                      if (result.email?.toLowerCase() != registeredEmail?.toLowerCase()) {
+                      if (result.email?.toLowerCase() !=
+                          registeredEmail?.toLowerCase()) {
                         setDialogState(() {
                           verifying = false;
-                          error = 'That Google account does not match the account on this device.';
+                          error =
+                              'That Google account does not match the account on this device.';
                         });
                         return;
                       }
                       Navigator.pop(ctx, true);
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+              ),
               child: verifying
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Text('Verify & Delete',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  : const Text(
+                      'Verify & Delete',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -283,7 +334,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: AppColors.danger),
@@ -300,7 +353,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   'This permanently deletes your account, profile, scan history, Safe Vault '
                   'and all local data on this device. This cannot be undone. Re-enter your '
                   'password to confirm.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -310,7 +366,13 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 8),
-                  Text(error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                  Text(
+                    error!,
+                    style: const TextStyle(
+                      color: AppColors.danger,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -318,7 +380,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -329,11 +394,21 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 if (result == AuthResult.success) {
                   if (ctx.mounted) Navigator.pop(ctx, true);
                 } else {
-                  setDialogState(() => error = 'Incorrect password. Try again.');
+                  setDialogState(
+                    () => error = 'Incorrect password. Try again.',
+                  );
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-              child: const Text('Delete Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+              ),
+              child: const Text(
+                'Delete Account',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -344,7 +419,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy & Data', style: TextStyle(fontWeight: FontWeight.bold))),
+      appBar: AppBar(
+        title: const Text(
+          'Privacy & Data',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       body: AbsorbPointer(
         absorbing: _busy,
         child: Opacity(
@@ -358,7 +438,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   Icons.article_outlined,
                   'Privacy Policy',
                   'What we process and why',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PrivacyPolicyScreen(),
+                    ),
+                  ),
                 ),
                 _tile(
                   Icons.hub_outlined,
@@ -374,11 +459,17 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   value: _aiEnabled,
                   activeThumbColor: AppColors.primary,
                   onChanged: _setAiEnabled,
-                  title: const Text('AI-Assisted Analysis', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  title: const Text(
+                    'AI-Assisted Analysis',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
                   subtitle: const Text(
                     'When on, scan text may be sent to Groq/Gemini for a more accurate verdict. '
                     'When off, only the on-device heuristic engine is used — scanning still works.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11.5,
+                    ),
                   ),
                 ),
               ]),
@@ -389,13 +480,19 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   Icons.folder_open_outlined,
                   'My Data',
                   'View & export what ScamShield stores about you',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyDataScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyDataScreen()),
+                  ),
                 ),
                 _tile(
                   Icons.lock_outline,
                   'Backup & Restore',
                   'Encrypted backup you keep yourself — no account needed',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BackupScreen()),
+                  ),
                 ),
               ]),
               const SizedBox(height: 24),
@@ -405,7 +502,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                   child: Text(
                     'Auto-delete scan history older than:',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 Padding(
@@ -419,7 +519,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                         selected: selected,
                         selectedColor: AppColors.primary,
                         labelStyle: TextStyle(
-                          color: selected ? Colors.black : AppColors.textSecondary,
+                          color: selected
+                              ? Colors.black
+                              : AppColors.textSecondary,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
@@ -456,7 +558,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   child: Text(
                     'A designated grievance contact has not yet been configured for this build. '
                     'REQUIRES PRODUCT/LEGAL DECISION before production release.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ]),
@@ -486,44 +591,79 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close', style: TextStyle(color: AppColors.primary))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Close',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _sectionHeader(String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 10, left: 4),
-        child: Text(
-          title.toUpperCase(),
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10, left: 4),
+    child: Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textSecondary,
+        letterSpacing: 0,
+      ),
+    ),
+  );
 
   Widget _card(List<Widget> children) => Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
-        ),
-        child: Column(children: children),
-      );
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.5)),
+    ),
+    child: Column(children: children),
+  );
 
-  Widget _tile(IconData icon, String title, String subtitle,
-      {required VoidCallback onTap, bool isDestructive = false}) {
+  Widget _tile(
+    IconData icon,
+    String title,
+    String subtitle, {
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
     return ListTile(
       onTap: onTap,
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (isDestructive ? AppColors.danger : AppColors.primary).withValues(alpha: 0.12),
+          color: (isDestructive ? AppColors.danger : AppColors.primary)
+              .withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: isDestructive ? AppColors.danger : AppColors.primary, size: 20),
+        child: Icon(
+          icon,
+          color: isDestructive ? AppColors.danger : AppColors.primary,
+          size: 20,
+        ),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDestructive ? AppColors.danger : AppColors.textPrimary)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5)),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: AppColors.textSecondary,
+        size: 20,
+      ),
     );
   }
 }

@@ -104,11 +104,14 @@ class DatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute(
-          'ALTER TABLE $tableUserPreferences ADD COLUMN $colConsentVersion TEXT NOT NULL DEFAULT \'\'');
+        'ALTER TABLE $tableUserPreferences ADD COLUMN $colConsentVersion TEXT NOT NULL DEFAULT \'\'',
+      );
       await db.execute(
-          'ALTER TABLE $tableUserPreferences ADD COLUMN $colConsentTimestamp TEXT');
+        'ALTER TABLE $tableUserPreferences ADD COLUMN $colConsentTimestamp TEXT',
+      );
       await db.execute(
-          'ALTER TABLE $tableUserPreferences ADD COLUMN $colAiProcessingEnabled INTEGER NOT NULL DEFAULT 1');
+        'ALTER TABLE $tableUserPreferences ADD COLUMN $colAiProcessingEnabled INTEGER NOT NULL DEFAULT 1',
+      );
     }
   }
 

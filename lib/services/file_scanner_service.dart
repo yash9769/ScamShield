@@ -77,11 +77,11 @@ class FileScannerService {
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         final path = file.path;
-        
+
         if (path != null && file.name.toLowerCase().endsWith('.apk')) {
           // --- TIER 1 PIPELINE: APK DEEP ANALYSIS ---
           final apkResult = await ApkAnalyzerService.analyzeApk(path);
-          
+
           // Collect OSINT for URLs
           final osintFutures = <Future<OsintResult>>[];
           // Check hash
@@ -92,12 +92,14 @@ class FileScannerService {
             osintFutures.add(OsintService.checkUrlhaus(urlsToCheck.first));
           }
           final osintResults = await Future.wait(osintFutures);
-          
-          final safeBrowsing = await OsintService.checkUrlsGoogleSafeBrowsing(urlsToCheck);
+
+          final safeBrowsing = await OsintService.checkUrlsGoogleSafeBrowsing(
+            urlsToCheck,
+          );
           osintResults.addAll(safeBrowsing);
-          
+
           final analysis = ScamDetector.analyzeApk(apkResult, osintResults);
-          
+
           return FileScanResult(
             analysis: analysis,
             fileName: file.name,
@@ -113,10 +115,13 @@ class FileScannerService {
         if (path != null) {
           try {
             final bytes = await File(path).readAsBytes();
-            content = String.fromCharCodes(bytes.where((b) => b >= 32 || b == 10 || b == 13));
+            content = String.fromCharCodes(
+              bytes.where((b) => b >= 32 || b == 10 || b == 13),
+            );
             if (content.length > 5000) content = content.substring(0, 5000);
           } catch (_) {
-            content = 'Suspicious File Content\nName: ${file.name}\nPath: $path';
+            content =
+                'Suspicious File Content\nName: ${file.name}\nPath: $path';
           }
         }
         if (content.trim().isEmpty) content = 'Document: ${file.name}';
@@ -166,7 +171,8 @@ class FileScannerService {
           fileName: name,
           source: ScanSource.image,
           rawContent: content,
-          error: 'Text extraction (OCR) is not available in this build, so only '
+          error:
+              'Text extraction (OCR) is not available in this build, so only '
               'the filename was checked. Paste the message text to analyse it fully.',
         );
       }
@@ -174,7 +180,8 @@ class FileScannerService {
       debugPrint('Image scan failed: $e');
       return FileScanResult.failure(
         source: ScanSource.image,
-        message: 'the image could not be read. Check permissions and try again.',
+        message:
+            'the image could not be read. Check permissions and try again.',
       );
     }
 

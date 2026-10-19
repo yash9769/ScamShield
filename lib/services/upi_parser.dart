@@ -36,7 +36,9 @@ class UpiPaymentRequest {
   /// The bank/PSP handle after the '@' — useful context, not a trust signal.
   String get handleProvider {
     final at = payeeAddress.lastIndexOf('@');
-    return at >= 0 && at < payeeAddress.length - 1 ? payeeAddress.substring(at + 1) : '';
+    return at >= 0 && at < payeeAddress.length - 1
+        ? payeeAddress.substring(at + 1)
+        : '';
   }
 }
 
