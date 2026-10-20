@@ -111,10 +111,12 @@ class BreachInfo {
   }
 
   String get formattedCount {
-    if (pwnCount >= 1000000000)
+    if (pwnCount >= 1000000000) {
       return '${(pwnCount / 1000000000).toStringAsFixed(1)}B';
-    if (pwnCount >= 1000000)
+    }
+    if (pwnCount >= 1000000) {
       return '${(pwnCount / 1000000).toStringAsFixed(1)}M';
+    }
     if (pwnCount >= 1000) return '${(pwnCount / 1000).toStringAsFixed(0)}K';
     return '$pwnCount';
   }

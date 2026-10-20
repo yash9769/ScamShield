@@ -179,22 +179,27 @@ class ApkAnalyzerService {
             }
 
             // Check Secrets
-            if (awsKeyRegex.hasMatch(s))
+            if (awsKeyRegex.hasMatch(s)) {
               secrets.add('AWS Key: ${awsKeyRegex.firstMatch(s)?.group(0)}');
-            if (googleApiKeyRegex.hasMatch(s))
+            }
+            if (googleApiKeyRegex.hasMatch(s)) {
               secrets.add(
                 'Google API Key: ${googleApiKeyRegex.firstMatch(s)?.group(0)}',
               );
-            if (stripeKeyRegex.hasMatch(s))
+            }
+            if (stripeKeyRegex.hasMatch(s)) {
               secrets.add(
                 'Stripe Key: ${stripeKeyRegex.firstMatch(s)?.group(0)}',
               );
-            if (supabaseUrlRegex.hasMatch(s))
+            }
+            if (supabaseUrlRegex.hasMatch(s)) {
               secrets.add(
                 'Supabase URL: ${supabaseUrlRegex.firstMatch(s)?.group(0)}',
               );
-            if (jwtRegex.hasMatch(s))
+            }
+            if (jwtRegex.hasMatch(s)) {
               secrets.add('JWT Token: ${jwtRegex.firstMatch(s)?.group(0)}');
+            }
             if (s.toLowerCase().contains('bearer ') && s.length > 20) {
               // Heuristic for hardcoded bearer tokens
               if (!s.contains(' ') || s.split(' ').length <= 3) {

@@ -65,11 +65,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final stats = await _repo.getStatistics();
       final recent = await _repo.loadHistory(limit: 3);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _stats = stats;
           _recent = recent;
         });
+      }
     } catch (_) {}
   }
 

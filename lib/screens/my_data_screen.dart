@@ -57,12 +57,17 @@ class _MyDataScreenState extends State<MyDataScreen> {
       const encoder = JsonEncoder.withIndent('  ');
       await file.writeAsString(encoder.convert(_data));
       await OpenFilex.open(file.path);
-      if (mounted) setState(() => _statusMessage = 'Exported and opened.');
+      if (mounted) {
+        setState(() => _statusMessage = 'Exported and opened.');
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() => _statusMessage = 'Export failed: could not write file.');
+      }
     } finally {
-      if (mounted) setState(() => _exporting = false);
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
     }
   }
 

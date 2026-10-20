@@ -51,23 +51,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     setState(() => _isLoading = true);
     try {
       final records = await _repo.loadHistory();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _allRecords = records;
           _isLoading = false;
         });
+      }
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   List<ScanRecord> get _filteredRecords {
     final query = _searchController.text.trim().toLowerCase();
     return _allRecords.where((r) {
-      if (_selectedFilterIndex == 1 && r.classification.toLowerCase() == 'safe')
+      if (_selectedFilterIndex == 1 && r.classification.toLowerCase() == 'safe') {
         return false;
-      if (_selectedFilterIndex == 2 && r.classification.toLowerCase() != 'safe')
+      }
+      if (_selectedFilterIndex == 2 && r.classification.toLowerCase() != 'safe') {
         return false;
+      }
       if (query.isNotEmpty) {
         return r.inputText.toLowerCase().contains(query) ||
             (r.summary.toLowerCase().contains(query)) ||

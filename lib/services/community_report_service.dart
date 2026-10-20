@@ -93,8 +93,9 @@ class CommunityReportService {
       final response = await http
           .get(Uri.parse('$_baseUrl/reputation/${type.value}/$encoded'))
           .timeout(_timeout);
-      if (response.statusCode != 200)
+      if (response.statusCode != 200) {
         return const ReputationResult.unavailable();
+      }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return ReputationResult(
