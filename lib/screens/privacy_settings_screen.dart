@@ -455,20 +455,43 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               const SizedBox(height: 24),
               _sectionHeader('Manage Consent'),
               _card([
-                SwitchListTile(
-                  value: _aiEnabled,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: _setAiEnabled,
-                  title: const Text(
-                    'AI-Assisted Analysis',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  subtitle: const Text(
-                    'When on, scan text may be sent to Groq/Gemini for a more accurate verdict. '
-                    'When off, only the on-device heuristic engine is used — scanning still works.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11.5,
+                Material(
+                  color: Colors.transparent,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'AI-Assisted Analysis',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'When on, scan text may be sent to Groq/Gemini for a more accurate verdict. '
+                                'When off, only the on-device heuristic engine is used — scanning still works.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Switch(
+                          value: _aiEnabled,
+                          activeThumbColor: AppColors.primary,
+                          onChanged: _setAiEnabled,
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -632,37 +655,61 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: (isDestructive ? AppColors.danger : AppColors.primary)
-              .withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isDestructive ? AppColors.danger : AppColors.primary)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDestructive ? AppColors.danger : AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+                size: 22,
+              ),
+            ],
+          ),
         ),
-        child: Icon(
-          icon,
-          color: isDestructive ? AppColors.danger : AppColors.primary,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: isDestructive ? AppColors.danger : AppColors.textPrimary,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: AppColors.textSecondary,
-        size: 20,
       ),
     );
   }
