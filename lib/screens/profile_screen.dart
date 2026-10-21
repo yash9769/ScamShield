@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
@@ -18,6 +20,14 @@ import '../services/localization_service.dart';
 import '../services/simple_mode_service.dart';
 import '../services/data_change_notifier.dart';
 
+enum ProtectionState {
+  active,
+  disabled,
+  permissionRequired,
+  unavailable,
+  error
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -32,13 +42,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Android 10+ with the role API present. Resolved once, because it cannot
   /// change while the app is running.
   bool _callScreeningSupported = false;
+  
+  /// Track states for protection features
+  ProtectionState _smsState = ProtectionState.disabled;
+  ProtectionState _callState = ProtectionState.unavailable;
+  bool _smsPermissionGranted = false;
+  
+  // Listener callbacks to properly remove in dispose
+  late final VoidCallback _smsListener;
+  late final VoidCallback _callListener;
+  bool _listenersAdded = false;
 
   @override
   void initState() {
     super.initState();
     SettingsService.init();
     _loadStats();
-    _resolveCallScreeningSupport();
+    // Initialize listeners first before calling async method
+    _smsListener = () => _updateSmsState();
+    _callListener = () => _updateCallState();
+    _resolveProtectionStates();
     // See data_change_notifier.dart: this screen stays alive in
     // MainNavigation's IndexedStack and needs an explicit signal to refresh
     // after a scan/deletion made from another tab or screen.
@@ -48,6 +71,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     DataChangeNotifier.version.removeListener(_loadStats);
+    if (_listenersAdded) {
+      SmsScreeningService.isActive.removeListener(_smsListener);
+      CallScreeningService.isActive.removeListener(_callListener);
+    }
     super.dispose();
   }
 
@@ -264,10 +291,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _resolveCallScreeningSupport() async {
-    final supported = await CallScreeningService.isSupported();
-    if (mounted) setState(() => _callScreeningSupported = supported);
+  Future<void> _resolveProtectionStates() async {
+    // Check if call screening is supported
+    final callSupported = await CallScreeningService.isSupported();
+    _callScreeningSupported = callSupported;
+    
+    // Initialize SMS protection state
+    final smsActive = SmsScreeningService.isActive.value;
+    if (smsActive) {
+      _smsState = ProtectionState.active;
+    } else {
+      // Check if SMS permission is granted
+      _smsPermissionGranted = await Permission.sms.isGranted;
+      if (!_smsPermissionGranted) {
+        _smsState = ProtectionState.permissionRequired;
+      } else {
+        _smsState = ProtectionState.disabled;
+      }
+    }
+    
+    // Initialize call screening state
+    if (!callSupported) {
+      _callState = ProtectionState.unavailable;
+    } else {
+      final callActive = CallScreeningService.isActive.value;
+      if (callActive) {
+        _callState = ProtectionState.active;
+      } else {
+        // Check if call role is granted
+        final callRoleGranted = await CallScreeningService.hasRole();
+        if (!callRoleGranted) {
+          _callState = ProtectionState.permissionRequired;
+        } else {
+          _callState = ProtectionState.disabled;
+        }
+      }
+    }
+    
+    if (mounted) setState(() {});
+    
+    // Add listeners (only once)
+    if (!_listenersAdded) {
+      SmsScreeningService.isActive.addListener(_smsListener);
+      CallScreeningService.isActive.addListener(_callListener);
+      _listenersAdded = true;
+    }
   }
+  
+  Future<void> _updateSmsState() async {
+    final active = SmsScreeningService.isActive.value;
+    if (!mounted) return;
+    
+    // Re-check permission status when state changes
+    _smsPermissionGranted = await Permission.sms.isGranted;
+    
+    setState(() {
+      if (active) {
+        _smsState = ProtectionState.active;
+      } else {
+        _smsState = _smsPermissionGranted ? ProtectionState.disabled : ProtectionState.permissionRequired;
+      }
+    });
+  }
+  
+  Future<void> _updateCallState() async {
+    final active = CallScreeningService.isActive.value;
+    if (!mounted) return;
+    
+    if (!_callScreeningSupported) {
+      setState(() => _callState = ProtectionState.unavailable);
+      return;
+    }
+    
+    if (active) {
+      setState(() => _callState = ProtectionState.active);
+    } else {
+      final callRoleGranted = await CallScreeningService.hasRole();
+      setState(() {
+        _callState = callRoleGranted ? ProtectionState.disabled : ProtectionState.permissionRequired;
+      });
+    }
+  }
+  
+
 
   Future<void> _onToggleCallScreening(bool wantsOn) async {
     if (!wantsOn) {
@@ -582,6 +688,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     hasSwitch: true,
                     switchValue: active,
                     onChanged: _onToggleSmsScreening,
+                    state: _smsState,
                   ),
                 ),
                 // Hidden rather than shown-and-disabled below Android 10: a
@@ -596,6 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       hasSwitch: true,
                       switchValue: active,
                       onChanged: _onToggleCallScreening,
+                      state: _callState,
                     ),
                   ),
                 _buildSettingItem(
@@ -778,7 +886,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(
           child: _buildSecurityCard(
             'ENCRYPTION',
-            'Military Grade',
+            'AES-256 On-Device',
             Icons.lock_outline,
             'ACTIVE',
             AppColors.success,
@@ -882,6 +990,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+
+
   Widget _buildSettingItem(
     IconData icon,
     String title,
@@ -891,7 +1001,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ValueChanged<bool>? onChanged,
     VoidCallback? onTap,
     bool isDestructive = false,
+    ProtectionState state = ProtectionState.active,
   }) {
+    // Build status text and color based on protection state
+    String statusText;
+    Color statusColor;
+    switch (state) {
+      case ProtectionState.active:
+        statusText = 'Active';
+        statusColor = AppColors.success;
+        break;
+      case ProtectionState.disabled:
+        statusText = 'Disabled';
+        statusColor = AppColors.textSecondary;
+        break;
+      case ProtectionState.permissionRequired:
+        statusText = 'Permission needed';
+        statusColor = AppColors.warning;
+        break;
+      case ProtectionState.unavailable:
+        statusText = 'Unavailable';
+        statusColor = AppColors.textSecondary;
+        break;
+      case ProtectionState.error:
+        statusText = 'Error';
+        statusColor = AppColors.danger;
+        break;
+    }
+
     // A neutral tile, not a tinted one. Fifteen accent-coloured icons down a
     // settings list is fifteen things asking to be looked at; the icon is
     // there to help you find a row you already know the name of.
@@ -928,11 +1065,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: AppText.subheading.copyWith(
-                        color: isDestructive ? AppColors.danger : AppColors.textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: AppText.subheading.copyWith(
+                            color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(subtitle, style: AppText.secondary),

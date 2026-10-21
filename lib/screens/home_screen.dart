@@ -125,9 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           children: [
             Reveal(delay: Reveal.step(0), child: _buildScanPrompt()),
-            const SizedBox(height: AppSpacing.xxl),
+            const SizedBox(height: AppSpacing.xl),
             Reveal(delay: Reveal.step(1), child: _buildStatusLine()),
-            const SizedBox(height: AppSpacing.xxxl),
+            const SizedBox(height: AppSpacing.xxl),
             Reveal(
               delay: Reveal.step(2),
               child: AppSection(
@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _buildTools(context),
               ),
             ),
-            const SizedBox(height: AppSpacing.xxxl),
+            const SizedBox(height: AppSpacing.xxl),
             Reveal(
               delay: Reveal.step(3),
               child: AppSection(
@@ -178,17 +178,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0),
                 1.0,
               ),
-              decoration: BoxDecoration(
-                boxShadow: _isHovered
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
               child: Semantics(
                 label: 'Scan a message, link, or phone number for scams',
                 button: true,
@@ -202,45 +191,88 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: AppCard(
                       onTap: () => ScanNowBottomSheet.show(context),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                        vertical: AppSpacing.lg,
+                        horizontal: AppSpacing.xl,
+                        vertical: AppSpacing.xl,
                       ),
+                      // Use AppCard's tone parameter instead of custom decoration
+                      tone: _isHovered ? AppColors.primary : null,
                       child: Row(
                         children: [
-                          AnimatedScale(
-                            duration: const Duration(milliseconds: 150),
-                            scale: _isHovered ? 1.05 : 1.0,
-                            child: const Icon(
-                              Icons.search_rounded,
-                              color: AppColors.primary,
-                              size: 22,
+                          // Wrap icon in its own AnimatedContainer for hover effects
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: _isHovered ? 0.15 : 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            child: AnimatedScale(
+                              duration: const Duration(milliseconds: 150),
+                              scale: _isHovered ? 1.1 : 1.0,
+                              child: const Icon(
+                                Icons.search_rounded,
+                                color: AppColors.primary,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Check a message or link',
+                                  style: AppText.body.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Paste any content to scan for scams',
+                                  style: AppText.secondary.copyWith(
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Text(
-                              'Check a message or link',
-                              style: AppText.body,
-                            ),
-                          ),
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
+                            duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            transform: Matrix4.diagonal3Values(
+                              _isHovered ? 1.05 : 1.0,
+                              _isHovered ? 1.05 : 1.0,
+                              1.0,
                             ),
                             decoration: BoxDecoration(
-                              color: _isHovered
-                                  ? AppColors.primary.withValues(alpha: 0.9)
-                                  : AppColors.primary,
+                              gradient: LinearGradient(
+                                colors: _isHovered
+                                    ? [AppColors.primary.withValues(alpha: 0.95), AppColors.primary]
+                                    : [AppColors.primary, AppColors.primary.withValues(alpha: 0.9)],
+                              ),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
+                              boxShadow: _isHovered
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.4),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: const Text(
-                              'Check',
+                              'Scan now',
                               style: TextStyle(
                                 color: Color(0xFF08121F),
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -266,17 +298,58 @@ class _HomeScreenState extends State<HomeScreen> {
   /// checked, and did any of it turn out to be bad.
   Widget _buildStatusLine() {
     final s = _stats;
-    final total = s?.totalScans ?? 0;
-    final caught = (s?.scamCount ?? 0) + (s?.suspiciousCount ?? 0);
+    // Add loading state when stats are still being fetched
+    if (s == null) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                'Loading your stats...',
+                style: AppText.secondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final total = s.totalScans;
+    final caught = s.scamCount + s.suspiciousCount;
 
     if (total == 0) {
       return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(
           children: [
-            const Icon(
-              Icons.shield_outlined,
-              size: 20,
-              color: AppColors.textSecondary,
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: const Icon(
+                Icons.shield_outlined,
+                size: 18,
+                color: AppColors.success,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -296,6 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
       button: true,
       child: AppCard(
         onTap: _openHistory,
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(
           children: [
             _stat(
@@ -304,8 +378,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Container(
               width: 1,
-              height: 34,
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              height: 40,
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               color: AppColors.surfaceLight,
             ),
             _stat(
@@ -316,6 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // colours a reassuring "0".
               color: caught > 0 ? AppColors.warning : null,
             ),
+            const SizedBox(width: AppSpacing.md),
             const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.textSecondary,
@@ -341,12 +416,19 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               '$current',
               style: AppText.display.copyWith(
-                fontSize: 26,
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
                 color: color ?? AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(label, style: AppText.caption),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              label, 
+              style: AppText.caption.copyWith(
+                height: 1.3,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         );
       },
