@@ -892,47 +892,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
     bool isDestructive = false,
   }) {
-    return ListTile(
-      onTap: onTap,
-      // A neutral tile, not a tinted one. Fifteen accent-coloured icons down a
-      // settings list is fifteen things asking to be looked at; the icon is
-      // there to help you find a row you already know the name of.
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isDestructive
-              ? AppColors.danger.withValues(alpha: 0.12)
-              : AppColors.surfaceLight.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Icon(
-          icon,
-          color: isDestructive ? AppColors.danger : AppColors.textPrimary,
-          size: 19,
+    // A neutral tile, not a tinted one. Fifteen accent-coloured icons down a
+    // settings list is fifteen things asking to be looked at; the icon is
+    // there to help you find a row you already know the name of.
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isDestructive
+                      ? AppColors.danger.withValues(alpha: 0.12)
+                      : AppColors.surfaceLight.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: AppText.subheading.copyWith(
+                        color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: AppText.secondary),
+                  ],
+                ),
+              ),
+              if (hasSwitch) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Switch(
+                  value: switchValue,
+                  onChanged: onChanged,
+                  activeThumbColor: AppColors.primary,
+                ),
+              ] else if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 22,
+                ),
+            ],
+          ),
         ),
       ),
-      title: Text(
-        title,
-        style: AppText.subheading.copyWith(
-          color: isDestructive ? AppColors.danger : AppColors.textPrimary,
-        ),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 2),
-        child: Text(subtitle, style: AppText.secondary),
-      ),
-      trailing: hasSwitch
-          ? Switch(
-              value: switchValue,
-              onChanged: onChanged,
-              activeThumbColor: AppColors.primary,
-            )
-          : const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
-              size: 22,
-            ),
     );
   }
 }
