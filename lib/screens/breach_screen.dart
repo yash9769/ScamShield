@@ -382,7 +382,21 @@ class _BreachScreenState extends State<BreachScreen>
     );
   }
 
+  // Helper to get severity color and text
+  // Format date from breach timestamp
+  String _formatBreachDate(String? date) {
+    if (date == null || date.isEmpty) return 'Unknown date';
+    try {
+      final dateTime = DateTime.parse(date);
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    } catch (_) {
+      return date;
+    }
+  }
+
   Widget _buildBreachCard(BreachInfo breach) {
+    final isVerified = breach.isVerified;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -390,7 +404,9 @@ class _BreachScreenState extends State<BreachScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.surfaceLight.withValues(alpha: 0.5),
+          color: isVerified 
+              ? AppColors.surfaceLight.withValues(alpha: 0.5)
+              : AppColors.warning.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -424,12 +440,26 @@ class _BreachScreenState extends State<BreachScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      breach.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
+                    Row(
+                      children: [
+                        if (isVerified)
+                          const Icon(
+                            Icons.verified,
+                            color: AppColors.primary,
+                            size: 14,
+                          ),
+                        if (isVerified) const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            breach.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       breach.domain,
@@ -438,23 +468,43 @@ class _BreachScreenState extends State<BreachScreen>
                         fontSize: 12,
                       ),
                     ),
+                    Text(
+                      'Breach date: ${_formatBreachDate(breach.breachDate)}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${(breach.pwnCount / 1000).toStringAsFixed(0)}K LEAKED',
-                  style: const TextStyle(
-                    color: AppColors.danger,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (isVerified ? AppColors.danger : AppColors.warning).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isVerified ? 'Verified' : 'Unverified',
+                      style: TextStyle(
+                        color: isVerified ? AppColors.danger : AppColors.warning,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(breach.pwnCount / 1000).toStringAsFixed(0)}K leaked',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -469,6 +519,28 @@ class _BreachScreenState extends State<BreachScreen>
               height: 1.4,
             ),
           ),
+          if (!isVerified)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.warning,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Unverified report',
+                    style: TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

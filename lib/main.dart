@@ -30,47 +30,114 @@ import 'screens/simple_home_screen.dart';
 import 'screens/consent_screen.dart';
 import 'data/repositories/scan_repository.dart';
 import 'data/repositories/preferences_repository.dart';
+// Conditionally import platform-specific code for web compatibility
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await UserProfileService.init();
-  await SettingsService.init();
-  // Awaited, not fire-and-forget: the first frame must already be in the
-  // user's language, or the app visibly flips from English a moment after
-  // launch every single time.
-  await LocalizationService.init();
-  // Also awaited: which of the two interfaces to show is decided before the
-  // first frame, so a Simple Mode user never briefly sees the full app.
-  await SimpleModeService.init();
-  final startLoggedIn = await AuthService.isLoggedIn();
-  final hasConsented = await ConsentService().hasGivenCurrentConsent();
-  await PermissionService.requestAllPermissionsOnce();
-  // Best-effort, non-blocking: remove stale generated-report files from the
-  // OS temp directory (retention control — see DataPrivacyService).
-  unawaited(DataPrivacyService().cleanupStaleTempReports());
-  // Apply the user's configured scan-history retention period, if any
-  // (Settings > Privacy & Data > Data Retention). No-ops when unset (0).
-  unawaited(_applyScanHistoryRetention());
-  // Re-attaches the live SMS listener and drains anything queued while the
-  // app wasn't running — a no-op unless the user has explicitly turned this
-  // on in Profile > Real-Time SMS Protection.
-  unawaited(SmsScreeningService.initIfEnabled());
-  // Same shape: no-op unless the user granted the call-screening role, and it
-  // turns itself off cleanly if that role was since taken away. Also refreshes
-  // the native side's known-bad number list from local scan history.
-  unawaited(CallScreeningService.initIfEnabled());
-  // Push notifications for family alerts. Fails soft and silently on any build
-  // without a Firebase config, which is why it is safe to call unconditionally.
-  unawaited(PushNotificationService.init());
-  // Keep the home-screen widget's status line current. Hooked to the app's
-  // one data-change signal rather than sprinkled through every write site, so
-  // scans, deletions and backup restores all keep it honest. Debounced, since
-  // a restore fires that signal once per record.
-  DataChangeNotifier.version.addListener(HomeWidgetService.refreshSoon);
-  unawaited(HomeWidgetService.refresh());
-  runApp(
-    ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented),
-  );
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // Initialize core services with error handling
+    await UserProfileService.init();
+    await SettingsService.init();
+    await LocalizationService.init();
+    await SimpleModeService.init();
+    
+    final startLoggedIn = await AuthService.isLoggedIn();
+    final hasConsented = await ConsentService().hasGivenCurrentConsent();
+    
+    // Only request permissions on mobile platforms
+    if (!kIsWeb) {
+      await PermissionService.requestAllPermissionsOnce();
+    }
+    
+    // Best-effort non-blocking operations that can fail gracefully
+    unawaited(_safeExecute(() => DataPrivacyService().cleanupStaleTempReports()));
+    unawaited(_safeExecute(_applyScanHistoryRetention));
+    
+    // Only initialize platform-specific services on mobile
+    if (!kIsWeb) {
+      unawaited(_safeExecute(SmsScreeningService.initIfEnabled));
+      unawaited(_safeExecute(CallScreeningService.initIfEnabled));
+      unawaited(_safeExecute(PushNotificationService.init));
+      DataChangeNotifier.version.addListener(HomeWidgetService.refreshSoon);
+      unawaited(_safeExecute(HomeWidgetService.refresh));
+    }
+    
+    runApp(
+      ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented),
+    );
+  } catch (e, stackTrace) {
+    // Show an error screen if initialization fails
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          backgroundColor: AppColors.background,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: AppColors.danger,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Failed to initialize ScamShield',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    e.toString(),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Retry initialization
+                      main();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    debugPrint('Initialization error: $e\nStack trace: $stackTrace');
+  }
+}
+
+// Helper to safely execute async functions without crashing the app
+Future<void> _safeExecute(Future<void> Function() operation) async {
+  try {
+    await operation();
+  } catch (e) {
+    debugPrint('Non-critical operation failed: $e');
+  }
 }
 
 Future<void> _applyScanHistoryRetention() async {
@@ -266,21 +333,31 @@ class _MainNavigationState extends State<MainNavigation>
     }
   }
 
+  // Track if we've already shown the clipboard alert to prevent repeats
+  bool _clipboardAlertShown = false;
+  
   Future<void> _checkClipboard() async {
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim() ?? "";
-      if (text.isNotEmpty && text != _lastCopiedText) {
+      if (text.isNotEmpty && text != _lastCopiedText && !_clipboardAlertShown) {
         if (text.contains("http://") ||
             text.contains("https://") ||
             text.toUpperCase().contains("URGENT") ||
             text.toUpperCase().contains("OTP")) {
           _lastCopiedText = text;
+          _clipboardAlertShown = true;
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: AppColors.surfaceLight,
-                duration: const Duration(seconds: 4),
+                duration: const Duration(seconds: 8),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 80,
+                  left: 16,
+                  right: 16,
+                ),
                 content: Row(
                   children: [
                     const Icon(
@@ -289,14 +366,27 @@ class _MainNavigationState extends State<MainNavigation>
                       size: 20,
                     ),
                     const SizedBox(width: 10),
-                    Expanded(
+                    const Expanded(
                       child: Text(
                         "Copied link/text detected in clipboard!",
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Add explicit dismiss button
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        _clipboardAlertShown = false;
+                      },
+                      child: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                        size: 18,
                       ),
                     ),
                   ],
@@ -308,14 +398,21 @@ class _MainNavigationState extends State<MainNavigation>
                     setState(() {
                       _selectedIndex = 1;
                     });
+                    _clipboardAlertShown = false;
                   },
                 ),
+                dismissDirection: DismissDirection.horizontal,
+                // SnackBar uses duration and automatically resets flag when dismissed
+                // This maintains the existing behavior while allowing manual dismissal
               ),
             );
           }
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Reset flag if there's an error
+      _clipboardAlertShown = false;
+    }
   }
 
   @override
