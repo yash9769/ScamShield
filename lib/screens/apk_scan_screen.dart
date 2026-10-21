@@ -7,6 +7,7 @@ import '../services/report_generator_service.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
 import '../theme.dart';
+import '../widgets/animated_radar.dart';
 
 class ApkScanScreen extends StatefulWidget {
   const ApkScanScreen({super.key});
@@ -99,95 +100,125 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     }
   }
 
-  // ── Progress Steps Widget ──────────────────────────────────────────────────
-  Widget _buildProgressSteps() {
+  // ── Immersive APK Scanning Experience ──────────────────────────────────────
+  Widget _buildImmersiveApkScanningScreen() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: const [
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: AppColors.primary,
-                ),
-              ),
-              SizedBox(width: 16),
-              Text(
-                'Static Analysis Pipeline',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          // Large animated radar as the focal point for APK scanning
+          const Center(child: AnimatedRadar(size: 320, isScanning: true)),
+          const SizedBox(height: AppSpacing.xxxl),
+          // Scan status text
+          Text(
+            'APK Security Analysis',
+            style: AppText.heading.copyWith(color: AppColors.textPrimary),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          ...List.generate(_scanStages.length, (index) {
-            final isCompleted = index < _currentStageIndex;
-            final isCurrent = index == _currentStageIndex;
+          const SizedBox(height: AppSpacing.lg),
+          // Current scanning stage
+          Text(
+            _scanStages[_currentStageIndex],
+            style: AppText.body.copyWith(color: AppColors.primary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          // Progress indicator with all stages
+          Container(
+            width: 280,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
+            ),
+            child: Column(
+              children: List.generate(_scanStages.length, (index) {
+                final isCompleted = index < _currentStageIndex;
+                final isCurrent = index == _currentStageIndex;
 
-            Color iconColor = AppColors.textSecondary.withValues(alpha: 0.5);
-            IconData icon = Icons.radio_button_unchecked;
+                Color iconColor = AppColors.textSecondary.withValues(alpha: 0.5);
+                IconData icon = Icons.radio_button_unchecked;
 
-            if (isCompleted) {
-              iconColor = AppColors.success;
-              icon = Icons.check_circle;
-            } else if (isCurrent) {
-              iconColor = AppColors.primary;
-              icon = Icons.sync;
-            }
+                if (isCompleted) {
+                  iconColor = AppColors.success;
+                  icon = Icons.check_circle;
+                } else if (isCurrent) {
+                  iconColor = AppColors.primary;
+                  icon = Icons.sync;
+                }
 
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isCurrent
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isCurrent
-                      ? AppColors.primary.withValues(alpha: 0.4)
-                      : Colors.transparent,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(icon, color: iconColor, size: 22),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      _scanStages[index],
-                      style: TextStyle(
-                        color: isCompleted
-                            ? Colors.white
-                            : (isCurrent
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary),
-                        fontWeight: isCurrent || isCompleted
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontSize: 14,
+                return Padding(
+                  padding: EdgeInsets.only(bottom: index == _scanStages.length - 1 ? 0 : AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Icon(icon, color: iconColor, size: 18),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _scanStages[index],
+                          style: TextStyle(
+                            color: isCompleted
+                                ? Colors.white
+                                : (isCurrent ? AppColors.primary : AppColors.textSecondary),
+                            fontWeight: isCurrent || isCompleted ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          // Progress bar showing overall completion
+          SizedBox(
+            width: 250,
+            child: Column(
+              children: [
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: FractionallySizedBox(
+                    widthFactor: (_currentStageIndex + 1) / _scanStages.length,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.protectionGradient,
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     ),
                   ),
-                ],
-              ),
-            );
-          }),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  '${((_currentStageIndex + 1) / _scanStages.length * 100).round()}% complete',
+                  style: AppText.caption.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          // Cancel button
+          TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _isScanning = false;
+                _error = 'Scan cancelled by user';
+              });
+            },
+            icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 18),
+            label: Text(
+              'Cancel scan',
+              style: AppText.body.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
         ],
       ),
     );
@@ -224,26 +255,137 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
     );
   }
 
+  /// Premium APK scan results screen with clear risk assessment
+  Widget _buildPremiumApkResults() {
+    final risk = _report!['risk'] ?? {};
+    final riskScore = (risk['score'] as int?) ?? 0;
+    final level = (risk['level'] as String?) ?? 'LOW';
+    final isSafe = level == 'LOW';
+    final isWarning = level == 'MEDIUM';
+    final isDangerous = level == 'HIGH' || level == 'CRITICAL';
+
+    // Calculate status colors
+    final statusColor = isSafe ? AppColors.accent : (isWarning ? AppColors.warning : AppColors.danger);
+    final statusGradient = isSafe ? AppColors.protectionGradient : LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isWarning 
+          ? [AppColors.warning, AppColors.warning.withValues(alpha: 0.7)]
+          : (isDangerous ? [AppColors.danger, AppColors.danger.withValues(alpha: 0.7)] : [AppColors.danger, AppColors.danger.withValues(alpha: 0.7)]),
+    );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Scanned file header
+          _buildScannedFileHeader(),
+          const SizedBox(height: AppSpacing.xl),
+          // Premium risk assessment hero section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Risk score circle
+                Center(
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: statusGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withValues(alpha: 0.4),
+                          blurRadius: 25,
+                          spreadRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$riskScore',
+                            style: const TextStyle(
+                              fontSize: 52,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const Text(
+                            '/ 100',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                // Risk level verdict
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      level == 'LOW' ? 'Safe' : level == 'MEDIUM' ? 'Suspicious' : 'Dangerous',
+                      style: AppText.heading.copyWith(color: statusColor),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Main recommendation
+                Text(
+                  isSafe 
+                      ? 'This APK appears to be safe for installation.'
+                      : isWarning 
+                          ? 'This APK has some suspicious characteristics - review carefully.'
+                          : 'This APK contains dangerous malware - do not install it.',
+                  style: AppText.body.copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // Detailed report
+          _buildReportView(_report!),
+        ],
+      ),
+    );
+  }
+
   /// Chooses the layout based on state.
-  ///
-  /// Before/while scanning we show the large upload card. Once a report is
-  /// available the large card is intentionally *removed* and replaced by a
-  /// compact "scanned file" header that scrolls together with the report in a
-  /// single [SingleChildScrollView]. Previously the upload card was a fixed
-  /// sibling above a bounded scroll region, so it stayed pinned on screen and
-  /// never disappeared when the results were scrolled.
   Widget _buildBody() {
     if (_report != null && !_isScanning) {
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildScannedFileHeader(),
-            const SizedBox(height: 16),
-            _buildReportView(_report!),
-          ],
-        ),
-      );
+      return _buildPremiumApkResults();
     }
 
     return Column(
@@ -251,7 +393,7 @@ class _ApkScanScreenState extends State<ApkScanScreen> {
       children: [
         _buildPickerCard(),
         const SizedBox(height: 20),
-        if (_isScanning) Expanded(child: Center(child: _buildProgressSteps())),
+        if (_isScanning) Expanded(child: _buildImmersiveApkScanningScreen()),
         if (_error != null && !_isScanning)
           Expanded(
             child: Center(

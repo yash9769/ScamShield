@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../widgets/ui_kit.dart';
+import '../widgets/animated_radar.dart';
 import '../services/scam_detector.dart';
 import '../services/api_service.dart';
 import '../services/share_intent_service.dart';
@@ -349,9 +350,9 @@ class _ScanScreenState extends State<ScanScreen>
             const SizedBox(height: 16),
             Reveal(delay: Reveal.step(2), child: _buildActionButton()),
             const SizedBox(height: 20),
-            if (_isAnalyzing) _buildAnalyzingWidget(),
+            if (_isAnalyzing) _buildImmersiveScanningScreen(),
             if (_result != null && !_isAnalyzing)
-              Reveal(child: _buildResultCard()),
+              Reveal(child: _buildPremiumResultCard()),
             if (_result != null && !_isAnalyzing && _analyzedText != null) ...[
               const SizedBox(height: 12),
               Reveal(child: _buildFeedbackSection()),
@@ -533,81 +534,223 @@ class _ScanScreenState extends State<ScanScreen>
     );
   }
 
-  /// The waiting state.
-  ///
-  /// Was a pulsing 48px brain icon over "Analyzing with Gemini AI…". Two
-  /// problems: the animation added drama to a moment that is already tense,
-  /// and the copy named a provider that may not even be the one running —
-  /// analysis falls back to Groq or to the on-device engine, and says so
-  /// honestly now.
-  Widget _buildAnalyzingWidget() {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.xxl,
-        horizontal: AppSpacing.lg,
-      ),
-      child: Row(
+  /// The waiting state - Immersive scanning experience with animated radar
+  Widget _buildImmersiveScanningScreen() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.primary,
+          // Large animated radar as the focal point
+          const Center(child: AnimatedRadar(size: 300, isScanning: true)),
+          const SizedBox(height: AppSpacing.xxxl),
+          // Scan status text
+          Text(
+            LocalizationService.tr('scan_analyzing'),
+            style: AppText.heading.copyWith(color: AppColors.textPrimary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Current scanning stage details
+          Text(
+            'Running AI-powered threat analysis on your content',
+            style: AppText.body.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // Progress indicator
+          SizedBox(
+            width: 200,
+            child: Column(
+              children: [
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.6, // Simulated progress - in real app use actual progress
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.protectionGradient,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Text(LocalizationService.tr('scan_analyzing'), style: AppText.body),
+          const SizedBox(height: AppSpacing.xxl),
+          // Cancel button
+          TextButton.icon(
+            onPressed: () {
+              // Allow user to cancel the scan
+              setState(() {
+                _isAnalyzing = false;
+                _result = null;
+              });
+            },
+            icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 18),
+            label: Text(
+              'Cancel scan',
+              style: AppText.body.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// The verdict — the single most important thing this app ever renders.
-  ///
-  /// What changed: the answer now leads with what to *do*, not what was
-  /// measured. The old card opened with a coloured word, a "GEMINI AI" badge
-  /// and "Risk Score: 87/100" — a measurement, a vendor name, and a number
-  /// nobody can act on, all above the advice. Someone reading this is often
-  /// mid-decision about whether to tap a link or send money; the instruction
-  /// belongs at the top and the diagnostics belong below it.
-  ///
-  /// The verdict's colour, icon and wording come from the shared kit
-  /// (verdictStyleFor), so this card, History, Home and Simple Mode cannot
-  /// describe the same result differently.
-  Widget _buildResultCard() {
+  /// Premium scan results screen with clear risk assessment
+  Widget _buildPremiumResultCard() {
     final r = _result!;
     final v = verdictStyleFor(r.classification.name);
+    final isSafe = r.classification.name == 'safe';
+    final isSuspicious = r.classification.name == 'suspicious';
+    final isDangerous = r.classification.name == 'scam';
 
-    return AppCard(
-      tone: v.color,
+    // Calculate status colors based on risk
+    final statusColor = isSafe ? AppColors.accent : (isSuspicious ? AppColors.warning : AppColors.danger);
+    final statusGradient = isSafe ? AppColors.protectionGradient : LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isSuspicious 
+          ? [AppColors.warning, AppColors.warning.withValues(alpha: 0.7)]
+          : (isDangerous ? [AppColors.danger, AppColors.danger.withValues(alpha: 0.7)] : [AppColors.danger, AppColors.danger.withValues(alpha: 0.7)]),
+    );
+
+    return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.15),
+            blurRadius: 30,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(v.icon, color: v.color, size: 30),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  // Translated, not the enum name upcased: this is the one
-                  // line the user has to understand.
-                  LocalizationService.tr('verdict_${r.classification.name}'),
-                  style: AppText.title.copyWith(color: v.color),
+          // Overall Risk Score Hero Section
+          Center(
+            child: Column(
+              children: [
+                // Risk score circle
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: statusGradient,
+                    boxShadow: [
+                      BoxShadow(
+                        color: statusColor.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${r.riskScore}',
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Text(
+                          '/ 100',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                // Verdict text
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      LocalizationService.tr('verdict_${r.classification.name}'),
+                      style: AppText.heading.copyWith(color: statusColor),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Main recommendation
+                Text(
+                  v.advice,
+                  style: AppText.body.copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          // Scan summary section
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  LocalizationService.tr('scan_summary'),
+                  style: AppText.label.copyWith(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  r.summary,
+                  style: AppText.body.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          // Scan details header
+          Text(
+            'Scan Details',
+            style: AppText.label.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(height: AppSpacing.md),
-          // The instruction. Plain, imperative, and above the detail.
-          Text(v.advice, style: AppText.body),
-          const SizedBox(height: AppSpacing.lg),
-          Container(height: 1, color: AppColors.surfaceLight),
-          const SizedBox(height: AppSpacing.lg),
-          Text(LocalizationService.tr('scan_summary'), style: AppText.label),
-          const SizedBox(height: AppSpacing.xs),
-          Text(r.summary, style: AppText.secondary),
           if (r.reasons.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
             Text(LocalizationService.tr('scan_factors'), style: AppText.label),

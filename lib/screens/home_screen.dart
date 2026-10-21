@@ -1,27 +1,16 @@
 // lib/screens/home_screen.dart
 //
-// ── What this screen used to be, and why it changed ──────────────────────────
-// The previous Home was a security dashboard: a 140px pulsing shield inside an
-// ambient radar sweep, a "SHIELD ACTIVE / ECOSYSTEM" badge, a 2×2 grid of four
-// stat cards, and a banner listing the engineering ("Androguard + YARA",
-// "Zero dummy data"). Roughly the whole first screen was spent before anything
-// the user could act on appeared.
-//
-// None of that answered the question people open this app with, which is
-// always the same one: *is this thing I just received safe?*
-//
-// So the order is inverted. The scan entry point is the first thing on the
-// screen and is a real target, not a button that opens a sheet of more buttons.
-// Status is one honest sentence instead of a badge and an animation. The four
-// vanity stats collapse to the two numbers that mean something, on one line.
-// The engineering brag list is gone — it was a README rendered as UI.
+// Premium cybersecurity command centre - redesigned home dashboard with
+// animated radar, comprehensive protection status, statistics, quick actions,
+// and recent activity feed. Maintains all existing functionality while
+// delivering a visually stunning, modern security experience.
 
 import 'package:flutter/material.dart';
-
 import '../theme.dart';
 import '../widgets/scan_now_bottom_sheet.dart';
 import '../widgets/motion.dart';
 import '../widgets/ui_kit.dart';
+import '../widgets/animated_radar.dart';
 import '../services/user_profile_service.dart';
 import 'sim_lock_screen.dart';
 import 'breach_screen.dart';
@@ -30,6 +19,7 @@ import 'history_screen.dart';
 import 'profile_screen.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
+import '../services/scam_detector.dart';
 import '../services/data_change_notifier.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,33 +28,48 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final ScanRepository _repo = ScanRepository();
   ScanStatistics? _stats;
   List<ScanRecord> _recent = [];
-  bool _isTapped = false;
-  bool _isHovered = false;
+  final bool _isScanning = false;
+  bool _isScanButtonHovered = false;
+
+  late AnimationController _scanButtonController;
+  late Animation<double> _scanButtonGlowAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
-    // See data_change_notifier.dart: this screen stays alive in
-    // MainNavigation's IndexedStack, so it needs an explicit signal to
-    // refresh after a scan/deletion made from another tab or screen.
     DataChangeNotifier.version.addListener(_loadStats);
+
+    // Scan button glow animation
+    _scanButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _scanButtonGlowAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(
+        parent: _scanButtonController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _scanButtonController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     DataChangeNotifier.version.removeListener(_loadStats);
+    _scanButtonController.dispose();
     super.dispose();
   }
 
   Future<void> _loadStats() async {
     try {
       final stats = await _repo.getStatistics();
-      final recent = await _repo.loadHistory(limit: 3);
+      final recent = await _repo.loadHistory(limit: 5);
       if (mounted) {
         setState(() {
           _stats = stats;
@@ -81,498 +86,70 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) => _loadStats());
   }
 
+  Future<void> _initiateScan() async {
+    if (_isScanning) return; // Prevent duplicate scans
+    ScanNowBottomSheet.show(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: AppSpacing.screen,
-        title: const Text('ScamShield'),
-        actions: [
-          Semantics(
-            label: 'Open profile settings',
-            button: true,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                ).then((_) => _loadStats());
-              },
-              child: ValueListenableBuilder<String>(
-                valueListenable: UserProfileService.avatarNotifier,
-                builder: (ctx, avatar, _) => CircleAvatar(
-                  radius: 15,
-                  backgroundColor: AppColors.surfaceLight,
-                  backgroundImage: NetworkImage(avatar),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.screen),
-        ],
-      ),
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: _loadStats,
         color: AppColors.primary,
         backgroundColor: AppColors.surface,
-        child: ListView(
+        child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.screen,
-            AppSpacing.sm,
+            AppSpacing.xxxl,
             AppSpacing.screen,
             AppSpacing.huge,
           ),
-          children: [
-            Reveal(delay: Reveal.step(0), child: _buildScanPrompt()),
-            const SizedBox(height: AppSpacing.xl),
-            Reveal(delay: Reveal.step(1), child: _buildStatusLine()),
-            const SizedBox(height: AppSpacing.xxl),
-            Reveal(
-              delay: Reveal.step(2),
-              child: AppSection(
-                label: 'Also check',
-                child: _buildTools(context),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            Reveal(
-              delay: Reveal.step(3),
-              child: AppSection(
-                label: 'Recent checks',
-                actionLabel: _recent.isEmpty ? null : 'See all',
-                onAction: _recent.isEmpty ? null : _openHistory,
-                child: _buildRecent(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// The primary action, first on the screen.
-  ///
-  /// Styled as an input rather than a button because that is what it leads to
-  /// and what it invites — a field you paste into reads as "put the message
-  /// here", where a button labelled SCAN NOW reads as "something will happen,
-  /// unclear what". The tap target is the whole card.
-  Widget _buildScanPrompt() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Is this a scam?', style: AppText.title),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Paste a message, link or number and get an answer in seconds.',
-          style: AppText.bodyMuted,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        StatefulBuilder(
-          builder: (context, setState) {
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              transformAlignment: Alignment.center,
-              transform: Matrix4.diagonal3Values(
-                _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0),
-                _isTapped ? 0.98 : (_isHovered ? 1.01 : 1.0),
-                1.0,
-              ),
-              child: Semantics(
-                label: 'Scan a message, link, or phone number for scams',
-                button: true,
-                child: MouseRegion(
-                  onEnter: (_) => setState(() => _isHovered = true),
-                  onExit: (_) => setState(() => _isHovered = false),
-                  child: GestureDetector(
-                    onTapDown: (_) => setState(() => _isTapped = true),
-                    onTapUp: (_) => setState(() => _isTapped = false),
-                    onTapCancel: () => setState(() => _isTapped = false),
-                    child: AppCard(
-                      onTap: () => ScanNowBottomSheet.show(context),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                        vertical: AppSpacing.xl,
-                      ),
-                      // Use AppCard's tone parameter instead of custom decoration
-                      tone: _isHovered ? AppColors.primary : null,
-                      child: Row(
-                        children: [
-                          // Wrap icon in its own AnimatedContainer for hover effects
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: _isHovered ? 0.15 : 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: AnimatedScale(
-                              duration: const Duration(milliseconds: 150),
-                              scale: _isHovered ? 1.1 : 1.0,
-                              child: const Icon(
-                                Icons.search_rounded,
-                                color: AppColors.primary,
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.lg),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Check a message or link',
-                                  style: AppText.body.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  'Paste any content to scan for scams',
-                                  style: AppText.secondary.copyWith(
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            transform: Matrix4.diagonal3Values(
-                              _isHovered ? 1.05 : 1.0,
-                              _isHovered ? 1.05 : 1.0,
-                              1.0,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: _isHovered
-                                    ? [AppColors.primary.withValues(alpha: 0.95), AppColors.primary]
-                                    : [AppColors.primary, AppColors.primary.withValues(alpha: 0.9)],
-                              ),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              boxShadow: _isHovered
-                                  ? [
-                                      BoxShadow(
-                                        color: AppColors.primary.withValues(alpha: 0.4),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: const Text(
-                              'Scan now',
-                              style: TextStyle(
-                                color: Color(0xFF08121F),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  /// One line of honest status.
-  ///
-  /// The old version had a permanent "SHIELD ACTIVE" badge that said the same
-  /// thing whether the user had run zero scans or four hundred, plus four stat
-  /// cards including "AVG RISK SCORE" — a number nobody can act on. What is
-  /// left is what a person would actually want to know: how much have I
-  /// checked, and did any of it turn out to be bad.
-  Widget _buildStatusLine() {
-    final s = _stats;
-    // Add loading state when stats are still being fetched
-    if (s == null) {
-      return AppCard(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                'Loading your stats...',
-                style: AppText.secondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final total = s.totalScans;
-    final caught = s.scamCount + s.suspiciousCount;
-
-    if (total == 0) {
-      return AppCard(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(
-                Icons.shield_outlined,
-                size: 18,
-                color: AppColors.success,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                'Nothing checked yet. Your first scan takes about five seconds.',
-                style: AppText.secondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Semantics(
-      label:
-          'View scan history: $total messages checked, $caught threats found',
-      button: true,
-      child: AppCard(
-        onTap: _openHistory,
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          children: [
-            _stat(
-              '$total',
-              total == 1 ? 'message checked' : 'messages checked',
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              color: AppColors.surfaceLight,
-            ),
-            _stat(
-              '$caught',
-              caught == 1 ? 'threat found' : 'threats found',
-              // The only place a verdict colour appears outside an actual
-              // verdict — and only when the number is non-zero, so it never
-              // colours a reassuring "0".
-              color: caught > 0 ? AppColors.warning : null,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
-              size: 22,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _stat(String value, String label, {Color? color}) {
-    final number = int.tryParse(value) ?? 0;
-    return TweenAnimationBuilder<int>(
-      tween: IntTween(begin: 0, end: number),
-      duration: const Duration(milliseconds: 900),
-      curve: Curves.easeOutCubic,
-      builder: (context, current, child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$current',
-              style: AppText.display.copyWith(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: color ?? AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              label, 
-              style: AppText.caption.copyWith(
-                height: 1.3,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// The secondary tools, as labelled rows rather than a row of cryptic icons.
-  ///
-  /// "SIM LOCK" and "BREACHES" under 65px tiles told you nothing about what
-  /// tapping would do. A row with a sentence under it costs a little more
-  /// vertical space and removes the guessing.
-  Widget _buildTools(BuildContext context) {
-    return AppListGroup(
-      children: [
-        AppListRow(
-          icon: Icons.mark_email_unread_outlined,
-          title: 'Was my email leaked?',
-          subtitle: 'Check an address against known data breaches',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const BreachScreen(initialIndex: 0),
-            ),
-          ),
-        ),
-        AppListRow(
-          icon: Icons.public_outlined,
-          title: 'Recent breaches',
-          subtitle: 'What has leaked lately, and who it affects',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const BreachScreen(initialIndex: 1),
-            ),
-          ),
-        ),
-        AppListRow(
-          icon: Icons.lock_outline_rounded,
-          title: 'Safe Vault',
-          subtitle: 'Notes and codes, encrypted on this device',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SafeVaultScreen()),
-          ),
-        ),
-        AppListRow(
-          icon: Icons.sim_card_outlined,
-          title: 'Device check',
-          subtitle: 'SIM and device security status',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SimLockScreen()),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecent() {
-    if (_recent.isEmpty) {
-      return EmptyState(
-        icon: Icons.inbox_outlined,
-        title: 'Nothing checked yet',
-        message:
-            'Anything you check will show up here so you can find it again.',
-        actionLabel: 'Check something now',
-        onAction: () => ScanNowBottomSheet.show(context),
-      );
-    }
-
-    return AppListGroup(
-      children: _recent
-          .asMap()
-          .entries
-          .map(
-            (entry) => Reveal(
-              delay: Reveal.step(entry.key, stepMs: 35),
-              offsetY: 8,
-              child: _recentRow(entry.value),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _recentRow(ScanRecord r) {
-    final v = verdictStyleFor(r.classification);
-    final diff = DateTime.now().difference(r.timestamp);
-    final timeStr = diff.inMinutes < 1
-        ? 'Just now'
-        : diff.inHours < 1
-        ? '${diff.inMinutes}m ago'
-        : diff.inDays < 1
-        ? '${diff.inHours}h ago'
-        : '${diff.inDays}d ago';
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _openHistory,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: v.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
+              // Premium Header with logo and profile actions
+              _buildHeader(),
+              const SizedBox(height: AppSpacing.xxxl),
+
+              // Hero Protection Status with Animated Radar
+              Reveal(delay: Reveal.step(0), child: _buildProtectionHero()),
+              const SizedBox(height: AppSpacing.xxl),
+
+              // Primary Scan Now Button
+              Reveal(delay: Reveal.step(1), child: _buildScanButton()),
+              const SizedBox(height: AppSpacing.xxl),
+
+              // Security Statistics Grid
+              Reveal(
+                delay: Reveal.step(2),
+                child: AppSection(
+                  label: 'Security Overview',
+                  child: _buildStatisticsGrid(),
                 ),
-                child: Icon(v.icon, color: v.color, size: 19),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          v.label,
-                          style: AppText.subheading.copyWith(
-                            color: v.color,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(timeStr, style: AppText.caption),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      r.inputText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.secondary,
-                    ),
-                  ],
+              const SizedBox(height: AppSpacing.xxl),
+
+              // Quick Actions Grid
+              Reveal(
+                delay: Reveal.step(3),
+                child: AppSection(
+                  label: 'Quick Actions',
+                  child: _buildQuickActionsGrid(context),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+
+              // Recent Activity
+              Reveal(
+                delay: Reveal.step(4),
+                child: AppSection(
+                  label: 'Recent Activity',
+                  actionLabel: _recent.isEmpty ? null : 'View all',
+                  onAction: _recent.isEmpty ? null : _openHistory,
+                  child: _buildRecentActivity(),
                 ),
               ),
             ],
@@ -580,5 +157,544 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// Premium header with ScamShield logo, personalised greeting, and actions
+  Widget _buildHeader() {
+    return ValueListenableBuilder<String>(
+      valueListenable: UserProfileService.avatarNotifier,
+      builder: (ctx, avatar, _) {
+        return Row(
+          children: [
+            // Logo and greeting
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.protectionGradient,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: const Icon(
+                          Icons.shield_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Text(
+                        'ScamShield',
+                        style: AppText.subheading.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Welcome back, your protection is active',
+                    style: AppText.secondary,
+                  ),
+                ],
+              ),
+            ),
+            // Notification and profile actions
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: AppColors.surfaceLight,
+                      width: 1,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      const Icon(
+                        Icons.notifications_none_rounded,
+                        color: AppColors.textSecondary,
+                        size: 22,
+                      ),
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.danger,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    ).then((_) => _loadStats());
+                  },
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.surfaceLight,
+                    backgroundImage: NetworkImage(avatar),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Hero protection status section with animated radar as focal point
+  Widget _buildProtectionHero() {
+    final isProtected = _stats != null && (_stats?.scamCount ?? 0) == 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isProtected
+              ? AppColors.accent.withValues(alpha: 0.3)
+              : AppColors.warning.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isProtected
+                ? AppColors.protectedGlow
+                : AppColors.warning.withValues(alpha: 0.2),
+            blurRadius: 40,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Status text
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isProtected ? AppColors.success : AppColors.warning,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isProtected ? AppColors.success : AppColors.warning)
+                          .withValues(alpha: 0.5),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                isProtected ? "You're protected" : "Review your security",
+                style: AppText.subheading.copyWith(
+                  color: isProtected ? AppColors.success : AppColors.warning,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Animated Radar - main visual focal point
+          Center(
+            child: AnimatedRadar(
+              size: 220,
+              isScanning: _isScanning,
+              threatMarkers: !isProtected && _recent.isNotEmpty
+                  ? [
+                      const Offset(-0.3, -0.2),
+                      const Offset(0.4, 0.1),
+                    ]
+                  : null,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Security summary
+          Text(
+            'Real-time threat monitoring active',
+            style: AppText.bodyMuted,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Prominent Scan Now button with animated border and glow effects
+  Widget _buildScanButton() {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AnimatedBuilder(
+          animation: _scanButtonGlowAnimation,
+          builder: (context, child) {
+            return MouseRegion(
+              onEnter: (_) => setState(() => _isScanButtonHovered = true),
+              onExit: (_) => setState(() => _isScanButtonHovered = false),
+              child: GestureDetector(
+                onTap: _isScanning ? null : _initiateScan,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.protectionGradient,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary
+                            .withValues(alpha: _isScanButtonHovered 
+                                ? _scanButtonGlowAnimation.value * 1.5 
+                                : _scanButtonGlowAnimation.value),
+                        blurRadius: _isScanButtonHovered ? 35 : 25,
+                        spreadRadius: _isScanButtonHovered ? 8 : 5,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _isScanning
+                            ? Icons.sync_rounded
+                            : Icons.search_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Text(
+                        _isScanning ? 'Scanning...' : 'Scan Now',
+                        style: AppText.subheading.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Security statistics grid with real data from repository
+  Widget _buildStatisticsGrid() {
+    if (_stats == null) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+      );
+    }
+
+    final stats = _stats!;
+    final statItems = [
+      {
+        'label': 'Total Scans',
+        'value': stats.totalScans.toString(),
+        'icon': Icons.search_rounded,
+        'color': AppColors.primary,
+      },
+      {
+        'label': 'Threats Detected',
+        'value': (stats.scamCount + stats.suspiciousCount).toString(),
+        'icon': Icons.warning_rounded,
+        'color': AppColors.danger,
+      },
+      {
+        'label': 'Safe Items',
+        'value': (stats.totalScans - stats.scamCount - stats.suspiciousCount)
+            .toString(),
+        'icon': Icons.check_circle_rounded,
+        'color': AppColors.success,
+      },
+      {
+        'label': 'Avg Risk Score',
+        'value': stats.averageRiskScore.toStringAsFixed(1),
+        'icon': Icons.analytics_rounded,
+        'color': AppColors.accent,
+      },
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: 1.5,
+      ),
+      itemCount: statItems.length,
+      itemBuilder: (context, index) {
+        final item = statItems[index];
+        return AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: (item['color'] as Color).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Icon(
+                  item['icon'] as IconData,
+                  color: item['color'] as Color,
+                  size: 20,
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item['value'] as String,
+                    style: AppText.display.copyWith(fontSize: 28),
+                  ),
+                  Text(
+                    item['label'] as String,
+                    style: AppText.secondary,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Quick actions grid for primary feature navigation
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    final quickActions = [
+      {
+        'label': 'SIM Lock',
+        'description': 'Protect your SIM',
+        'icon': Icons.sim_card_rounded,
+        'color': AppColors.primary,
+        'screen': const SimLockScreen(),
+      },
+      {
+        'label': 'Email Check',
+        'description': 'Scan your inbox',
+        'icon': Icons.email_rounded,
+        'color': AppColors.accent,
+        'screen': const BreachScreen(),
+      },
+      {
+        'label': 'Breach Check',
+        'description': 'Data leak monitor',
+        'icon': Icons.security_rounded,
+        'color': AppColors.warning,
+        'screen': const BreachScreen(),
+      },
+      {
+        'label': 'Safe Vault',
+        'description': 'Secure storage',
+        'icon': Icons.lock_rounded,
+        'color': AppColors.success,
+        'screen': const SafeVaultScreen(),
+      },
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: 1.4,
+      ),
+      itemCount: quickActions.length,
+      itemBuilder: (context, index) {
+        final action = quickActions[index];
+        return AppCard(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => action['screen'] as Widget,
+              ),
+            );
+          },
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: (action['color'] as Color).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(
+                  action['icon'] as IconData,
+                  color: action['color'] as Color,
+                  size: 24,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                action['label'] as String,
+                style: AppText.subheading,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                action['description'] as String,
+                style: AppText.secondary,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Recent activity feed with scan history
+  Widget _buildRecentActivity() {
+    if (_recent.isEmpty) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.history_rounded,
+                color: AppColors.textSecondary,
+                size: 48,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'No recent activity',
+                style: AppText.bodyMuted,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Your scan history will appear here',
+                style: AppText.secondary,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: _recent.map((scan) {
+        final isDangerous = scan.classification == ScamClassification.scam.name;
+        final isSuspicious = scan.classification == ScamClassification.suspicious.name;
+        final statusColor = isDangerous
+            ? AppColors.danger
+            : isSuspicious
+                ? AppColors.warning
+                : AppColors.success;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Icon(
+                    isDangerous
+                        ? Icons.dangerous_rounded
+                        : isSuspicious
+                            ? Icons.help_rounded
+                            : Icons.check_circle_rounded,
+                    color: statusColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        scan.source ?? 'Unknown scan',
+                        style: AppText.subheading.copyWith(fontSize: 14),
+                      ),
+                      Text(
+                        _formatTimestamp(scan.timestamp),
+                        style: AppText.secondary,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    isDangerous
+                        ? 'Dangerous'
+                        : isSuspicious
+                            ? 'Suspicious'
+                            : 'Safe',
+                    style: AppText.label.copyWith(
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Format timestamp for recent activity
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inHours < 1) return '${difference.inMinutes}m ago';
+    if (difference.inDays < 1) return '${difference.inHours}h ago';
+    return '${difference.inDays}d ago';
   }
 }

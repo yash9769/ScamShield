@@ -41,48 +41,54 @@ import 'package:flutter/material.dart';
 
 /// Core palette.
 ///
-/// The background moved off navy to a true neutral charcoal: navy pushes
-/// everything drawn on it slightly blue, which is what made the old accent
-/// have to shout to be seen at all. On a neutral ground a much quieter accent
-/// reads perfectly well.
+/// Premium cybersecurity command centre aesthetic: Deep midnight navy and
+/// graphite backgrounds with restrained emerald green and icy cyan accents.
+/// Creates a professional, modern security dashboard feel while maintaining
+/// excellent readability and visual hierarchy.
 class AppColors {
   // ── Neutrals ──────────────────────────────────────────────────────────────
-  /// App background. Not pure black — pure black against an OLED panel makes
-  /// the elevation steps below invisible, and haloes light text.
-  static const Color background = Color(0xFF0C0E12);
+  /// Deep midnight navy background - the primary app background
+  static const Color background = Color(0xFF0A1628);
 
-  /// Raised surfaces: cards, sheets, inputs.
-  static const Color surface = Color(0xFF15181F);
+  /// Graphite surfaces: cards, sheets, inputs - elevated from background
+  static const Color surface = Color(0xFF111E32);
 
-  /// Hairlines, borders, dividers, disabled fills. One step up from surface,
-  /// deliberately close to it — a border should describe an edge, not draw a
-  /// line across the screen.
-  static const Color surfaceLight = Color(0xFF262B35);
+  /// Lighter graphite for borders, dividers, subtle elevations
+  static const Color surfaceLight = Color(0xFF1E2D47);
 
-  static const Color textPrimary = Color(0xFFF5F6F8);
+  /// Crisp white for primary text
+  static const Color textPrimary = Color(0xFFF8FAFC);
 
-  /// Secondary text sits at ~4.9:1 on the background — comfortably readable,
-  /// while still clearly receding from primary.
-  static const Color textSecondary = Color(0xFF9BA3B0);
+  /// Muted slate for secondary text - maintains excellent contrast
+  static const Color textSecondary = Color(0xFF94A3B8);
 
-  // ── Accent ────────────────────────────────────────────────────────────────
-  /// One accent, used only for things you can act on. The old neon cyan
-  /// (#06B6D4) matured into a calmer, deeper blue that still carries a hint of
-  /// the original hue but stops competing with the verdict colours.
-  static const Color primary = Color(0xFF5B9DFF);
+  // ── Premium Accents ───────────────────────────────────────────────────────
+  /// Icy cyan - primary interactive accent, used for scanning visuals and
+  /// primary actions
+  static const Color primary = Color(0xFF06D0FF);
 
-  /// Used sparingly — a second interactive tone for stacked/secondary actions,
-  /// not a gradient partner. (The old theme blended it into every button.)
-  static const Color accent = Color(0xFF7C8CFF);
+  /// Emerald green - success and protection states, secondary accent
+  static const Color accent = Color(0xFF10B981);
 
-  // ── Verdict colours — reserved ────────────────────────────────────────────
-  // These three are the app's most important information. They are never used
-  // for decoration, section headers, icons-for-flavour or empty states.
-  // Every place they appear is also labelled in words and paired with a
-  // distinct icon, so the meaning survives colour blindness and greyscale.
-  static const Color success = Color(0xFF3DD68C); // safe
-  static const Color warning = Color(0xFFF5B849); // be careful
-  static const Color danger = Color(0xFFFF6B6B); // scam
+  // ── Verdict colours — reserved for risk states ───────────────────────────
+  // These maintain clear risk communication while fitting the premium palette
+  static const Color success = Color(0xFF10B981); // safe - matches emerald accent
+  static const Color warning = Color(0xFFF59E0B); // be careful - refined amber
+  static const Color danger = Color(0xFFEF4444); // scam - refined red
+
+  // ── Premium Gradient Utilities ───────────────────────────────────────────
+  /// Linear gradient for protection status cards - cyan to emerald
+  static LinearGradient get protectionGradient => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF06D0FF), Color(0xFF10B981)],
+      );
+
+  /// Glow color for radar and scanning effects - icy cyan with opacity
+  static Color get radarGlow => const Color(0xFF06D0FF).withValues(alpha: 0.3);
+
+  /// Emerald glow for protected states
+  static Color get protectedGlow => const Color(0xFF10B981).withValues(alpha: 0.25);
 
   // `cardGlow` used to live here — the tint painted under every card to give
   // it a halo. It is gone rather than retuned: nothing referenced it outside
