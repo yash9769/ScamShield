@@ -103,7 +103,9 @@ ADMIN_KEY = "scamshield_admin_sec_key_2026"
 
 def test_dashboard():
     print("\n[11] Testing GET /dashboard (Web SOC Threat Dashboard Portal)")
-    r = httpx.get(f"{BASE_URL}/dashboard?key={ADMIN_KEY}")
+    # Header, not ?key=...: query-string credentials are rejected on purpose
+    # (they leak into logs and browser history; see DASH-SEC-004).
+    r = httpx.get(f"{BASE_URL}/dashboard", headers={"X-Admin-Key": ADMIN_KEY})
     print(f"    Status: {r.status_code}")
     assert r.status_code == 200 and "SCAMSHIELD" in r.text
 

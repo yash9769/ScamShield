@@ -606,7 +606,7 @@ FINANCIAL_KW = [
 PRIZE_KW = [
     'win', 'winner', 'lottery', 'prize', 'reward', 'congratulations', 'selected',
     'gift card', 'voucher', 'free money', 'jackpot', 'lucky draw', 'cash prize',
-    'you have been chosen', 'claim your prize', 'you won',
+    'you have been chosen', 'claim your prize', 'you won', 'kbc',
 ]
 URGENCY_KW = [
     'urgent', 'immediately', 'act now', 'limited time', 'expires', 'final notice',
@@ -620,7 +620,9 @@ IMPERSONATION_KW = [
     'whatsapp team', 'rbi', 'sebi', 'customs department', 'social security administration',
 ]
 MANIPULATION_KW = [
-    'click here', 'click now', 'tap here', 'do not share', 'never share',
+    # Not "do not share" / "never share": that is the warning every genuine
+    # bank OTP SMS carries, and counting it flagged real OTPs as suspicious.
+    'click here', 'click now', 'tap here',
     'call us immediately', 'call now', 'trust us', 'guaranteed', 'risk free',
     'no cost', 'secret', 'confidential', 'exclusive offer', 'only for you',
     'keep this confidential', 'do not tell anyone',
@@ -633,6 +635,7 @@ INVESTMENT_KW = [
 SUSPICIOUS_KW = [
     'click', 'download', 'install', 'open attachment', 'verify your identity',
     'update your information', 'confirm your details', 'login to your account',
+    'via the link', 'link below', 'following link',
 ]
 
 URL_RE       = re.compile(r'https?://[^\s]+', re.IGNORECASE)
@@ -640,6 +643,44 @@ SHORT_URL_RE = re.compile(
     r'\b(bit\.ly|tinyurl\.com|goo\.gl|t\.co|ow\.ly|buff\.ly|is\.gd|rb\.gy|cutt\.ly|tiny\.cc|adf\.ly)[^\s]*',
     re.IGNORECASE)
 OTP_RE   = re.compile(r'otp[\s:is]*\d{4,8}', re.IGNORECASE)
+# Asking for the code, as opposed to delivering it. "Share OTP 482913 with
+# our agent" is a request; "Your OTP is 551203. Do not share it" is a bank
+# delivering a code and warning you, and must not score as a scam.
+OTP_REQUEST_RE = re.compile(
+    r'\b(share|send|tell|forward|give|provide|read\s+out|reply\s+with)\b[^.]{0,40}\b(otp|code|pin)\b'
+    r'|\b(otp|code)\b[^.]{0,30}\b(to|with)\s+(our|the|this)\s+(agent|executive|officer|representative|number)\b',
+    re.IGNORECASE)
+# Threats to cut a service off: the electricity / SIM / gas bill scam.
+DISCONNECTION_RE = re.compile(
+    r'\b(electricity|power|light|gas|water|connection|sim|mobile number|number|service)\b[^.]{0,50}'
+    r'\b(disconnect\w*|cut\s+off|deactivat\w*|be\s+blocked|suspend\w*)\b'
+    r'|\b(disconnect\w*|deactivat\w*)\b[^.]{0,40}\b(tonight|today|within)\b',
+    re.IGNORECASE)
+# Money demanded up front to release a prize, loan, parcel or job.
+ADVANCE_FEE_RE = re.compile(
+    r'\b(processing|registration|clearance|release|delivery|activation|verification|customs)\s+(fee|fees|charge|charges)\b'
+    r'|\b(pay|deposit|transfer|send)\b[^.]{0,30}\b(fee|charges?|tax)\b[^.]{0,30}\b(to\s+)?(claim|release|receive|activate|unlock)\b',
+    re.IGNORECASE)
+
+
+_NEGATION_RE = re.compile(r"\b(never|not|don't|dont|do\s+not)\s*$", re.IGNORECASE)
+
+
+def _asks_for_otp(text: str) -> bool:
+    """True when the message asks for a code, ignoring negated forms like
+    "never share this code" that genuine OTP messages use as a warning."""
+    for m in OTP_REQUEST_RE.finditer(text):
+        if not _NEGATION_RE.search(text[max(0, m.start() - 12):m.start()]):
+            return True
+    return False
+
+
+def _keyword_hits(keywords: list, lower: str) -> list:
+    """Whole-word matches only: a substring test let "pin" fire inside
+    "shipping" and "win" inside "window"."""
+    return [k for k in keywords if re.search(r'(?<![a-z0-9])' + re.escape(k) + r'(?![a-z0-9])', lower)]
+
+
 PHONE_RE = re.compile(r'(\+?\d[\d\s\-(.)]{7,}\d)')
 
 def heuristic_analyze(text: str) -> AnalysisResult:
@@ -647,7 +688,7 @@ def heuristic_analyze(text: str) -> AnalysisResult:
     reasons = []
     score   = 0
 
-    fin = [k for k in FINANCIAL_KW if k in lower]
+    fin = _keyword_hits(FINANCIAL_KW, lower)
     if fin:
         pts = min(len(fin) * 12, 35); score += pts
         top = ", ".join(f'"{k}"' for k in fin[:3])
@@ -655,7 +696,7 @@ def heuristic_analyze(text: str) -> AnalysisResult:
             description=f"Found {len(fin)} financial term(s): {top}. Scammers use these to steal money or credentials.",
             scoreContribution=pts, iconCategory=IconCategory.financial))
 
-    prize = [k for k in PRIZE_KW if k in lower]
+    prize = _keyword_hits(PRIZE_KW, lower)
     if prize:
         pts = min(len(prize) * 14, 30); score += pts
         top = ", ".join(f'"{k}"' for k in prize[:3])
@@ -663,7 +704,7 @@ def heuristic_analyze(text: str) -> AnalysisResult:
             description=f"Classic lottery-scam language: {top}. Legitimate organisations never announce prizes via SMS.",
             scoreContribution=pts, iconCategory=IconCategory.suspicious))
 
-    urgency = [k for k in URGENCY_KW if k in lower]
+    urgency = _keyword_hits(URGENCY_KW, lower)
     if urgency:
         pts = min(len(urgency) * 10, 25); score += pts
         top = ", ".join(f'"{k}"' for k in urgency[:3])
@@ -671,7 +712,7 @@ def heuristic_analyze(text: str) -> AnalysisResult:
             description=f"{len(urgency)} urgency trigger(s): {top}. Creating artificial pressure is a core scam technique.",
             scoreContribution=pts, iconCategory=IconCategory.urgency))
 
-    imp = [k for k in IMPERSONATION_KW if k in lower]
+    imp = _keyword_hits(IMPERSONATION_KW, lower)
     if imp:
         pts = min(len(imp) * 20, 35); score += pts
         top = ", ".join(f'"{k}"' for k in imp[:3])
@@ -679,7 +720,7 @@ def heuristic_analyze(text: str) -> AnalysisResult:
             description=f"Claims to be from: {top}. Scammers impersonate government agencies and tech companies to create fear.",
             scoreContribution=pts, iconCategory=IconCategory.manipulation))
 
-    inv = [k for k in INVESTMENT_KW if k in lower]
+    inv = _keyword_hits(INVESTMENT_KW, lower)
     if inv:
         pts = min(len(inv) * 15, 30); score += pts
         top = ", ".join(f'"{k}"' for k in inv[:3])
@@ -700,13 +741,36 @@ def heuristic_analyze(text: str) -> AnalysisResult:
             description=f"Found {len(url_m)} link(s). Verify before clicking, especially if unexpected.",
             scoreContribution=pts, iconCategory=IconCategory.link))
 
-    if OTP_RE.search(lower):
-        pts = 25; score += pts
+    if _asks_for_otp(text):
+        pts = 30; score += pts
         reasons.append(DetectionReason(label="OTP / Code Sharing Request",
-            description="Contains or requests an OTP. No legitimate service ever asks you to share your OTP.",
+            description="Asks you to share an OTP or code. No legitimate service ever asks you to share your OTP.",
+            scoreContribution=pts, iconCategory=IconCategory.financial))
+    elif OTP_RE.search(lower) and not (url_m or short_m):
+        # A code being delivered, with no request and no link: the normal
+        # shape of a genuine bank or app OTP. Scores nothing.
+        pass
+    elif OTP_RE.search(lower):
+        pts = 15; score += pts
+        reasons.append(DetectionReason(label="OTP Alongside a Link",
+            description="An OTP arrives together with a link. Never enter a code on a page reached from a message.",
             scoreContribution=pts, iconCategory=IconCategory.financial))
 
-    manip = [k for k in MANIPULATION_KW if k in lower]
+    if DISCONNECTION_RE.search(text):
+        pts = 30; score += pts
+        reasons.append(DetectionReason(label="Service Disconnection Threat",
+            description="Threatens to cut off your electricity, SIM or another service unless you act now. "
+                        "Utilities don't disconnect over SMS; check with the provider's official number.",
+            scoreContribution=pts, iconCategory=IconCategory.urgency))
+
+    if ADVANCE_FEE_RE.search(text):
+        pts = 30; score += pts
+        reasons.append(DetectionReason(label="Upfront Fee Demand",
+            description="Asks for a fee before you can receive a prize, loan, parcel or job. "
+                        "Real prizes and refunds never require paying first.",
+            scoreContribution=pts, iconCategory=IconCategory.financial))
+
+    manip = _keyword_hits(MANIPULATION_KW, lower)
     if manip:
         pts = min(len(manip) * 8, 20); score += pts
         top = ", ".join(f'"{k}"' for k in manip[:3])
@@ -714,7 +778,7 @@ def heuristic_analyze(text: str) -> AnalysisResult:
             description=f"Manipulative language: {top}. Designed to bypass critical thinking.",
             scoreContribution=pts, iconCategory=IconCategory.manipulation))
 
-    susp = [k for k in SUSPICIOUS_KW if k in lower]
+    susp = _keyword_hits(SUSPICIOUS_KW, lower)
     if susp:
         pts = min(len(susp) * 5, 15); score += pts
         top = ", ".join(f'"{k}"' for k in susp[:3])

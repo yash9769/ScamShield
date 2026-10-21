@@ -77,6 +77,8 @@ class ScamDetector {
     'free money',
     'jackpot',
     'lucky draw',
+    'you won',
+    'kbc',
   ];
 
   // ── Urgency / pressure words ─────────────────────────────────────────────
@@ -103,8 +105,8 @@ class ScamDetector {
     'click here',
     'click now',
     'tap here',
-    'do not share',
-    'never share',
+    // Not "do not share" / "never share": that is the warning every genuine
+    // bank OTP SMS carries, and counting it flagged real OTPs as suspicious.
     'call us immediately',
     'call now',
     'trust us',
@@ -125,6 +127,9 @@ class ScamDetector {
     'confirm your details',
     'update your information',
     'verify your identity',
+    'via the link',
+    'link below',
+    'following link',
   ];
 
   // ── Regex patterns ────────────────────────────────────────────────────────
@@ -146,6 +151,54 @@ class ScamDetector {
     caseSensitive: false,
   );
 
+  /// Asking for a code, as opposed to delivering one. "Share OTP 482913 with
+  /// our agent" is a request; "Your OTP is 551203. Do not share it" is a bank
+  /// delivering a code and warning you, and must not score as a scam.
+  static final _otpRequestRegex = RegExp(
+    r'\b(share|send|tell|forward|give|provide|read\s+out|reply\s+with)\b[^.]{0,40}\b(otp|code|pin)\b'
+    r'|\b(otp|code)\b[^.]{0,30}\b(to|with)\s+(our|the|this)\s+(agent|executive|officer|representative|number)\b',
+    caseSensitive: false,
+  );
+  static final _negationRegex = RegExp(
+    r"\b(never|not|don't|dont|do\s+not)\s*$",
+    caseSensitive: false,
+  );
+
+  /// Threats to cut a service off: the electricity / SIM / gas bill scam.
+  static final _disconnectionRegex = RegExp(
+    r'\b(electricity|power|light|gas|water|connection|sim|mobile number|number|service)\b[^.]{0,50}'
+    r'\b(disconnect\w*|cut\s+off|deactivat\w*|be\s+blocked|suspend\w*)\b'
+    r'|\b(disconnect\w*|deactivat\w*)\b[^.]{0,40}\b(tonight|today|within)\b',
+    caseSensitive: false,
+  );
+
+  /// Money demanded up front to release a prize, loan, parcel or job.
+  static final _advanceFeeRegex = RegExp(
+    r'\b(processing|registration|clearance|release|delivery|activation|verification|customs)\s+(fee|fees|charge|charges)\b'
+    r'|\b(pay|deposit|transfer|send)\b[^.]{0,30}\b(fee|charges?|tax)\b[^.]{0,30}\b(to\s+)?(claim|release|receive|activate|unlock)\b',
+    caseSensitive: false,
+  );
+
+  /// Whole-word matches only: a substring test let "pin" fire inside
+  /// "shipping" and "win" inside "window".
+  static List<String> _hits(List<String> keywords, String lower) => keywords
+      .where(
+        (k) => RegExp(
+          '(?<![a-z0-9])${RegExp.escape(k)}(?![a-z0-9])',
+        ).hasMatch(lower),
+      )
+      .toList();
+
+  /// True when [text] asks for a code, ignoring negated forms like "never
+  /// share this code" that genuine OTP messages use as a warning.
+  static bool asksForOtp(String text) {
+    for (final m in _otpRequestRegex.allMatches(text)) {
+      final before = text.substring(m.start < 12 ? 0 : m.start - 12, m.start);
+      if (!_negationRegex.hasMatch(before)) return true;
+    }
+    return false;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   /// The main entry point. Returns an [AnalysisResult] for [text].
   // ─────────────────────────────────────────────────────────────────────────
@@ -164,9 +217,7 @@ class ScamDetector {
     int score = 0;
 
     // ── 1. Financial keywords ─────────────────────────────────────────────
-    final financialHits = _financialKeywords
-        .where((k) => lower.contains(k))
-        .toList();
+    final financialHits = _hits(_financialKeywords, lower);
     if (financialHits.isNotEmpty) {
       final pts = (financialHits.length * 12).clamp(0, 35);
       score += pts;
@@ -182,7 +233,7 @@ class ScamDetector {
     }
 
     // ── 2. Prize / lottery keywords ───────────────────────────────────────
-    final prizeHits = _prizeKeywords.where((k) => lower.contains(k)).toList();
+    final prizeHits = _hits(_prizeKeywords, lower);
     if (prizeHits.isNotEmpty) {
       final pts = (prizeHits.length * 14).clamp(0, 30);
       score += pts;
@@ -198,9 +249,7 @@ class ScamDetector {
     }
 
     // ── 3. Urgency keywords ───────────────────────────────────────────────
-    final urgencyHits = _urgencyKeywords
-        .where((k) => lower.contains(k))
-        .toList();
+    final urgencyHits = _hits(_urgencyKeywords, lower);
     if (urgencyHits.isNotEmpty) {
       final pts = (urgencyHits.length * 10).clamp(0, 25);
       score += pts;
@@ -216,46 +265,90 @@ class ScamDetector {
     }
 
     // ── 4. URL detection ─────────────────────────────────────────────────
+    // Shortened links are checked on their own, not only inside http(s)://
+    // matches: SMS phishing usually writes "bit.ly/xyz" with no scheme.
     final urlMatches = _urlRegex.allMatches(text);
-    if (urlMatches.isNotEmpty) {
-      int urlPts = 10;
-
-      // Check for shortened / phishing URLs — higher penalty
-      final shortMatches = _shortUrlRegex.allMatches(text);
-      if (shortMatches.isNotEmpty) {
-        urlPts = 25;
-        reasons.add(
-          DetectionReason(
-            label: 'Shortened / Obfuscated URL',
-            description:
-                'Found ${shortMatches.length} shortened URL(s). Scammers use services like bit.ly to hide the real destination of malicious links.',
-            scoreContribution: urlPts,
-            iconCategory: IconCategory.link,
-          ),
-        );
-      } else {
-        reasons.add(
-          DetectionReason(
-            label: 'URL / Link Detected',
-            description:
-                'Found ${urlMatches.length} link(s) in the message. Verify any link before clicking, especially if you were not expecting it.',
-            scoreContribution: urlPts,
-            iconCategory: IconCategory.link,
-          ),
-        );
-      }
+    final shortMatches = _shortUrlRegex.allMatches(text);
+    final hasLink = urlMatches.isNotEmpty || shortMatches.isNotEmpty;
+    if (shortMatches.isNotEmpty) {
+      const urlPts = 25;
       score += urlPts;
+      reasons.add(
+        DetectionReason(
+          label: 'Shortened / Obfuscated URL',
+          description:
+              'Found ${shortMatches.length} shortened URL(s). Scammers use services like bit.ly to hide the real destination of malicious links.',
+          scoreContribution: urlPts,
+          iconCategory: IconCategory.link,
+        ),
+      );
+    } else if (urlMatches.isNotEmpty) {
+      const urlPts = 10;
+      score += urlPts;
+      reasons.add(
+        DetectionReason(
+          label: 'URL / Link Detected',
+          description:
+              'Found ${urlMatches.length} link(s) in the message. Verify any link before clicking, especially if you were not expecting it.',
+          scoreContribution: urlPts,
+          iconCategory: IconCategory.link,
+        ),
+      );
     }
 
     // ── 5. OTP request pattern ───────────────────────────────────────────
-    if (_otpPatternRegex.hasMatch(lower)) {
-      const pts = 20;
+    if (asksForOtp(text)) {
+      const pts = 30;
       score += pts;
       reasons.add(
         DetectionReason(
           label: 'OTP / Code Sharing Request',
           description:
-              'The message appears to contain or request an OTP. No legitimate service will ever ask you to share your OTP.',
+              'The message asks you to share an OTP or code. No legitimate service will ever ask you to share your OTP.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.financial,
+        ),
+      );
+    } else if (_otpPatternRegex.hasMatch(lower) && hasLink) {
+      // A code delivered alongside a link. A code delivered on its own, with
+      // no request, is the normal shape of a genuine OTP: no points.
+      const pts = 15;
+      score += pts;
+      reasons.add(
+        DetectionReason(
+          label: 'OTP Alongside a Link',
+          description:
+              'An OTP arrives together with a link. Never enter a code on a page reached from a message.',
+          scoreContribution: pts,
+          iconCategory: IconCategory.financial,
+        ),
+      );
+    }
+
+    // ── 5b. Service disconnection threat ─────────────────────────────────
+    if (_disconnectionRegex.hasMatch(text)) {
+      const pts = 30;
+      score += pts;
+      reasons.add(
+        DetectionReason(
+          label: 'Service Disconnection Threat',
+          description:
+              "Threatens to cut off your electricity, SIM or another service unless you act now. Utilities don't disconnect over SMS; check with the provider's official number.",
+          scoreContribution: pts,
+          iconCategory: IconCategory.urgency,
+        ),
+      );
+    }
+
+    // ── 5c. Upfront fee demand ───────────────────────────────────────────
+    if (_advanceFeeRegex.hasMatch(text)) {
+      const pts = 30;
+      score += pts;
+      reasons.add(
+        DetectionReason(
+          label: 'Upfront Fee Demand',
+          description:
+              'Asks for a fee before you can receive a prize, loan, parcel or job. Real prizes and refunds never require paying first.',
           scoreContribution: pts,
           iconCategory: IconCategory.financial,
         ),
@@ -263,9 +356,7 @@ class ScamDetector {
     }
 
     // ── 6. Manipulation keywords ─────────────────────────────────────────
-    final manipHits = _manipulationKeywords
-        .where((k) => lower.contains(k))
-        .toList();
+    final manipHits = _hits(_manipulationKeywords, lower);
     if (manipHits.isNotEmpty) {
       final pts = (manipHits.length * 8).clamp(0, 20);
       score += pts;
@@ -281,9 +372,7 @@ class ScamDetector {
     }
 
     // ── 7. Generic suspicious action words ───────────────────────────────
-    final suspHits = _suspiciousKeywords
-        .where((k) => lower.contains(k))
-        .toList();
+    final suspHits = _hits(_suspiciousKeywords, lower);
     if (suspHits.isNotEmpty) {
       final pts = (suspHits.length * 5).clamp(0, 15);
       score += pts;

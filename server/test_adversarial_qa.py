@@ -96,14 +96,19 @@ def test_virustotal_eicar_and_safe_browsing():
     r_vt = httpx.get(f"{BASE_URL}/osint/hash/{eicar_hash}")
     assert r_vt.status_code == 200
     vt_data = r_vt.json()
-    print("  └─ VirusTotal EICAR Detection Count:", vt_data.get("malicious"))
-    assert vt_data.get("malicious", 0) > 50, "VirusTotal failed to identify EICAR malware hash!"
-    
-    # Google Safe Browsing Phishing URL
     phishing_url = "http://testsafebrowsing.appspot.com/s/phishing.html"
     r_gsb = httpx.post(f"{BASE_URL}/osint/urls", json={"urls": [phishing_url]})
     assert r_gsb.status_code == 200
     gsb_results = r_gsb.json().get("results", [])
+
+    # These are live third-party checks. Without VIRUSTOTAL_API_KEY /
+    # GOOGLE_SAFE_BROWSING_API_KEY the server reports checked=False; that is
+    # a configuration gap to report as skipped, not a failure of the code.
+    if not vt_data.get("checked") or not any(res.get("checked") for res in gsb_results):
+        pytest.skip("VirusTotal / Safe Browsing API keys not configured on the server")
+
+    print("  └─ VirusTotal EICAR Detection Count:", vt_data.get("malicious"))
+    assert vt_data.get("malicious", 0) > 50, "VirusTotal failed to identify EICAR malware hash!"
     print("  └─ Google Safe Browsing Result:", gsb_results)
     assert any(res.get("malicious") is True for res in gsb_results), "Google Safe Browsing failed to flag phishing URL!"
 

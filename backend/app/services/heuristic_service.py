@@ -27,6 +27,7 @@ PRIZE_KW = frozenset({
     "win", "winner", "lottery", "prize", "reward", "congratulations", "selected",
     "gift card", "voucher", "free money", "jackpot", "lucky draw", "cash prize",
     "you have been chosen", "claim your prize", "you are the winner",
+    "you won", "kbc",
 })
 
 URGENCY_KW = frozenset({
@@ -37,7 +38,9 @@ URGENCY_KW = frozenset({
 })
 
 MANIPULATION_KW = frozenset({
-    "click here", "click now", "tap here", "do not share", "never share",
+    # Not "do not share" / "never share": that is the warning every genuine
+    # bank OTP SMS carries, and counting it flagged real OTPs as suspicious.
+    "click here", "click now", "tap here",
     "call us immediately", "call now", "trust us", "guaranteed", "risk free",
     "no cost", "secret", "confidential", "exclusive offer", "only for you",
     "do not tell anyone", "keep this private",
@@ -47,6 +50,7 @@ SUSPICIOUS_KW = frozenset({
     "click", "download", "install", "open attachment", "verify your identity",
     "update your information", "confirm your details", "login to your account",
     "access your account", "secure your account",
+    "via the link", "link below", "following link",
 })
 
 CRYPTO_KW = frozenset({
@@ -94,6 +98,44 @@ PHONE_RE = re.compile(r"(\+?\d[\d\s\-(.)]{7,}\d)")
 UPI_RE = re.compile(r"[a-zA-Z0-9.\-_]+@[a-zA-Z0-9]+", re.IGNORECASE)
 QR_RE = re.compile(r"\bqr\s*(code)?\b", re.IGNORECASE)
 AMOUNT_RE = re.compile(r"(rs\.?|inr|₹|\$)\s*[\d,]+", re.IGNORECASE)
+# Asking for the code, as opposed to delivering it. "Share OTP 482913 with
+# our agent" is a request; "Your OTP is 551203. Do not share it" is a bank
+# delivering a code and warning you, and must not score as a scam.
+OTP_REQUEST_RE = re.compile(
+    r"\b(share|send|tell|forward|give|provide|read\s+out|reply\s+with)\b[^.]{0,40}\b(otp|code|pin)\b"
+    r"|\b(otp|code)\b[^.]{0,30}\b(to|with)\s+(our|the|this)\s+(agent|executive|officer|representative|number)\b",
+    re.IGNORECASE,
+)
+NEGATION_RE = re.compile(r"\b(never|not|don't|dont|do\s+not)\s*$", re.IGNORECASE)
+# Threats to cut a service off: the electricity / SIM / gas bill scam.
+DISCONNECTION_RE = re.compile(
+    r"\b(electricity|power|light|gas|water|connection|sim|mobile number|number|service)\b[^.]{0,50}"
+    r"\b(disconnect\w*|cut\s+off|deactivat\w*|be\s+blocked|suspend\w*)\b"
+    r"|\b(disconnect\w*|deactivat\w*)\b[^.]{0,40}\b(tonight|today|within)\b",
+    re.IGNORECASE,
+)
+# Money demanded up front to release a prize, loan, parcel or job.
+ADVANCE_FEE_RE = re.compile(
+    r"\b(processing|registration|clearance|release|delivery|activation|verification|customs)\s+(fee|fees|charge|charges)\b"
+    r"|\b(pay|deposit|transfer|send)\b[^.]{0,30}\b(fee|charges?|tax)\b[^.]{0,30}\b(to\s+)?(claim|release|receive|activate|unlock)\b",
+    re.IGNORECASE,
+)
+
+
+def keyword_hits(keywords, lower: str) -> list[str]:
+    """Whole-word matches only, in a stable order: a substring test let "pin"
+    fire inside "shipping" and "win" inside "window"."""
+    return [k for k in sorted(keywords)
+            if re.search(r"(?<![a-z0-9])" + re.escape(k) + r"(?![a-z0-9])", lower)]
+
+
+def asks_for_otp(text: str) -> bool:
+    """True when the message asks for a code, ignoring negated forms like
+    "never share this code" that genuine OTP messages use as a warning."""
+    for m in OTP_REQUEST_RE.finditer(text):
+        if not NEGATION_RE.search(text[max(0, m.start() - 12):m.start()]):
+            return True
+    return False
 
 
 @dataclass
@@ -128,7 +170,7 @@ class HeuristicService:
             category_votes[cat] = category_votes.get(cat, 0) + pts
 
         # ── Financial keywords ─────────────────────────────────────────────────
-        fin_hits = [k for k in FINANCIAL_KW if k in lower]
+        fin_hits = keyword_hits(FINANCIAL_KW, lower)
         if fin_hits:
             pts = min(len(fin_hits) * 12, 35)
             score += pts
@@ -143,7 +185,7 @@ class HeuristicService:
             vote(ScamCategory.bank_scam, pts)
 
         # ── Prize / Lottery ────────────────────────────────────────────────────
-        prize_hits = [k for k in PRIZE_KW if k in lower]
+        prize_hits = keyword_hits(PRIZE_KW, lower)
         if prize_hits:
             pts = min(len(prize_hits) * 14, 30)
             score += pts
@@ -158,7 +200,7 @@ class HeuristicService:
             vote(ScamCategory.lottery_scam, pts)
 
         # ── Urgency ────────────────────────────────────────────────────────────
-        urgency_hits = [k for k in URGENCY_KW if k in lower]
+        urgency_hits = keyword_hits(URGENCY_KW, lower)
         if urgency_hits:
             pts = min(len(urgency_hits) * 10, 25)
             score += pts
@@ -197,20 +239,59 @@ class HeuristicService:
             ))
 
         # ── OTP request ────────────────────────────────────────────────────────
-        if OTP_RE.search(lower) or ("otp" in lower and any(w in lower for w in ["share", "send", "give", "enter"])):
-            pts = 25
+        if asks_for_otp(text):
+            pts = 30
             score += pts
             reasons.append(DetectionReason(
                 label="OTP / Code Request",
-                description="The message contains or requests an OTP. "
+                description="The message asks you to share an OTP or code. "
                             "No legitimate service ever asks you to share your OTP.",
                 scoreContribution=pts,
                 iconCategory=IconCategory.financial,
             ))
             vote(ScamCategory.otp_scam, pts)
+        elif OTP_RE.search(lower) and (url_matches or short_matches):
+            # A code delivered alongside a link. A code delivered on its own,
+            # with no request, is the normal shape of a genuine OTP: no points.
+            pts = 15
+            score += pts
+            reasons.append(DetectionReason(
+                label="OTP Alongside a Link",
+                description="An OTP arrives together with a link. "
+                            "Never enter a code on a page reached from a message.",
+                scoreContribution=pts,
+                iconCategory=IconCategory.financial,
+            ))
+            vote(ScamCategory.otp_scam, pts)
+
+        # ── Service disconnection threat ───────────────────────────────────────
+        if DISCONNECTION_RE.search(text):
+            pts = 30
+            score += pts
+            reasons.append(DetectionReason(
+                label="Service Disconnection Threat",
+                description="Threatens to cut off your electricity, SIM or another service unless you act now. "
+                            "Utilities don't disconnect over SMS; check with the provider's official number.",
+                scoreContribution=pts,
+                iconCategory=IconCategory.urgency,
+            ))
+            vote(ScamCategory.bank_scam, pts)
+
+        # ── Upfront fee demand ─────────────────────────────────────────────────
+        if ADVANCE_FEE_RE.search(text):
+            pts = 30
+            score += pts
+            reasons.append(DetectionReason(
+                label="Upfront Fee Demand",
+                description="Asks for a fee before you can receive a prize, loan, parcel or job. "
+                            "Real prizes and refunds never require paying first.",
+                scoreContribution=pts,
+                iconCategory=IconCategory.financial,
+            ))
+            vote(ScamCategory.lottery_scam if keyword_hits(PRIZE_KW, lower) else ScamCategory.job_scam, pts)
 
         # ── Manipulation ───────────────────────────────────────────────────────
-        manip_hits = [k for k in MANIPULATION_KW if k in lower]
+        manip_hits = keyword_hits(MANIPULATION_KW, lower)
         if manip_hits:
             pts = min(len(manip_hits) * 8, 20)
             score += pts
@@ -224,7 +305,7 @@ class HeuristicService:
             ))
 
         # ── Crypto keywords ────────────────────────────────────────────────────
-        crypto_hits = [k for k in CRYPTO_KW if k in lower]
+        crypto_hits = keyword_hits(CRYPTO_KW, lower)
         if crypto_hits:
             pts = min(len(crypto_hits) * 12, 30)
             score += pts
@@ -239,7 +320,7 @@ class HeuristicService:
             vote(ScamCategory.investment_scam, pts)
 
         # ── Government impersonation ───────────────────────────────────────────
-        gov_hits = [k for k in GOVERNMENT_KW if k in lower]
+        gov_hits = keyword_hits(GOVERNMENT_KW, lower)
         if gov_hits:
             pts = min(len(gov_hits) * 10, 28)
             score += pts
@@ -254,7 +335,7 @@ class HeuristicService:
             vote(ScamCategory.government_scam, pts)
 
         # ── Romance scam ───────────────────────────────────────────────────────
-        romance_hits = [k for k in ROMANCE_KW if k in lower]
+        romance_hits = keyword_hits(ROMANCE_KW, lower)
         if romance_hits:
             pts = min(len(romance_hits) * 11, 28)
             score += pts
@@ -269,7 +350,7 @@ class HeuristicService:
             vote(ScamCategory.romance_scam, pts)
 
         # ── Job scam ──────────────────────────────────────────────────────────
-        job_hits = [k for k in JOB_KW if k in lower]
+        job_hits = keyword_hits(JOB_KW, lower)
         if job_hits:
             pts = min(len(job_hits) * 10, 25)
             score += pts
@@ -284,7 +365,7 @@ class HeuristicService:
             vote(ScamCategory.job_scam, pts)
 
         # ── Courier / delivery scam ────────────────────────────────────────────
-        courier_hits = [k for k in COURIER_KW if k in lower]
+        courier_hits = keyword_hits(COURIER_KW, lower)
         if courier_hits:
             pts = min(len(courier_hits) * 10, 22)
             score += pts
@@ -337,7 +418,7 @@ class HeuristicService:
             ))
 
         # ── Suspicious action words ────────────────────────────────────────────
-        susp_hits = [k for k in SUSPICIOUS_KW if k in lower]
+        susp_hits = keyword_hits(SUSPICIOUS_KW, lower)
         if susp_hits:
             pts = min(len(susp_hits) * 5, 15)
             score += pts
