@@ -3,24 +3,27 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'apk_analyzer_service.dart';
+import 'backend_config.dart';
 
 class ScannerService {
   final String baseUrl;
 
-  ScannerService({String? baseUrl}) : baseUrl = baseUrl ?? _resolveBaseUrl();
-
-  static String _resolveBaseUrl() {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  ScannerService({String? baseUrl})
+    : baseUrl = baseUrl ?? BackendConfig.baseUrl;
 
   Future<Map<String, dynamic>> scanApk(PlatformFile apkFile) async {
+    String reason = 'server_unreachable';
     try {
-      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/scan'));
+      // Cheap reachability probe first, so a phone with no server fails over to
+      // the on-device scan in a few seconds instead of after an upload.
+      final probe = await http
+          .get(Uri.parse('$baseUrl/health'))
+          .timeout(const Duration(seconds: 4));
+      if (probe.statusCode != 200) {
+        throw const SocketException('not ScamShield');
+      }
 
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/scan'));
       request.files.add(
         await http.MultipartFile.fromPath(
           'file',
@@ -29,9 +32,13 @@ class ScannerService {
         ),
       );
 
-      // Timeout backend connection after 5 seconds
+      // The server unpacks the APK (androguard, YARA) and asks VirusTotal, so
+      // the answer takes real time. This used to give up after 5 seconds,
+      // which is shorter than most scans, so even a reachable server fell
+      // back to the on-device engine and "androguard and VirusTotal never
+      // work".
       var streamedResponse = await request.send().timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 150),
       );
       var response = await http.Response.fromStream(streamedResponse);
 
@@ -40,12 +47,15 @@ class ScannerService {
         data['scan_mode'] = 'server';
         return data;
       }
+      reason = 'server_error_${response.statusCode}';
     } catch (_) {
-      // Backend is offline/unreachable or timed out: fall back to local static engine
+      // Unreachable, offline or timed out: fall back to the local static engine.
     }
 
     // Fallback to local static APK engine
-    return await _performLocalScan(apkFile);
+    final local = await _performLocalScan(apkFile);
+    local['fallback_reason'] = reason;
+    return local;
   }
 
   Future<Map<String, dynamic>> _performLocalScan(PlatformFile apkFile) async {
@@ -148,9 +158,9 @@ class ScannerService {
           'malicious': 0,
           'suspicious': 0,
           'note':
-              'Cloud reputation not run in on-device mode. Reconnect to the '
-              'ScamShield backend (with a VirusTotal key configured) for a live '
-              'multi-engine verdict.',
+              'Cloud reputation not run: this scan happened on the phone only. '
+              'Set the server address in Profile > Server address (the server '
+              'needs a VirusTotal key) for a live multi-engine verdict.',
         },
         'safe_browsing': {
           'checked': false,
@@ -158,9 +168,9 @@ class ScannerService {
           'urls_found': result.urls.length,
           'note': result.urls.isEmpty
               ? 'No URLs were extracted from this APK, so there was nothing to check.'
-              : '${result.urls.length} URL(s) extracted. Reconnect to the ScamShield '
-                    'backend (with a Google Safe Browsing key configured) to screen '
-                    'them live.',
+              : '${result.urls.length} URL(s) extracted. Set the server address '
+                    '(its Google Safe Browsing key must be enabled) to screen '
+                    'them live (Profile > Server address).',
         },
       },
     };

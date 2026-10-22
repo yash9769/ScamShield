@@ -14,7 +14,9 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 import '../widgets/motion.dart';
+import '../services/backend_config.dart';
 import '../services/cloud_account_service.dart';
+import '../widgets/server_address_dialog.dart';
 
 class TrendsScreen extends StatefulWidget {
   const TrendsScreen({super.key});
@@ -70,6 +72,8 @@ class _TrendsScreenState extends State<TrendsScreen> {
               _buildEmpty()
             else
               ..._buildTrendList(_trends!),
+            const SizedBox(height: 28),
+            ..._buildCommonScams(),
           ],
         ),
       ),
@@ -295,6 +299,106 @@ class _TrendsScreenState extends State<TrendsScreen> {
     );
   }
 
+  /// Built into the app, so this screen is useful with no server and in the
+  /// first days of a fresh deployment when nobody has reported anything yet.
+  /// These are long-running patterns, not a live feed, and are labelled so.
+  List<Widget> _buildCommonScams() {
+    const scams = [
+      (
+        Icons.account_balance_outlined,
+        'Fake bank / KYC messages',
+        '"Your account will be blocked, update KYC now" with a link. Banks '
+            'never ask for KYC, OTP or PIN through a link in an SMS.',
+      ),
+      (
+        Icons.local_police_outlined,
+        '"Digital arrest" calls',
+        'A caller claiming to be police, CBI or customs says you are under '
+            'arrest on video call. No agency arrests or takes money over a call.',
+      ),
+      (
+        Icons.qr_code_2_outlined,
+        'Scan-to-receive-money QR',
+        'Scanning a QR or entering your PIN only ever sends money out. '
+            'Anyone saying "scan to receive" is stealing from you.',
+      ),
+      (
+        Icons.work_outline,
+        'Task and part-time job fraud',
+        'Small payments for liking videos or reviews, then a "deposit" to '
+            'unlock earnings. The deposit is the scam.',
+      ),
+      (
+        Icons.bolt_outlined,
+        'Electricity / SIM disconnection',
+        '"Your power will be cut tonight, call this number." Utilities and '
+            'telecoms do not disconnect over SMS.',
+      ),
+      (
+        Icons.card_giftcard_outlined,
+        'Lottery, prize and KBC messages',
+        'Any prize that asks you to pay a fee, tax or "processing charge" '
+            'first is a scam.',
+      ),
+    ];
+    return [
+      const Text(
+        'SCAMS TO WATCH FOR',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textSecondary,
+          letterSpacing: 0.6,
+        ),
+      ),
+      const SizedBox(height: 4),
+      const Text(
+        'Common patterns, built into the app. Not live data.',
+        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+      ),
+      const SizedBox(height: 10),
+      for (final (icon, title, text) in scams)
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: AppColors.primary, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+    ];
+  }
+
   Widget _buildUnavailable() {
     return Container(
       padding: const EdgeInsets.all(22),
@@ -303,24 +407,38 @@ class _TrendsScreenState extends State<TrendsScreen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.cloud_off, color: AppColors.warning, size: 30),
-          SizedBox(height: 12),
-          Text(
-            'Trends are unavailable',
+          const Icon(Icons.cloud_off, color: AppColors.warning, size: 30),
+          const SizedBox(height: 12),
+          const Text(
+            'Live trends need the ScamShield server',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Text(
-            'Could not reach the ScamShield service. Pull down to try again — '
-            'scanning still works offline.',
+            BackendConfig.isDefault
+                ? 'This phone has no server address set, so it cannot reach '
+                      'the community reports. Scanning still works on this '
+                      'device.'
+                : 'Could not reach ${BackendConfig.baseUrl}. Check that the '
+                      'server is running and that you are on the same Wi-Fi. '
+                      'Pull down to try again.',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12.5,
               height: 1.4,
             ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await showServerAddressDialog(context);
+              if (mounted) _load();
+            },
+            icon: const Icon(Icons.dns_outlined, size: 18),
+            label: const Text('Set server address'),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'scam_detector.dart';
 import 'consent_service.dart';
+import 'backend_config.dart';
 
 class ApiService {
   static final ConsentService _consentService = ConsentService();
@@ -13,13 +14,7 @@ class ApiService {
   // (which resolves to the emulator itself). Hardcoding the loopback address
   // meant every text analysis silently failed on Android and fell into the
   // error path. Matches the resolution used by ScannerService/OsintService.
-  static String get _baseUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _baseUrl => BackendConfig.baseUrl;
 
   /// Calls the FastAPI backend to analyze the text using Gemini AI.
   ///
@@ -102,15 +97,17 @@ class ApiService {
         await http.MultipartFile.fromPath('file', audioFile.path),
       );
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 90),
       );
       final response = await http.Response.fromStream(
         streamedResponse,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 90));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }
     } catch (e) {
+      // Whisper transcription is slow, so these calls get a long timeout (90 s
+      // voice, 45 s image); 10 s made every real voice note "fail".
       debugPrint('Voice API error: $e');
     }
     return const AnalysisResult(
@@ -141,11 +138,11 @@ class ApiService {
         await http.MultipartFile.fromPath('file', imageFile.path),
       );
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 45),
       );
       final response = await http.Response.fromStream(
         streamedResponse,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 45));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }

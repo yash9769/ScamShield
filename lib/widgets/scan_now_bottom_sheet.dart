@@ -119,10 +119,11 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
   /// bottom-nav tab. We dismiss the sheet first, then push the dedicated
   /// screen so the user gets the complete multi-section report UI.
   void _openApkScanner() {
-    Navigator.of(context).pop(); // close the bottom sheet
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const ApkScanScreen()));
+    // Grab the navigator before popping: the sheet's own context is gone
+    // once it closes.
+    final navigator = Navigator.of(context);
+    navigator.pop(); // close the bottom sheet
+    navigator.push(MaterialPageRoute(builder: (_) => const ApkScanScreen()));
   }
 
   @override

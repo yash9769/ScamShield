@@ -7,15 +7,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- Real-time SMS scam screening (Settings > Real-Time Protection). This is
-         an optional, explicitly opt-in feature — RECEIVE_SMS only lets
-         ScamShield observe incoming messages alongside the user's normal SMS
-         app, it does not make ScamShield a messaging app or intercept/block
-         anything. See SmsScreeningReceiver.kt. -->
-    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
 
     <application
-        android:label="SScamSShield"
+        android:label="ScamShield"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
@@ -54,37 +48,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Real-time SMS scam screening. exported=true is required for the
-             system to deliver the SMS_RECEIVED broadcast to this receiver;
-             it does not expose any app functionality to other apps beyond
-             that one system broadcast. -->
-        <receiver
-            android:name=".SmsScreeningReceiver"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-            </intent-filter>
-        </receiver>
-
-        <!-- Incoming-call scam screening (Profile > Scam Call Screening).
-             Deliberately declares no call-log permission: the Android 10 role
-             API supplies the caller's number to a screening service directly,
-             which is why this feature is gated to API 29+ rather than taking
-             the pre-10 route of replacing the user's dialer.
-
-             BIND_SCREENING_SERVICE is a system-signature permission, so this
-             service can only ever be bound by the telecom framework — the
-             exported=true below does not expose it to other apps. -->
-        <service
-            android:name=".CallScreeningServiceImpl"
-            android:exported="true"
-            android:permission="android.permission.BIND_SCREENING_SERVICE">
-            <intent-filter>
-                <action android:name="android.telecom.CallScreeningService"/>
-            </intent-filter>
-        </service>
-
         <!-- Home-screen widget: one tap from a suspicious message to a scan.
              exported=true is required for the launcher to place and update it.
              It exposes nothing but the tile itself — the only thing tapping it
@@ -116,6 +79,26 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Android 11+ package visibility: without these, url_launcher cannot
+             tell whether anything can handle a phone number or a web link, and
+             refuses to open the dialer (1930 helpline) or the browser
+             (cybercrime.gov.in, QR links). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="upi"/>
         </intent>
     </queries>
 </manifest>

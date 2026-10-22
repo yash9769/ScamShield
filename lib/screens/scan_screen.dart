@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme.dart';
@@ -15,7 +17,9 @@ import '../data/models/scan_record.dart';
 import '../services/upi_parser.dart';
 import '../data/repositories/scan_repository.dart';
 import 'qr_scan_screen.dart';
+import 'qr_result_screen.dart';
 import 'upi_verify_screen.dart';
+import 'cybercrime_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -94,37 +98,140 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  Future<void> _analyzeSharedImage(String path) async {
+  Future<void> _analyzeSharedImage(String path) =>
+      _analyzeAttachment(File(path), isVoice: false, source: 'Shared Image');
+
+  /// Audio files the server's Whisper step accepts, and the limits it enforces
+  /// (MAX_AUDIO_SIZE_MB / MAX_IMAGE_SIZE_MB). Checked here so a too-large file
+  /// is refused instantly instead of after a long upload.
+  static const int _maxAudioBytes = 25 * 1024 * 1024;
+  static const int _maxImageBytes = 10 * 1024 * 1024;
+
+  String? _attachedName;
+
+  /// Voice and image scans used to be a text box with a different placeholder:
+  /// there was no way to attach the actual voice note or screenshot, although
+  /// the analysis code behind them existed.
+  Future<void> _pickVoiceNote() async {
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+      allowMultiple: false,
+    );
+    final file = picked?.files.single;
+    if (file == null || file.path == null) return;
+    if (file.size > _maxAudioBytes) {
+      _showSnackBar(
+        'That file is over 25 MB. Choose a shorter voice note.',
+        isError: true,
+      );
+      return;
+    }
+    await _analyzeAttachment(File(file.path!), isVoice: true, name: file.name);
+  }
+
+  Future<void> _pickImage(ImageSource from) async {
+    XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(source: from, imageQuality: 92);
+    } catch (e) {
+      _showSnackBar(
+        from == ImageSource.camera
+            ? 'Could not open the camera. Check the camera permission in Settings.'
+            : 'Could not open your photos. Check the permission in Settings.',
+        isError: true,
+      );
+      return;
+    }
+    if (picked == null) return;
+    final size = await picked.length();
+    if (size > _maxImageBytes) {
+      _showSnackBar(
+        'That image is over 10 MB. Choose a smaller one.',
+        isError: true,
+      );
+      return;
+    }
+    await _analyzeAttachment(
+      File(picked.path),
+      isVoice: false,
+      name: picked.name,
+    );
+  }
+
+  Future<void> _pickImageFile() async {
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+    final file = picked?.files.single;
+    if (file == null || file.path == null) return;
+    if (file.size > _maxImageBytes) {
+      _showSnackBar(
+        'That image is over 10 MB. Choose a smaller one.',
+        isError: true,
+      );
+      return;
+    }
+    await _analyzeAttachment(File(file.path!), isVoice: false, name: file.name);
+  }
+
+  Future<void> _analyzeAttachment(
+    File file, {
+    required bool isVoice,
+    String? name,
+    String? source,
+  }) async {
+    final label = name ?? file.path.split('/').last;
     setState(() {
       _isAnalyzing = true;
       _result = null;
+      _attachedName = label;
     });
 
-    final result = await ApiService.analyzeImage(File(path));
+    final result = isVoice
+        ? await ApiService.analyzeVoice(file)
+        : await ApiService.analyzeImage(file);
 
-    try {
-      final record = ScanRecord.fromAnalysisResult(
-        inputText: 'Shared image: $path',
-        result: result,
-        source: 'Shared Image',
-      );
-      await _repo.saveScan(record);
-    } catch (_) {}
+    // A failed upload says nothing about the file, so don't file it in
+    // history as if it had been checked.
+    final failed =
+        result.reasons.isNotEmpty &&
+        (result.reasons.first.label == 'Voice Note Scan Failed' ||
+            result.reasons.first.label == 'Image Scan Failed' ||
+            result.reasons.first.label == 'Analysis Unavailable');
+    if (!failed) {
+      try {
+        final record = ScanRecord.fromAnalysisResult(
+          inputText: '${isVoice ? 'Voice note' : 'Image'}: $label',
+          result: result,
+          source: source ?? (isVoice ? 'Voice Note' : 'Image'),
+        );
+        await _repo.saveScan(record);
+      } catch (_) {}
+      _maybeAlertFamily(result);
+    }
 
     if (mounted) {
       setState(() {
         _result = result;
         _isAnalyzing = false;
-        // A shared image has no reportable URL of its own — clear any
-        // leftover community-report state from a previous text/link scan.
+        // An attachment has no reportable URL of its own — clear any leftover
+        // community-report state from a previous text/link scan.
         _reportableUrl = null;
         _reputation = null;
         _reportSubmitted = false;
-        // The OCR'd text isn't surfaced here, so there is nothing stable to
-        // hash — feedback is offered on text and link scans only.
+        // The transcript / OCR text isn't surfaced here, so there is nothing
+        // stable to hash: feedback is offered on text and link scans only.
         _analyzedText = null;
         _feedbackGiven = null;
       });
+      if (failed) {
+        _showSnackBar(
+          'Could not analyse the ${isVoice ? 'voice note' : 'image'}. It needs the '
+          'ScamShield server: set it up in Profile > Server address.',
+          isError: true,
+        );
+      }
     }
   }
 
@@ -286,6 +393,14 @@ class _ScanScreenState extends State<ScanScreen>
       );
       return;
     }
+
+    // Show what the code actually holds (the real address, who owns it, and
+    // the tricks used to disguise bad ones) BEFORE anything is analysed or
+    // opened. A verdict alone doesn't tell someone where they'd be sent.
+    final action = await Navigator.of(context).push<QrAction>(
+      MaterialPageRoute(builder: (_) => QrResultScreen(raw: decoded)),
+    );
+    if (!mounted || action != QrAction.analyze) return;
 
     setState(() {
       _activeTab = 1; // QR payloads are almost always a URL/UPI link
@@ -467,8 +582,8 @@ class _ScanScreenState extends State<ScanScreen>
                   : _activeTab == 1
                   ? 'Paste the link here'
                   : _activeTab == 2
-                  ? 'Paste what the caller said, or the voicemail text'
-                  : 'Paste the text from the screenshot',
+                  ? 'Attach a voice note below, or paste what the caller said'
+                  : 'Attach a screenshot or photo below, or paste its text',
               hintStyle: AppText.bodyMuted,
               filled: false,
               isDense: true,
@@ -480,6 +595,37 @@ class _ScanScreenState extends State<ScanScreen>
               focusedBorder: InputBorder.none,
             ),
           ),
+          if (_attachedName != null && (_activeTab == 2 || _activeTab == 3))
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Icon(
+                    _activeTab == 2
+                        ? Icons.graphic_eq_rounded
+                        : Icons.image_outlined,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _attachedName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.caption,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => setState(() => _attachedName = null),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.close, size: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const Divider(height: 1),
           Row(
             children: [
@@ -493,6 +639,29 @@ class _ScanScreenState extends State<ScanScreen>
                 'Scan QR',
                 _scanQrCode,
               ),
+              if (_activeTab == 2)
+                _inputAction(
+                  Icons.attach_file_rounded,
+                  'Attach voice note',
+                  _pickVoiceNote,
+                ),
+              if (_activeTab == 3) ...[
+                _inputAction(
+                  Icons.photo_library_outlined,
+                  'Gallery',
+                  () => _pickImage(ImageSource.gallery),
+                ),
+                _inputAction(
+                  Icons.photo_camera_outlined,
+                  'Camera',
+                  () => _pickImage(ImageSource.camera),
+                ),
+                _inputAction(
+                  Icons.folder_open_outlined,
+                  'Files',
+                  _pickImageFile,
+                ),
+              ],
               const Spacer(),
               if (_controller.text.isNotEmpty)
                 Text(
@@ -527,7 +696,15 @@ class _ScanScreenState extends State<ScanScreen>
   Widget _buildActionButton() {
     final hasText = _controller.text.trim().isNotEmpty;
     return ElevatedButton.icon(
-      onPressed: (_isAnalyzing || !hasText) ? null : _analyze,
+      onPressed: _isAnalyzing
+          ? null
+          : hasText
+          ? _analyze
+          : () => _showSnackBar(
+              'Paste or type a message, link or number first, or attach a '
+              'file.',
+              isError: false,
+            ),
       icon: const Icon(Icons.shield_outlined, size: 20),
       label: Text(LocalizationService.tr('scan_button')),
     );
@@ -667,7 +844,7 @@ class _ScanScreenState extends State<ScanScreen>
     if (text == null || result == null || _feedbackSending) return;
 
     setState(() => _feedbackSending = true);
-    final ok = await VerdictFeedbackService.submit(
+    final outcome = await VerdictFeedbackService.submit(
       text: text,
       classification: result.classification.name,
       riskScore: result.riskScore,
@@ -677,14 +854,54 @@ class _ScanScreenState extends State<ScanScreen>
 
     setState(() {
       _feedbackSending = false;
-      // Only claim it landed if it actually did — a thank-you for something
-      // that never left the device is worse than an error.
-      _feedbackGiven = ok ? agreement : null;
+      // Claim it only if it was actually recorded, here or on the server.
+      _feedbackGiven = outcome == FeedbackOutcome.notRecorded
+          ? null
+          : agreement;
     });
-    if (!ok) {
+
+    if (outcome == FeedbackOutcome.notRecorded) {
       _showSnackBar(
-        "Couldn't send that just now. Your scan is unaffected.",
+        "Couldn't record that: consent for sending feedback isn't on file.",
         isError: true,
+      );
+      return;
+    }
+
+    if (agreement == VerdictAgreement.missed) {
+      // "It was a scam" is not just a data point. This person may have lost
+      // money or be about to, so put the next step right there.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 10),
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            outcome == FeedbackOutcome.sent
+                ? 'Thanks. If you lost money or shared details, report it now.'
+                : 'Saved on this device. If you lost money or shared details, report it now.',
+          ),
+          action: SnackBarAction(
+            label: 'REPORT',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CybercrimeScreen(
+                  record: ScanRecord.fromAnalysisResult(
+                    inputText: text,
+                    result: result,
+                    source: 'Manual',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    } else if (outcome == FeedbackOutcome.savedOnDevice) {
+      _showSnackBar(
+        'Saved on this device. It will be sent when the server is reachable.',
+        isError: false,
       );
     }
   }

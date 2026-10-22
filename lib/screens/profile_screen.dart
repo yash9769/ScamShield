@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import '../services/settings_service.dart';
-import '../services/sms_screening_service.dart';
-import '../services/call_screening_service.dart';
 import '../services/auth_service.dart';
+import '../services/backend_config.dart';
+import '../widgets/server_address_dialog.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
 import 'login_screen.dart';
@@ -15,6 +14,7 @@ import 'history_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'family_screen.dart';
 import 'trends_screen.dart';
+import 'cybercrime_screen.dart';
 import 'language_screen.dart';
 import '../services/localization_service.dart';
 import '../services/simple_mode_service.dart';
@@ -25,7 +25,7 @@ enum ProtectionState {
   disabled,
   permissionRequired,
   unavailable,
-  error
+  error,
 }
 
 class ProfileScreen extends StatefulWidget {
@@ -39,29 +39,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ScanRepository _repo = ScanRepository();
   ScanStatistics? _stats;
 
-  /// Android 10+ with the role API present. Resolved once, because it cannot
-  /// change while the app is running.
-  bool _callScreeningSupported = false;
-  
-  /// Track states for protection features
-  ProtectionState _smsState = ProtectionState.disabled;
-  ProtectionState _callState = ProtectionState.unavailable;
-  bool _smsPermissionGranted = false;
-  
-  // Listener callbacks to properly remove in dispose
-  late final VoidCallback _smsListener;
-  late final VoidCallback _callListener;
-  bool _listenersAdded = false;
-
   @override
   void initState() {
     super.initState();
     SettingsService.init();
     _loadStats();
-    // Initialize listeners first before calling async method
-    _smsListener = () => _updateSmsState();
-    _callListener = () => _updateCallState();
-    _resolveProtectionStates();
     // See data_change_notifier.dart: this screen stays alive in
     // MainNavigation's IndexedStack and needs an explicit signal to refresh
     // after a scan/deletion made from another tab or screen.
@@ -71,10 +53,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     DataChangeNotifier.version.removeListener(_loadStats);
-    if (_listenersAdded) {
-      SmsScreeningService.isActive.removeListener(_smsListener);
-      CallScreeningService.isActive.removeListener(_callListener);
-    }
     super.dispose();
   }
 
@@ -219,257 +197,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _onToggleSmsScreening(bool wantsOn) async {
-    if (!wantsOn) {
-      await SmsScreeningService.disable();
-      return;
-    }
-
-    // A sensitive permission deserves an explanation before the system
-    // prompt, not just after a denial.
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.sms_outlined, color: AppColors.primary),
-            SizedBox(width: 8),
-            Expanded(child: Text('Read incoming SMS?')),
-          ],
-        ),
-        content: const Text(
-          'ScamShield will screen each incoming text message for scam content the '
-          'moment it arrives, using the same engine as manual scans, and alert you '
-          'if one looks dangerous. Message text stays on this device and is never '
-          'sent anywhere except to the same AI analysis service manual scans use.\n\n'
-          'This does not make ScamShield your messaging app — it just watches '
-          'alongside it.',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-            height: 1.45,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Not now',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text(
-              'Allow',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (proceed != true || !mounted) return;
-
-    final granted = await SmsScreeningService.requestPermissionAndEnable();
-    if (!mounted) return;
-    if (!granted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'SMS permission was not granted, so real-time protection stays off.',
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.surfaceLight,
-        ),
-      );
-    }
-  }
-
-  Future<void> _resolveProtectionStates() async {
-    // Check if call screening is supported
-    final callSupported = await CallScreeningService.isSupported();
-    _callScreeningSupported = callSupported;
-    
-    // Initialize SMS protection state
-    final smsActive = SmsScreeningService.isActive.value;
-    if (smsActive) {
-      _smsState = ProtectionState.active;
-    } else {
-      // Check if SMS permission is granted
-      _smsPermissionGranted = await Permission.sms.isGranted;
-      if (!_smsPermissionGranted) {
-        _smsState = ProtectionState.permissionRequired;
-      } else {
-        _smsState = ProtectionState.disabled;
-      }
-    }
-    
-    // Initialize call screening state
-    if (!callSupported) {
-      _callState = ProtectionState.unavailable;
-    } else {
-      final callActive = CallScreeningService.isActive.value;
-      if (callActive) {
-        _callState = ProtectionState.active;
-      } else {
-        // Check if call role is granted
-        final callRoleGranted = await CallScreeningService.hasRole();
-        if (!callRoleGranted) {
-          _callState = ProtectionState.permissionRequired;
-        } else {
-          _callState = ProtectionState.disabled;
-        }
-      }
-    }
-    
-    if (mounted) setState(() {});
-    
-    // Add listeners (only once)
-    if (!_listenersAdded) {
-      SmsScreeningService.isActive.addListener(_smsListener);
-      CallScreeningService.isActive.addListener(_callListener);
-      _listenersAdded = true;
-    }
-  }
-  
-  Future<void> _updateSmsState() async {
-    final active = SmsScreeningService.isActive.value;
-    if (!mounted) return;
-    
-    // Re-check permission status when state changes
-    _smsPermissionGranted = await Permission.sms.isGranted;
-    
-    setState(() {
-      if (active) {
-        _smsState = ProtectionState.active;
-      } else {
-        _smsState = _smsPermissionGranted ? ProtectionState.disabled : ProtectionState.permissionRequired;
-      }
-    });
-  }
-  
-  Future<void> _updateCallState() async {
-    final active = CallScreeningService.isActive.value;
-    if (!mounted) return;
-    
-    if (!_callScreeningSupported) {
-      setState(() => _callState = ProtectionState.unavailable);
-      return;
-    }
-    
-    if (active) {
-      setState(() => _callState = ProtectionState.active);
-    } else {
-      final callRoleGranted = await CallScreeningService.hasRole();
-      setState(() {
-        _callState = callRoleGranted ? ProtectionState.disabled : ProtectionState.permissionRequired;
-      });
-    }
-  }
-  
-
-
-  Future<void> _onToggleCallScreening(bool wantsOn) async {
-    if (!wantsOn) {
-      await CallScreeningService.disable();
-      if (!mounted) return;
-      // Switching the feature off stops the screening, but Android still lists
-      // ScamShield as the call-screening app until the user says otherwise.
-      // Saying so — and offering the way there — is more honest than letting
-      // them think the off switch removed it.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Call screening stopped. Android still lists ScamShield '
-            'as your screening app until you change it in system settings.',
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.surfaceLight,
-          duration: const Duration(seconds: 7),
-          action: SnackBarAction(
-            label: 'SETTINGS',
-            textColor: AppColors.primary,
-            onPressed: CallScreeningService.openSystemRoleSettings,
-          ),
-        ),
-      );
-      return;
-    }
-
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.phone_in_talk_outlined, color: AppColors.primary),
-            SizedBox(width: 8),
-            Expanded(child: Text('Screen incoming calls?')),
-          ],
-        ),
-        content: const Text(
-          'Android will ask you to make ScamShield your call screening app. When a '
-          'number you or the community have already flagged calls you, ScamShield '
-          'warns you while it is still ringing.\n\n'
-          'It never blocks or rejects a call. A wrongly blocked call could be a '
-          'hospital or your bank, so the call always comes through and the warning '
-          'is yours to act on.',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-            height: 1.45,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Not now',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text(
-              'Continue',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (proceed != true || !mounted) return;
-
-    final granted = await CallScreeningService.requestRoleAndEnable();
-    if (!mounted) return;
-    if (!granted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'ScamShield was not made your call screening app, so call '
-            'screening stays off.',
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.surfaceLight,
-        ),
-      );
-    }
-  }
-
   Future<void> _onToggleSimpleMode(bool wantsOn) async {
     if (!wantsOn) {
       await SimpleModeService.setEnabled(false);
+      _showTopLevel();
       return;
     }
 
@@ -524,6 +255,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (proceed != true) return;
     await SimpleModeService.setEnabled(true);
+    _showTopLevel();
+  }
+
+  /// Switching modes swaps the app's `home` widget, which sits at the bottom of
+  /// the navigator stack. When this screen was opened as a pushed route (from
+  /// the Home screen's profile button) it stays on top of that stack, so the
+  /// switch happened underneath and the user saw nothing change. Pop back to
+  /// the root so the new interface is the thing on screen.
+  void _showTopLevel() {
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   void _showSignOutDialog() {
@@ -679,33 +421,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onChanged: (v) => SettingsService.setAutoScanClipboard(v),
                   ),
                 ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: SmsScreeningService.isActive,
-                  builder: (ctx, active, _) => _buildSettingItem(
-                    Icons.sms_outlined,
-                    'Real-Time SMS Protection',
-                    'Screen incoming texts for scams the moment they arrive',
-                    hasSwitch: true,
-                    switchValue: active,
-                    onChanged: _onToggleSmsScreening,
-                    state: _smsState,
-                  ),
-                ),
-                // Hidden rather than shown-and-disabled below Android 10: a
-                // control that can never be switched on is just a dead end.
-                if (_callScreeningSupported)
-                  ValueListenableBuilder<bool>(
-                    valueListenable: CallScreeningService.isActive,
-                    builder: (ctx, active, _) => _buildSettingItem(
-                      Icons.phone_in_talk_outlined,
-                      'Scam Call Screening',
-                      'Warn before you answer a number known for scams',
-                      hasSwitch: true,
-                      switchValue: active,
-                      onChanged: _onToggleCallScreening,
-                      state: _callState,
-                    ),
-                  ),
                 _buildSettingItem(
                   Icons.history,
                   'Scan History',
@@ -759,6 +474,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 _buildSettingItem(
+                  Icons.local_police_outlined,
+                  'Report a cybercrime',
+                  'Call 1930, open the portal, make an evidence PDF',
+                  hasSwitch: false,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CybercrimeScreen()),
+                  ),
+                ),
+                _buildSettingItem(
                   Icons.trending_up,
                   'Scam Trends',
                   'What the community is reporting this week',
@@ -766,6 +491,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const TrendsScreen()),
+                  ),
+                ),
+                ValueListenableBuilder<String?>(
+                  valueListenable: BackendConfig.savedUrl,
+                  builder: (ctx, saved, _) => _buildSettingItem(
+                    Icons.dns_outlined,
+                    'Server address',
+                    saved ??
+                        (BackendConfig.isDefault
+                            ? 'Not set: VirusTotal, Safe Browsing, APK analysis, AI and trends need it'
+                            : BackendConfig.baseUrl),
+                    hasSwitch: false,
+                    onTap: () => showServerAddressDialog(context),
                   ),
                 ),
                 _buildSettingItem(
@@ -990,8 +728,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
-
   Widget _buildSettingItem(
     IconData icon,
     String title,
@@ -1055,7 +791,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Icon(
                   icon,
-                  color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                  color: isDestructive
+                      ? AppColors.danger
+                      : AppColors.textPrimary,
                   size: 19,
                 ),
               ),
@@ -1070,12 +808,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Text(
                           title,
                           style: AppText.subheading.copyWith(
-                            color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                            color: isDestructive
+                                ? AppColors.danger
+                                : AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),

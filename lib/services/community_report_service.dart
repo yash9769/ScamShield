@@ -10,9 +10,9 @@
 // reported as "unknown", never silently treated as "not a scam" — the same
 // fail-closed convention used by OsintService.
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'backend_config.dart';
 
 enum IndicatorType { phone, url, domain, upi }
 
@@ -46,13 +46,7 @@ class ReputationResult {
 }
 
 class CommunityReportService {
-  static String get _baseUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _baseUrl => BackendConfig.baseUrl;
 
   static const Duration _timeout = Duration(seconds: 6);
 

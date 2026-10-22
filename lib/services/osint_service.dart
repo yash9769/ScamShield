@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'backend_config.dart';
 
 /// Result of an OSINT threat-intelligence lookup (VirusTotal, Google Safe
 /// Browsing, AbuseIPDB, URLhaus, ...).
@@ -45,13 +45,7 @@ class OsintResult {
 /// provider, the lookup is honestly reported as unavailable instead of
 /// fabricating a "safe" or "malicious" result.
 class OsintService {
-  static String get _backendBaseUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _backendBaseUrl => BackendConfig.baseUrl;
 
   static const Duration _timeout = Duration(seconds: 6);
 
