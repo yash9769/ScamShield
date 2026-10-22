@@ -75,7 +75,10 @@ class BackendConfig {
   static String get baseUrl {
     final saved = savedUrl.value;
     if (saved != null) return saved;
-    if (_buildTimeUrl.isNotEmpty) return _buildTimeUrl;
+    // Cleaned like a typed address: a trailing slash in the build setting made
+    // every request go to "host//path", which the server answers with 404.
+    final built = normalize(_buildTimeUrl);
+    if (built != null) return built;
     return developmentDefault;
   }
 
@@ -118,7 +121,8 @@ class BackendConfig {
 
   /// True when nothing but the development default is in effect, which on a
   /// real phone cannot work.
-  static bool get isDefault => savedUrl.value == null && _buildTimeUrl.isEmpty;
+  static bool get isDefault =>
+      savedUrl.value == null && normalize(_buildTimeUrl) == null;
 
   static String get developmentDefault {
     try {
