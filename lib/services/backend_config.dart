@@ -189,9 +189,17 @@ class BackendConfig {
         'Could not connect. Is the ScamShield server running, and is your '
         'phone on the same Wi-Fi as the computer running it?';
     try {
+      // A hosted server may be asleep and need up to a minute to wake; only a
+      // local address should fail fast.
+      final host = Uri.parse(target).host;
+      final local =
+          host == 'localhost' ||
+          host == '10.0.2.2' ||
+          RegExp(r'^(10|127|192\.168|172\.(1[6-9]|2\d|3[01]))[.\d]*$')
+              .hasMatch(host);
       final response = await http
           .get(Uri.parse('$target/'))
-          .timeout(const Duration(seconds: 6));
+          .timeout(Duration(seconds: local ? 6 : 75));
       Map<dynamic, dynamic>? body;
       try {
         final decoded = jsonDecode(response.body);
@@ -261,8 +269,9 @@ class BackendConfig {
       return BackendStatus(
         reachable: false,
         message:
-            'No answer from $target within 6 seconds. Check the address, the '
-            'port and your connection.',
+            'No answer from $target. Check the address and your connection. '
+            'If the address opens in your phone\'s browser, try again in a '
+            'minute: a hosted server can take that long to wake up.',
       );
     }
   }
