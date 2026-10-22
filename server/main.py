@@ -87,6 +87,10 @@ async def verify_admin_auth(request: Request):
 
 logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
 logger = logging.getLogger("scamshield")
+# httpx logs every request URL at INFO, and the Safe Browsing key travels in the
+# query string, so that would write the API key into the host's logs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 BASE_DIR        = Path(__file__).resolve().parent
 MAX_TEXT_LENGTH = 10_000
@@ -863,9 +867,20 @@ async def gsb_lookup_urls(urls: List[str]) -> List[dict]:
             # URLs as "Clean per Google Safe Browsing" told users a phishing
             # link had been checked and found safe when it had not been
             # checked at all.
-            logger.warning(f"Safe Browsing lookup failed: HTTP {r.status_code}")
+            reason = ""
+            try:
+                err = r.json().get("error", {})
+                reason = err.get("status") or ""
+                for d in err.get("details", []):
+                    if d.get("reason"):
+                        reason = d["reason"]
+                        break
+            except Exception:
+                pass
+            logger.warning(f"Safe Browsing lookup failed: HTTP {r.status_code} {reason}")
+            suffix = f" {reason}" if reason else ""
             return [{"url": u, "malicious": False, "checked": False,
-                     "note": f"Safe Browsing lookup failed (HTTP {r.status_code})."} for u in urls]
+                     "note": f"Safe Browsing lookup failed (HTTP {r.status_code}{suffix})."} for u in urls]
         flagged = set()
         for m in (r.json().get("matches") or []):
             flagged.add(m.get("threat", {}).get("url", ""))
