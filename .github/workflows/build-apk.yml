@@ -39,13 +39,23 @@ jobs:
       - name: Verify Flutter Installation
         run: flutter doctor -v
 
+      - name: Require the server address
+        env:
+          URL: ${{ vars.SCAMSHIELD_BACKEND_URL || secrets.SCAMSHIELD_BACKEND_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "::error::SCAMSHIELD_BACKEND_URL is empty. Add it under Settings > Secrets and variables > Actions (Variables or Secrets), with your Render address."
+            exit 1
+          fi
+          echo "Building with server address: $URL"
+
       - name: Install Flutter Dependencies
         run: flutter pub get
 
       - name: Build Android Release APK
         # SCAMSHIELD_BACKEND_URL is a repository variable (Settings > Secrets and
         # variables > Actions > Variables). The app reads it as its server address.
-        run: flutter build apk --release --dart-define=SCAMSHIELD_BACKEND_URL=${{ vars.SCAMSHIELD_BACKEND_URL }}
+        run: flutter build apk --release --dart-define=SCAMSHIELD_BACKEND_URL=${{ vars.SCAMSHIELD_BACKEND_URL || secrets.SCAMSHIELD_BACKEND_URL }}
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
