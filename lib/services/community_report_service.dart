@@ -69,7 +69,7 @@ class CommunityReportService {
               'category': ?category,
             }),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('CommunityReportService.reportIndicator failed: $e');
@@ -86,7 +86,7 @@ class CommunityReportService {
       final encoded = Uri.encodeComponent(value);
       final response = await http
           .get(Uri.parse('$_baseUrl/reputation/${type.value}/$encoded'))
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       if (response.statusCode != 200) {
         return const ReputationResult.unavailable();
       }

@@ -50,7 +50,7 @@ class ApiService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'text': text}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(BackendConfig.timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -97,11 +97,11 @@ class ApiService {
         await http.MultipartFile.fromPath('file', audioFile.path),
       );
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 90),
+        BackendConfig.timeout(const Duration(seconds: 90)),
       );
       final response = await http.Response.fromStream(
         streamedResponse,
-      ).timeout(const Duration(seconds: 90));
+      ).timeout(BackendConfig.timeout(const Duration(seconds: 90)));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }
@@ -138,11 +138,11 @@ class ApiService {
         await http.MultipartFile.fromPath('file', imageFile.path),
       );
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 45),
+        BackendConfig.timeout(const Duration(seconds: 45)),
       );
       final response = await http.Response.fromStream(
         streamedResponse,
-      ).timeout(const Duration(seconds: 45));
+      ).timeout(BackendConfig.timeout(const Duration(seconds: 45)));
       if (response.statusCode == 200) {
         return _parseAnalysisResult(jsonDecode(response.body));
       }

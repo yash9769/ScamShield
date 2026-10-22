@@ -278,7 +278,7 @@ class CloudAccountService {
             'display_name': ?displayName,
           }),
         )
-        .timeout(_timeout);
+        .timeout(BackendConfig.timeout(_timeout));
     await _storeSession(_decode(resp));
   }
 
@@ -292,7 +292,7 @@ class CloudAccountService {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'email': email, 'password': password}),
         )
-        .timeout(_timeout);
+        .timeout(BackendConfig.timeout(_timeout));
     await _storeSession(_decode(resp));
   }
 
@@ -329,7 +329,7 @@ class CloudAccountService {
     try {
       final resp = await http
           .delete(Uri.parse('$_baseUrl/account'), headers: await _authHeaders())
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       confirmed = resp.statusCode == 200;
     } catch (e) {
       debugPrint('CloudAccountService.deleteAccount failed: $e');
@@ -351,7 +351,7 @@ class CloudAccountService {
             Uri.parse('$_baseUrl/account/export'),
             headers: await _authHeaders(),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       if (resp.statusCode != 200) return null;
       return jsonDecode(resp.body) as Map<String, dynamic>;
     } catch (e) {
@@ -385,7 +385,7 @@ class CloudAccountService {
               'device_name': ?deviceName,
             }),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
 
       if (resp.statusCode == 401) {
         // The session expired; drop it so the UI stops claiming to be synced.
@@ -406,7 +406,7 @@ class CloudAccountService {
     try {
       final resp = await http
           .get(Uri.parse('$_baseUrl/family'), headers: await _authHeaders())
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       if (resp.statusCode == 401) {
         await signOut();
         return null;
@@ -425,7 +425,7 @@ class CloudAccountService {
           headers: await _authHeaders(),
           body: jsonEncode({'name': name}),
         )
-        .timeout(_timeout);
+        .timeout(BackendConfig.timeout(_timeout));
     return FamilyGroup.fromJson(_decode(resp));
   }
 
@@ -439,7 +439,7 @@ class CloudAccountService {
           headers: await _authHeaders(),
           body: jsonEncode({'invite_code': inviteCode, 'role': role}),
         )
-        .timeout(_timeout);
+        .timeout(BackendConfig.timeout(_timeout));
     return FamilyGroup.fromJson(_decode(resp));
   }
 
@@ -449,7 +449,7 @@ class CloudAccountService {
           Uri.parse('$_baseUrl/family/leave'),
           headers: await _authHeaders(),
         )
-        .timeout(_timeout);
+        .timeout(BackendConfig.timeout(_timeout));
     _decode(resp);
   }
 
@@ -472,7 +472,7 @@ class CloudAccountService {
               'summary': summary,
             }),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       return resp.statusCode == 200;
     } catch (e) {
       debugPrint('CloudAccountService.raiseAlert failed: $e');
@@ -487,7 +487,7 @@ class CloudAccountService {
             Uri.parse('$_baseUrl/family/alert/$alertId/ack'),
             headers: await _authHeaders(),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
     } catch (e) {
       debugPrint('CloudAccountService.acknowledgeAlert failed: $e');
     }
@@ -507,7 +507,7 @@ class CloudAccountService {
             headers: await _authHeaders(),
             body: jsonEncode({'token': token, 'platform': 'android'}),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       return resp.statusCode == 200;
     } catch (e) {
       debugPrint('CloudAccountService.registerPushToken failed: $e');
@@ -525,7 +525,7 @@ class CloudAccountService {
             headers: await _authHeaders(),
             body: jsonEncode({'token': token, 'platform': 'android'}),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
     } catch (e) {
       debugPrint('CloudAccountService.unregisterPushToken failed: $e');
     }
@@ -554,7 +554,7 @@ class CloudAccountService {
               'articles_read': articlesRead,
             }),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       return resp.statusCode == 200;
     } catch (e) {
       debugPrint('CloudAccountService.pushLearningProgress failed: $e');
@@ -574,7 +574,7 @@ class CloudAccountService {
             Uri.parse('$_baseUrl/learning/leaderboard?scope=$scope'),
             headers: await _authHeaders(),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       final data = _decode(resp);
       return (data['entries'] as List<dynamic>? ?? [])
           .map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
@@ -593,7 +593,7 @@ class CloudAccountService {
     try {
       final resp = await http
           .get(Uri.parse('$_baseUrl/trends?days=$days'))
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       return ScamTrends.fromJson(_decode(resp));
     } catch (e) {
       debugPrint('CloudAccountService.fetchTrends failed: $e');

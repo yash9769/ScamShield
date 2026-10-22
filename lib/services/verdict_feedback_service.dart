@@ -148,7 +148,7 @@ class VerdictFeedbackService {
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode(vote),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       return resp.statusCode == 200;
     } catch (e) {
       debugPrint('VerdictFeedbackService.submit failed: $e');
@@ -215,7 +215,7 @@ class VerdictFeedbackService {
     try {
       final resp = await http
           .get(Uri.parse('$_baseUrl/feedback/accuracy?days=$days'))
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       if (resp.statusCode != 200) return null;
       return VerdictAccuracy.fromJson(
         jsonDecode(resp.body) as Map<String, dynamic>,

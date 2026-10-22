@@ -40,6 +40,7 @@ void main() async {
     // Initialize core services with error handling
     // First: every server-backed service reads this address.
     await BackendConfig.init();
+    BackendConfig.warmUp(); // not awaited: wakes a sleeping host while the app starts
     await UserProfileService.init();
     await SettingsService.init();
     await LocalizationService.init();

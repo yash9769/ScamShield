@@ -305,7 +305,7 @@ class BreachService {
               if (apiKey != null && apiKey!.isNotEmpty) 'hibp-api-key': apiKey!,
             },
           )
-          .timeout(const Duration(seconds: 4));
+          .timeout(BackendConfig.timeout(const Duration(seconds: 4)));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -377,7 +377,7 @@ class BreachService {
               ),
               headers: {'User-Agent': _userAgent, 'hibp-api-key': apiKey!},
             )
-            .timeout(const Duration(seconds: 5));
+            .timeout(BackendConfig.timeout(const Duration(seconds: 5)));
 
         if (response.statusCode == 200) {
           final List<dynamic> data = json.decode(response.body);
@@ -423,7 +423,7 @@ class BreachService {
     try {
       final response = await http
           .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 8));
+          .timeout(BackendConfig.timeout(const Duration(seconds: 8)));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);

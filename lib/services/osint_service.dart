@@ -55,7 +55,9 @@ class OsintService {
   static Future<OsintResult> checkHashVirusTotal(String hash) async {
     try {
       final url = Uri.parse('$_backendBaseUrl/osint/hash/$hash');
-      final response = await http.get(url).timeout(_timeout);
+      final response = await http
+          .get(url)
+          .timeout(BackendConfig.timeout(_timeout));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['checked'] == false) {
@@ -96,7 +98,7 @@ class OsintService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'urls': urls}),
           )
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final results = data['results'] as List<dynamic>? ?? [];
@@ -148,7 +150,9 @@ class OsintService {
   static Future<OsintResult> checkIpAbuseIPDB(String ip) async {
     try {
       final url = Uri.parse('$_backendBaseUrl/osint/ip/$ip');
-      final response = await http.get(url).timeout(_timeout);
+      final response = await http
+          .get(url)
+          .timeout(BackendConfig.timeout(_timeout));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['checked'] == false) {
@@ -177,7 +181,7 @@ class OsintService {
       final endpoint = Uri.parse('https://urlhaus-api.abuse.ch/v1/url/');
       final response = await http
           .post(endpoint, body: {'url': urlToCheck})
-          .timeout(_timeout);
+          .timeout(BackendConfig.timeout(_timeout));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

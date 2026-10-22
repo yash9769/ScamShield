@@ -79,6 +79,43 @@ class BackendConfig {
     return developmentDefault;
   }
 
+  static DateTime? _awakeUntil;
+  static Future<void>? _warming;
+
+  /// Free hosts (Render) put an idle server to sleep and need 30-60 seconds to
+  /// wake it. The short per-request timeouts below that were fine for a local
+  /// server made every first request after a quiet spell fail and fall back
+  /// to "on-device" or "could not reach". While the server is not known to be
+  /// awake, timeouts get extra headroom; once a warm-up has succeeded they
+  /// return to normal for 10 minutes. The local development default is never
+  /// extended, so a missing server still fails fast.
+  static Duration timeout(Duration base) {
+    if (isDefault) return base;
+    final until = _awakeUntil;
+    if (until != null && DateTime.now().isBefore(until)) return base;
+    return base + const Duration(seconds: 60);
+  }
+
+  /// Wakes the server in the background. Safe to call often; concurrent calls
+  /// share one request.
+  static Future<void> warmUp() {
+    if (isDefault) return Future.value();
+    return _warming ??= () async {
+      try {
+        final r = await http
+            .get(Uri.parse('$baseUrl/health'))
+            .timeout(const Duration(seconds: 90));
+        if (r.statusCode == 200) {
+          _awakeUntil = DateTime.now().add(const Duration(minutes: 10));
+        }
+      } catch (_) {
+        // Offline or the address is wrong: the real requests report that.
+      } finally {
+        _warming = null;
+      }
+    }();
+  }
+
   /// True when nothing but the development default is in effect, which on a
   /// real phone cannot work.
   static bool get isDefault => savedUrl.value == null && _buildTimeUrl.isEmpty;
@@ -125,6 +162,8 @@ class BackendConfig {
       return false;
     }
     savedUrl.value = cleaned;
+    _awakeUntil = null;
+    warmUp();
     return true;
   }
 

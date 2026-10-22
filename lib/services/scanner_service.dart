@@ -18,7 +18,7 @@ class ScannerService {
       // the on-device scan in a few seconds instead of after an upload.
       final probe = await http
           .get(Uri.parse('$baseUrl/health'))
-          .timeout(const Duration(seconds: 4));
+          .timeout(BackendConfig.timeout(const Duration(seconds: 4)));
       if (probe.statusCode != 200) {
         throw const SocketException('not ScamShield');
       }
@@ -38,7 +38,7 @@ class ScannerService {
       // back to the on-device engine and "androguard and VirusTotal never
       // work".
       var streamedResponse = await request.send().timeout(
-        const Duration(seconds: 150),
+        BackendConfig.timeout(const Duration(seconds: 150)),
       );
       var response = await http.Response.fromStream(streamedResponse);
 
