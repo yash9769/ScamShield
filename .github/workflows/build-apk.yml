@@ -43,7 +43,9 @@ jobs:
         run: flutter pub get
 
       - name: Build Android Release APK
-        run: flutter build apk --release
+        # SCAMSHIELD_BACKEND_URL is a repository variable (Settings > Secrets and
+        # variables > Actions > Variables). The app reads it as its server address.
+        run: flutter build apk --release --dart-define=SCAMSHIELD_BACKEND_URL=${{ vars.SCAMSHIELD_BACKEND_URL }}
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
