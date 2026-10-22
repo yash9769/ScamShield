@@ -4,6 +4,7 @@ import '../widgets/motion.dart';
 import '../services/user_profile_service.dart';
 import 'learning_module_screen.dart';
 import 'leaderboard_screen.dart';
+import 'profile_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -246,7 +247,10 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
         centerTitle: false,
         actions: [
           GestureDetector(
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
             child: ValueListenableBuilder<String>(
               valueListenable: UserProfileService.avatarNotifier,
               builder: (ctx, avatar, _) => CircleAvatar(

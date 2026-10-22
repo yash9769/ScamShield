@@ -21,14 +21,16 @@
 // who never signs in, and requiring an identity to give it would cost more
 // than it is worth.
 
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'consent_service.dart';
+import 'backend_config.dart';
 
 /// The three things a user can say about a verdict.
 enum VerdictAgreement {
@@ -48,6 +50,20 @@ extension VerdictAgreementWire on VerdictAgreement {
     VerdictAgreement.falsePositive => 'false_positive',
     VerdictAgreement.missed => 'missed',
   };
+}
+
+/// What happened to a vote.
+enum FeedbackOutcome {
+  /// The server has it.
+  sent,
+
+  /// The server could not be reached, so the vote is saved on this device and
+  /// goes out the next time the server answers. The user's answer is not lost,
+  /// and the button must not look like it did nothing.
+  savedOnDevice,
+
+  /// Nothing was recorded (no consent on file).
+  notRecorded,
 }
 
 class VerdictAccuracy {
@@ -79,13 +95,7 @@ class VerdictFeedbackService {
 
   static final ConsentService _consent = ConsentService();
 
-  static String get _baseUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _baseUrl => BackendConfig.baseUrl;
 
   static const Duration _timeout = Duration(seconds: 8);
 
@@ -94,10 +104,13 @@ class VerdictFeedbackService {
   static String contentHash(String text) =>
       sha256.convert(utf8.encode(text.trim())).toString();
 
-  /// Submits one vote. Returns false on any failure so the caller can say
-  /// "couldn't send" rather than show a thank-you for something that never
-  /// left the device.
-  static Future<bool> submit({
+  static const String _pendingKey = 'scamshield_pending_feedback';
+
+  /// Submits one vote. If the server can't be reached the vote is kept on the
+  /// device and retried later, instead of being dropped with an error: the
+  /// "It was a scam" button used to do nothing visible whenever the server was
+  /// down, which on a phone with no server configured was always.
+  static Future<FeedbackOutcome> submit({
     required String text,
     required String classification,
     required int riskScore,
@@ -107,26 +120,91 @@ class VerdictFeedbackService {
     // Feedback leaves the device, so it is covered by the same consent gate as
     // every other outbound call. Someone who declined analytics/AI processing
     // has not agreed to send this either.
-    if (!await _consent.hasGivenCurrentConsent()) return false;
+    if (!await _consent.hasGivenCurrentConsent()) {
+      return FeedbackOutcome.notRecorded;
+    }
 
+    final vote = <String, dynamic>{
+      'content_hash': contentHash(text),
+      'classification': classification.toLowerCase(),
+      'risk_score': riskScore,
+      'agreement': agreement.wireValue,
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+    };
+
+    if (await _post(vote)) {
+      unawaited(flushPending());
+      return FeedbackOutcome.sent;
+    }
+    await _enqueue(vote);
+    return FeedbackOutcome.savedOnDevice;
+  }
+
+  static Future<bool> _post(Map<String, dynamic> vote) async {
     try {
       final resp = await http
           .post(
             Uri.parse('$_baseUrl/feedback/verdict'),
             headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'content_hash': contentHash(text),
-              'classification': classification.toLowerCase(),
-              'risk_score': riskScore,
-              'agreement': agreement.wireValue,
-              if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
-            }),
+            body: jsonEncode(vote),
           )
           .timeout(_timeout);
       return resp.statusCode == 200;
     } catch (e) {
       debugPrint('VerdictFeedbackService.submit failed: $e');
       return false;
+    }
+  }
+
+  static Future<void> _enqueue(Map<String, dynamic> vote) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final queue = prefs.getStringList(_pendingKey) ?? <String>[];
+      // One vote per message: a newer answer replaces an older one.
+      queue.removeWhere((raw) {
+        try {
+          return (jsonDecode(raw) as Map)['content_hash'] ==
+              vote['content_hash'];
+        } catch (_) {
+          return true;
+        }
+      });
+      queue.add(jsonEncode(vote));
+      // Bounded, so a server that is never reachable can't grow this forever.
+      final trimmed = queue.length > 50
+          ? queue.sublist(queue.length - 50)
+          : queue;
+      await prefs.setStringList(_pendingKey, trimmed);
+    } catch (e) {
+      debugPrint('VerdictFeedbackService could not queue a vote: $e');
+    }
+  }
+
+  /// Sends votes saved while the server was unreachable. Safe to call often.
+  static Future<void> flushPending() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final queue = prefs.getStringList(_pendingKey) ?? const <String>[];
+      if (queue.isEmpty) return;
+
+      // Send in order; stop at the first failure and keep it and everything
+      // after it for next time.
+      var firstUnsent = queue.length;
+      for (var i = 0; i < queue.length; i++) {
+        Map<String, dynamic> vote;
+        try {
+          vote = Map<String, dynamic>.from(jsonDecode(queue[i]) as Map);
+        } catch (_) {
+          continue; // unreadable entry: drop it
+        }
+        if (!await _post(vote)) {
+          firstUnsent = i;
+          break;
+        }
+      }
+      await prefs.setStringList(_pendingKey, queue.sublist(firstUnsent));
+    } catch (e) {
+      debugPrint('VerdictFeedbackService.flushPending failed: $e');
     }
   }
 

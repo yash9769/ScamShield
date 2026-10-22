@@ -6,6 +6,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'backend_config.dart';
 
 class BreachCheckException implements Exception {
   final String message;
@@ -411,13 +412,7 @@ class BreachService {
         .toList();
   }
 
-  static String get _backendUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _backendUrl => BackendConfig.baseUrl;
 
   /// Query the ScamShield backend to check if an email has been exposed using XposedOrNot.
   static Future<BreachCheckResult> checkEmailBreach(String email) async {

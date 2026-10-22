@@ -34,6 +34,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/repositories/scan_repository.dart';
+import 'backend_config.dart';
 
 class CallScreeningService {
   CallScreeningService._();
@@ -60,13 +61,7 @@ class CallScreeningService {
   /// Lets Profile reflect live state without re-reading prefs on every build.
   static final ValueNotifier<bool> isActive = ValueNotifier<bool>(false);
 
-  static String get _baseUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _baseUrl => BackendConfig.baseUrl;
 
   /// Android 10+ only. Anything else reports unsupported rather than showing
   /// the user a control that cannot work.

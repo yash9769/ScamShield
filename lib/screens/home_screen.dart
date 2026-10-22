@@ -31,6 +31,8 @@ import 'profile_screen.dart';
 import '../data/repositories/scan_repository.dart';
 import '../data/models/scan_record.dart';
 import '../services/data_change_notifier.dart';
+import 'cybercrime_screen.dart';
+import 'trends_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -203,7 +205,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: _isHovered ? 0.15 : 0.1),
+                              color: AppColors.primary.withValues(
+                                alpha: _isHovered ? 0.15 : 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: AnimatedScale(
@@ -253,14 +257,26 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: _isHovered
-                                    ? [AppColors.primary.withValues(alpha: 0.95), AppColors.primary]
-                                    : [AppColors.primary, AppColors.primary.withValues(alpha: 0.9)],
+                                    ? [
+                                        AppColors.primary.withValues(
+                                          alpha: 0.95,
+                                        ),
+                                        AppColors.primary,
+                                      ]
+                                    : [
+                                        AppColors.primary,
+                                        AppColors.primary.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                      ],
                               ),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                               boxShadow: _isHovered
                                   ? [
                                       BoxShadow(
-                                        color: AppColors.primary.withValues(alpha: 0.4),
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.4,
+                                        ),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),
@@ -321,10 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Text(
-                'Loading your stats...',
-                style: AppText.secondary,
-              ),
+              child: Text('Loading your stats...', style: AppText.secondary),
             ),
           ],
         ),
@@ -423,7 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              label, 
+              label,
               style: AppText.caption.copyWith(
                 height: 1.3,
                 color: AppColors.textSecondary,
@@ -443,6 +456,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTools(BuildContext context) {
     return AppListGroup(
       children: [
+        AppListRow(
+          icon: Icons.local_police_outlined,
+          title: 'Report a cybercrime',
+          subtitle: 'Call 1930, open the portal, make an evidence PDF',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CybercrimeScreen()),
+          ),
+        ),
+        AppListRow(
+          icon: Icons.trending_up,
+          title: 'Scam trends',
+          subtitle: 'What people are reporting right now',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TrendsScreen()),
+          ),
+        ),
         AppListRow(
           icon: Icons.mark_email_unread_outlined,
           title: 'Was my email leaked?',

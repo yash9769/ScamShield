@@ -9,6 +9,8 @@ import 'screens/breach_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/learn_screen.dart';
 import 'screens/profile_screen.dart';
+import 'services/backend_config.dart';
+import 'services/verdict_feedback_service.dart';
 import 'services/user_profile_service.dart';
 import 'services/permission_service.dart';
 import 'services/settings_service.dart';
@@ -19,8 +21,6 @@ import 'services/share_intent_service.dart';
 import 'services/breach_watch_service.dart';
 import 'services/cloud_account_service.dart';
 import 'services/cloud_sync_service.dart';
-import 'services/sms_screening_service.dart';
-import 'services/call_screening_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/localization_service.dart';
 import 'services/simple_mode_service.dart';
@@ -36,34 +36,37 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Initialize core services with error handling
+    // First: every server-backed service reads this address.
+    await BackendConfig.init();
     await UserProfileService.init();
     await SettingsService.init();
     await LocalizationService.init();
     await SimpleModeService.init();
-    
+
     final startLoggedIn = await AuthService.isLoggedIn();
     final hasConsented = await ConsentService().hasGivenCurrentConsent();
-    
+
     // Only request permissions on mobile platforms
     if (!kIsWeb) {
       await PermissionService.requestAllPermissionsOnce();
     }
-    
+
     // Best-effort non-blocking operations that can fail gracefully
-    unawaited(_safeExecute(() => DataPrivacyService().cleanupStaleTempReports()));
+    unawaited(
+      _safeExecute(() => DataPrivacyService().cleanupStaleTempReports()),
+    );
     unawaited(_safeExecute(_applyScanHistoryRetention));
-    
+
     // Only initialize platform-specific services on mobile
     if (!kIsWeb) {
-      unawaited(_safeExecute(SmsScreeningService.initIfEnabled));
-      unawaited(_safeExecute(CallScreeningService.initIfEnabled));
       unawaited(_safeExecute(PushNotificationService.init));
+      unawaited(_safeExecute(VerdictFeedbackService.flushPending));
       DataChangeNotifier.version.addListener(HomeWidgetService.refreshSoon);
       unawaited(_safeExecute(HomeWidgetService.refresh));
     }
-    
+
     runApp(
       ScamShieldApp(startLoggedIn: startLoggedIn, hasConsented: hasConsented),
     );
@@ -335,7 +338,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   // Track if we've already shown the clipboard alert to prevent repeats
   bool _clipboardAlertShown = false;
-  
+
   Future<void> _checkClipboard() async {
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);

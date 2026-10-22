@@ -11,11 +11,11 @@
 // session is absent or the server is down.
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'backend_config.dart';
 
 class CloudAccount {
   final String userId;
@@ -203,13 +203,7 @@ class CloudException implements Exception {
 class CloudAccountService {
   CloudAccountService._();
 
-  static String get _baseUrl {
-    const customUrl = String.fromEnvironment('SCAMSHIELD_BACKEND_URL');
-    if (customUrl.isNotEmpty) return customUrl;
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
-  }
+  static String get _baseUrl => BackendConfig.baseUrl;
 
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
