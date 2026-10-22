@@ -830,7 +830,12 @@ async def vt_lookup_hash(sha256: str) -> dict:
                     "note": f"{mal} vendor(s) flagged as malicious, {susp} suspicious." if (mal or susp) else "No detections on VirusTotal."}
         if r.status_code == 404:
             return {"malicious": 0, "suspicious": 0, "checked": True, "note": "Hash not found in VirusTotal (new or unknown file)."}
-        return {"malicious": 0, "suspicious": 0, "checked": True, "note": f"VirusTotal HTTP {r.status_code}."}
+        # Any other status (bad key, quota, outage) is a failed lookup, not a
+        # clean result: checked=False lets the app say "unavailable" rather
+        # than present the file as having zero detections.
+        logger.warning(f"VirusTotal lookup failed: HTTP {r.status_code}")
+        return {"malicious": 0, "suspicious": 0, "checked": False,
+                "note": f"VirusTotal lookup failed (HTTP {r.status_code})."}
     except Exception as e:
         logger.warning(f"VT lookup error: {e}")
         return {"malicious": 0, "suspicious": 0, "checked": False, "note": "VirusTotal lookup timed out."}
@@ -853,10 +858,17 @@ async def gsb_lookup_urls(urls: List[str]) -> List[dict]:
                 f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={GOOGLE_SAFE_BROWSING_KEY}",
                 json=payload,
             )
+        if r.status_code != 200:
+            # A rejected key or an outage is not a verdict. Reporting these
+            # URLs as "Clean per Google Safe Browsing" told users a phishing
+            # link had been checked and found safe when it had not been
+            # checked at all.
+            logger.warning(f"Safe Browsing lookup failed: HTTP {r.status_code}")
+            return [{"url": u, "malicious": False, "checked": False,
+                     "note": f"Safe Browsing lookup failed (HTTP {r.status_code})."} for u in urls]
         flagged = set()
-        if r.status_code == 200:
-            for m in (r.json().get("matches") or []):
-                flagged.add(m.get("threat", {}).get("url", ""))
+        for m in (r.json().get("matches") or []):
+            flagged.add(m.get("threat", {}).get("url", ""))
         return [{"url": u, "malicious": u in flagged, "checked": True,
                  "note": "Flagged by Google Safe Browsing." if u in flagged else "Clean per Google Safe Browsing."} for u in urls]
     except Exception as e:
@@ -971,7 +983,9 @@ async def abuseipdb_lookup(ip: str) -> dict:
             sc = r.json().get("data", {}).get("abuseConfidenceScore", 0)
             return {"abuseConfidenceScore": sc, "checked": True,
                     "note": f"Abuse confidence: {sc}%." + (" ⚠ HIGH RISK IP." if sc > 50 else " Low risk.")}
-        return {"abuseConfidenceScore": 0, "checked": True, "note": f"AbuseIPDB HTTP {r.status_code}."}
+        logger.warning(f"AbuseIPDB lookup failed: HTTP {r.status_code}")
+        return {"abuseConfidenceScore": 0, "checked": False,
+                "note": f"AbuseIPDB lookup failed (HTTP {r.status_code})."}
     except Exception as e:
         logger.warning(f"AbuseIPDB error: {e}")
         return {"abuseConfidenceScore": 0, "checked": False, "note": "AbuseIPDB lookup timed out."}
