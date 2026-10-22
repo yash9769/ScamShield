@@ -323,6 +323,7 @@ def test_breach_malformed(mock_get):
 def test_missing_admin_key_raises_error():
     import subprocess
     import os
+    import sys
     env = os.environ.copy()
     env.pop("ADMIN_API_KEY", None)
     env.pop("PYTEST_CURRENT_TEST", None)
@@ -333,7 +334,9 @@ def test_missing_admin_key_raises_error():
     # test runner's working directory is the repo root, which does not match
     # the CI job (`working-directory: server`) or `cd server && pytest`.
     res = subprocess.run(
-        ["python3", "-c", "import main"],
+        # The interpreter running pytest, not whatever `python3` is on PATH,
+        # which may lack the server's dependencies and fail for another reason.
+        [sys.executable, "-c", "import main"],
         cwd=os.path.dirname(os.path.abspath(__file__)),
         env=env,
         capture_output=True,

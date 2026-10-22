@@ -213,8 +213,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 4),
                   Reveal(
                     delay: Reveal.step(7),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    // Wrap, not Row: at larger text sizes (Simple Mode, or
+                    // the phone's own font scale) the prompt and the button
+                    // don't fit on one line and a Row overflows.
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         const Text(
                           "Don't have an account?",
