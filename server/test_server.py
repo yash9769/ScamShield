@@ -232,7 +232,7 @@ def test_rate_limit_blocks_scan_flood():
 
 
 # ── Breach checks ────────────────────────────────────────────────────────────
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 @patch("httpx.AsyncClient.get")
@@ -346,3 +346,44 @@ def test_missing_admin_key_raises_error():
     assert "ValueError: ADMIN_API_KEY environment variable is required" in res.stderr
 
 
+
+
+# ── Threat-intel lookups must not turn provider errors into "clean" ───────────
+# A rejected Safe Browsing key (HTTP 403 API_KEY_SERVICE_BLOCKED) used to
+# come back as "Clean per Google Safe Browsing" with checked=True, so a
+# phishing link that was never checked was shown to users as verified safe.
+
+def _status(code):
+    response = MagicMock()
+    response.status_code = code
+    response.json = lambda: {"error": {"code": code}}
+    return response
+
+
+@patch("httpx.AsyncClient.post")
+def test_safe_browsing_error_is_not_reported_clean(mock_post, monkeypatch):
+    monkeypatch.setattr(main, "GOOGLE_SAFE_BROWSING_KEY", "test-key")
+    mock_post.return_value = _status(403)
+    r = client.post("/osint/urls", json={"urls": ["http://testsafebrowsing.appspot.com/s/phishing.html"]})
+    assert r.status_code == 200
+    result = r.json()["results"][0]
+    assert result["checked"] is False
+    assert "Clean" not in result["note"]
+
+
+@patch("httpx.AsyncClient.get")
+def test_virustotal_error_is_not_reported_checked(mock_get, monkeypatch):
+    monkeypatch.setattr(main, "VIRUSTOTAL_API_KEY", "test-key")
+    mock_get.return_value = _status(401)
+    r = client.get("/osint/hash/" + "a" * 64)
+    assert r.status_code == 200
+    assert r.json()["checked"] is False
+
+
+@patch("httpx.AsyncClient.get")
+def test_abuseipdb_error_is_not_reported_checked(mock_get, monkeypatch):
+    monkeypatch.setattr(main, "ABUSEIPDB_API_KEY", "test-key")
+    mock_get.return_value = _status(429)
+    r = client.get("/osint/ip/8.8.8.8")
+    assert r.status_code == 200
+    assert r.json()["checked"] is False
