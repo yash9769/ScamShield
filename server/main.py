@@ -2,6 +2,7 @@
 # Every feature the app promises is implemented here end-to-end with real keys.
 
 import asyncio
+import base64
 import hashlib
 import hmac
 import io
@@ -1450,10 +1451,39 @@ async def osint_hash(request: Request, file_hash: str):
         raise HTTPException(400, "Invalid hash format (MD5/SHA-1/SHA-256 expected).")
     return await vt_lookup_hash(file_hash.lower())
 
+async def vt_lookup_url(url: str) -> dict:
+    """VirusTotal reputation for a URL (read-only lookup, nothing is submitted)."""
+    if not VIRUSTOTAL_API_KEY:
+        return {"url": url, "malicious": 0, "suspicious": 0, "checked": False,
+                "note": "VirusTotal not configured."}
+    url_id = base64.urlsafe_b64encode(url.encode()).decode().rstrip("=")
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            r = await c.get(f"https://www.virustotal.com/api/v3/urls/{url_id}",
+                            headers={"x-apikey": VIRUSTOTAL_API_KEY})
+        if r.status_code == 200:
+            stats = r.json().get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
+            mal, susp = stats.get("malicious", 0), stats.get("suspicious", 0)
+            return {"url": url, "malicious": mal, "suspicious": susp, "checked": True,
+                    "note": f"{mal} vendor(s) flagged as malicious, {susp} suspicious." if (mal or susp)
+                    else "No detections on VirusTotal."}
+        if r.status_code == 404:
+            return {"url": url, "malicious": 0, "suspicious": 0, "checked": True,
+                    "note": "Not seen by VirusTotal before."}
+        logger.warning(f"VirusTotal URL lookup failed: HTTP {r.status_code}")
+        return {"url": url, "malicious": 0, "suspicious": 0, "checked": False,
+                "note": f"VirusTotal lookup failed (HTTP {r.status_code})."}
+    except Exception as e:
+        logger.warning(f"VT URL lookup error: {e}")
+        return {"url": url, "malicious": 0, "suspicious": 0, "checked": False,
+                "note": "VirusTotal lookup timed out."}
+
 @app.post("/osint/urls")
 @limiter.limit("60/minute")
 async def osint_urls(request: Request, body: UrlCheckRequest):
-    return {"results": await gsb_lookup_urls(body.urls)}
+    # VirusTotal's free tier is 4 lookups a minute, so only the first few URLs.
+    vt = await asyncio.gather(*(vt_lookup_url(u) for u in body.urls[:3]))
+    return {"results": await gsb_lookup_urls(body.urls), "virustotal": list(vt)}
 
 @app.get("/osint/ip/{ip}")
 @limiter.limit("60/minute")

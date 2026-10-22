@@ -106,19 +106,40 @@ class OsintService {
         // provider key is not configured server-side, so fall back to URLhaus.
         final allUnchecked =
             results.isNotEmpty && results.every((r) => r['checked'] == false);
+        // VirusTotal's verdict on the same URLs, when the server has a key.
+        final vtResults = <OsintResult>[];
+        for (final v in (data['virustotal'] as List<dynamic>? ?? [])) {
+          if (v is! Map || v['checked'] != true) continue;
+          final bad = ((v['malicious'] as num?) ?? 0) > 0;
+          vtResults.add(
+            OsintResult(
+              provider: 'VirusTotal',
+              isMalicious: bad,
+              details: bad
+                  ? 'Flagged by VirusTotal: ${v['note']}'
+                  : '${v['note'] ?? 'No detections.'}',
+            ),
+          );
+        }
         if (!allUnchecked && results.isNotEmpty) {
-          return results.map((r) {
-            final isMalicious = r['malicious'] == true;
-            final checked = r['checked'] == true;
-            return OsintResult(
-              provider: 'Google Safe Browsing',
-              isMalicious: isMalicious,
-              available: checked,
-              details: isMalicious
-                  ? 'Flagged as dangerous by Google Safe Browsing.'
-                  : (r['note'] as String? ?? 'No threats found.'),
-            );
-          }).toList();
+          return [
+            ...vtResults,
+            ...results.map((r) {
+              final isMalicious = r['malicious'] == true;
+              final checked = r['checked'] == true;
+              return OsintResult(
+                provider: 'Google Safe Browsing',
+                isMalicious: isMalicious,
+                available: checked,
+                details: isMalicious
+                    ? 'Flagged as dangerous by Google Safe Browsing.'
+                    : (r['note'] as String? ?? 'No threats found.'),
+              );
+            }),
+          ];
+        }
+        if (vtResults.isNotEmpty) {
+          return [...vtResults, ...await _urlhausFallback(urls)];
         }
       }
     } catch (_) {

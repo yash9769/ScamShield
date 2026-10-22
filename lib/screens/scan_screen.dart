@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../theme.dart';
 import '../widgets/motion.dart';
 import '../widgets/ui_kit.dart';
+import '../services/osint_service.dart';
 import '../services/scam_detector.dart';
 import '../services/api_service.dart';
 import '../services/share_intent_service.dart';
@@ -260,6 +261,8 @@ class _ScanScreenState extends State<ScanScreen>
       result = ScamDetector.analyze(text);
     }
 
+    result = await _withThreatIntel(text, result);
+
     try {
       final resolvedSource = source ?? (_activeTab == 1 ? 'Link' : 'Manual');
       final record = ScanRecord.fromAnalysisResult(
@@ -283,6 +286,49 @@ class _ScanScreenState extends State<ScanScreen>
         _feedbackGiven = null;
       });
       _maybeCheckCommunityReputation(text);
+    }
+  }
+
+  /// The text analysis only reads the wording, so a known-malicious link with
+  /// calm wording came back SAFE. Every link in the message is also checked
+  /// with Google Safe Browsing and VirusTotal (through the server); a hit makes
+  /// the verdict a scam whatever the wording says.
+  Future<AnalysisResult> _withThreatIntel(
+    String text,
+    AnalysisResult result,
+  ) async {
+    try {
+      final urls = RegExp(r'https?://[^\s]+', caseSensitive: false)
+          .allMatches(text)
+          .map((m) => m.group(0)!.replaceAll(RegExp(r'[).,;!?]+$'), ''))
+          .toSet()
+          .take(5)
+          .toList();
+      if (urls.isEmpty) return result;
+      final checks = await OsintService.checkUrlsGoogleSafeBrowsing(urls);
+      final flagged = checks.where((c) => c.isMalicious).toList();
+      if (flagged.isEmpty) return result;
+      final providers = flagged.map((c) => c.provider).toSet().join(' and ');
+      return AnalysisResult(
+        classification: ScamClassification.scam,
+        riskScore: result.riskScore < 95 ? 95 : result.riskScore,
+        aiPowered: result.aiPowered,
+        summary:
+            'A link in this message is flagged as dangerous by $providers. '
+            'Do not open it.',
+        reasons: [
+          for (final c in flagged)
+            DetectionReason(
+              label: 'Flagged by ${c.provider}',
+              description: c.details,
+              scoreContribution: 60,
+              iconCategory: IconCategory.link,
+            ),
+          ...result.reasons,
+        ],
+      );
+    } catch (_) {
+      return result;
     }
   }
 
