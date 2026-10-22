@@ -113,18 +113,23 @@ Future<void> showServerAddressDialog(BuildContext context) async {
                         child: Row(
                           children: [
                             Icon(
-                              status!.integrations[entry.key]!
+                              (status!.live[entry.key]?.ok ??
+                                      status!.integrations[entry.key]!)
                                   ? Icons.check
                                   : Icons.close,
                               size: 14,
-                              color: status!.integrations[entry.key]!
+                              color:
+                                  (status!.live[entry.key]?.ok ??
+                                      status!.integrations[entry.key]!)
                                   ? AppColors.success
                                   : AppColors.warning,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                status!.integrations[entry.key]!
+                                status!.live[entry.key] != null
+                                    ? '${entry.value}: ${status!.live[entry.key]!.detail}'
+                                    : status!.integrations[entry.key]!
                                     ? entry.value
                                     : '${entry.value}: not set up on this server',
                                 style: const TextStyle(

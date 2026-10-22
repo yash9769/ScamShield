@@ -35,10 +35,15 @@ class BackendStatus {
   /// the server's /health endpoint; empty when it doesn't report them.
   final Map<String, bool> integrations;
 
+  /// Result of the server's live /selftest per integration: whether the key
+  /// really works, with the reason when it doesn't. Empty when unavailable.
+  final Map<String, ({bool ok, String detail})> live;
+
   const BackendStatus({
     required this.reachable,
     required this.message,
     this.integrations = const {},
+    this.live = const {},
   });
 }
 
@@ -183,10 +188,31 @@ class BackendConfig {
               'VirusTotal, Safe Browsing, trends and feedback.',
         );
       }
+      final live = <String, ({bool ok, String detail})>{};
+      try {
+        final test = await http
+            .get(Uri.parse('$target/selftest'))
+            .timeout(const Duration(seconds: 25));
+        final decoded = jsonDecode(test.body);
+        if (test.statusCode == 200 && decoded is Map) {
+          for (final key in integrationLabels.keys) {
+            final item = decoded[key];
+            if (item is Map && item['ok'] is bool) {
+              live[key] = (
+                ok: item['ok'] as bool,
+                detail: '${item['detail'] ?? ''}',
+              );
+            }
+          }
+        }
+      } catch (_) {
+        // Older servers have no /selftest; the flags above still show.
+      }
       return BackendStatus(
         reachable: true,
         message: 'Connected to $target',
         integrations: integrations,
+        live: live,
       );
     } on SocketException {
       return const BackendStatus(reachable: false, message: unreachable);

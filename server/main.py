@@ -1290,6 +1290,34 @@ async def root():
         "yara":                YARA_AVAILABLE,
     }
 
+@app.get("/selftest")
+async def selftest():
+    """Live check of each third-party integration with a harmless known probe.
+
+    GET / only says whether a key is set; this says whether the key actually
+    works (a key can be present but rejected, over quota, or not enabled for
+    the API). Returns {name: {"ok": bool, "detail": str}}. No key values are
+    ever returned.
+    """
+    eicar_sha256 = "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f"
+    vt, gsb, abuse = await asyncio.gather(
+        vt_lookup_hash(eicar_sha256),
+        gsb_lookup_urls(["http://testsafebrowsing.appspot.com/s/malware.html"]),
+        abuseipdb_lookup("8.8.8.8"),
+    )
+    g = gsb[0] if gsb else {"checked": False, "note": "no result"}
+    return {
+        "virustotal": {"ok": bool(vt.get("checked")), "detail": vt.get("note", "")},
+        "safe_browsing": {"ok": bool(g.get("checked")), "detail": g.get("note", "")},
+        "abuseipdb": {"ok": bool(abuse.get("checked")), "detail": abuse.get("note", "")},
+        "androguard": {"ok": ANDROGUARD_AVAILABLE,
+                       "detail": "Installed." if ANDROGUARD_AVAILABLE else "androguard is not installed on the server."},
+        "yara": {"ok": YARA_AVAILABLE,
+                 "detail": "Installed." if YARA_AVAILABLE else "yara-python is not installed on the server."},
+        "gemini_available": {"ok": bool(GEMINI_AVAILABLE),
+                             "detail": "AI key loaded." if GEMINI_AVAILABLE else "No working Gemini key; using the built-in engine."},
+    }
+
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
