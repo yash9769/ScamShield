@@ -1,0 +1,73 @@
+name: Build APK
+run-name: Build ScamShield Android APK
+
+on:
+  push:
+    branches:
+      - V2-Final
+      - V2_Final
+      - V1
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter Installation
+        run: flutter doctor -v
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Build Android Release APK
+        run: flutter build apk --release
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScamShield-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Create GitHub Release with APK
+        if: github.ref == 'refs/heads/V2-Final' || github.ref == 'refs/heads/V2_Final'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.0-final
+          name: "ScamShield V2.0 Final Release"
+          body: |
+            ## ScamShield V2 Final Android APK
+            
+            - **Branch:** ${{ github.ref_name }}
+            - **Commit:** ${{ github.sha }}
+            - Download `app-release.apk` below and install directly on your Android device.
+          files: build/app/outputs/flutter-apk/app-release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
