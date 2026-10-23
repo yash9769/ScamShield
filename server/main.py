@@ -1132,7 +1132,10 @@ async def analyze_apk_file(apk_path: str, file_size: int) -> dict:
     is_signed, androguard_status = False, "unavailable"
     if ANDROGUARD_AVAILABLE:
         try:
-            apk          = AndroguardAPK(apk_path)
+            # CPU-heavy parsing runs in a worker thread: on the event loop it
+            # froze the whole server (even /health) for the length of a scan,
+            # and a host can restart a service that stops answering.
+            apk          = await asyncio.to_thread(AndroguardAPK, apk_path)
             permissions  = apk.get_permissions() or []
             package_name = apk.get_package() or "unknown"
             is_signed    = apk.is_signed()
@@ -1165,7 +1168,7 @@ async def analyze_apk_file(apk_path: str, file_size: int) -> dict:
         risk_breakdown.append({"factor": "Unsigned APK", "points": 20, "category": "manifest"})
 
     # 2. String extraction
-    blob = extract_strings(apk_path)
+    blob = await asyncio.to_thread(extract_strings, apk_path)
     text = blob.decode("latin-1", errors="ignore")
 
     # 3. Secret detection
@@ -1194,7 +1197,8 @@ async def analyze_apk_file(apk_path: str, file_size: int) -> dict:
     rules = get_yara_rules()
     if rules:
         try:
-            yara_matches = [m.rule for m in rules.match(data=blob)]
+            matches = await asyncio.to_thread(rules.match, data=blob, timeout=60)
+            yara_matches = [m.rule for m in matches]
         except Exception as e:
             logger.warning(f"YARA error: {e}")
     if yara_matches:
