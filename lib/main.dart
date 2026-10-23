@@ -193,6 +193,7 @@ class _ScamShieldAppState extends State<ScamShieldApp> {
         builder: (context, simple, _) => MaterialApp(
           title: 'ScamShield',
           theme: appTheme,
+          scrollBehavior: const _BouncyScroll(),
           // Consent and sign-in come first in either mode — Simple Mode
           // simplifies the app, it does not skip asking permission.
           home: !_hasConsented
@@ -421,64 +422,56 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    // Sentence case labels; these were "HOME", "SCAN", "BREACH", "HISTORY",
+    // "LEARN", "PROFILE", six shouted words along the bottom of every screen.
+    final items = <(IconData, IconData, String)>[
+      (Icons.home_outlined, Icons.home_rounded, 'nav_home'),
+      (Icons.search_rounded, Icons.search_rounded, 'nav_scan'),
+      (
+        Icons.mark_email_unread_outlined,
+        Icons.mark_email_unread_rounded,
+        'nav_breach',
+      ),
+      (Icons.history_rounded, Icons.history_rounded, 'nav_history'),
+      (Icons.school_outlined, Icons.school_rounded, 'nav_learn'),
+      (Icons.person_outline_rounded, Icons.person_rounded, 'nav_profile'),
+    ];
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
+      // Black like the screens above it, split off by a hairline: the bar
+      // belongs to the app instead of sitting on it as a separate slab.
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: AppColors.surface,
-          // A hairline instead of a drop shadow. The bar needs to be separated
-          // from the content, which a 1px rule does; it does not need to look
-          // like it is floating above it.
-          border: Border(top: BorderSide(color: AppColors.surfaceLight)),
+          color: Colors.black,
+          border: Border(top: BorderSide(color: Color(0xFF2C2C2E), width: 0.5)),
         ),
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            padding: const EdgeInsets.only(top: 4, bottom: 2),
             child: BottomNavigationBar(
               currentIndex: _selectedIndex,
-              onTap: (index) => setState(() => _selectedIndex = index),
+              onTap: (index) {
+                if (index != _selectedIndex) {
+                  HapticFeedback.selectionClick();
+                }
+                setState(() => _selectedIndex = index);
+              },
               backgroundColor: Colors.transparent,
               elevation: 0,
               type: BottomNavigationBarType.fixed,
-              selectedFontSize: 11,
-              unselectedFontSize: 11,
-              selectedItemColor: AppColors.primary,
-              unselectedItemColor: AppColors.textSecondary,
-              // Sentence case. These were "HOME", "SCAN", "BREACH", "HISTORY",
-              // "LEARN", "PROFILE" — six shouted words along the bottom of
-              // every screen in the app.
+              selectedFontSize: 10.5,
+              unselectedFontSize: 10.5,
+              iconSize: 23,
+              selectedItemColor: AppColors.textPrimary,
+              unselectedItemColor: const Color(0xFF6E6E73),
               items: [
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.home_outlined),
-                  activeIcon: const Icon(Icons.home_rounded),
-                  label: LocalizationService.tr('nav_home'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.search_rounded),
-                  activeIcon: const Icon(Icons.search_rounded),
-                  label: LocalizationService.tr('nav_scan'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.mark_email_unread_outlined),
-                  activeIcon: const Icon(Icons.mark_email_unread_rounded),
-                  label: LocalizationService.tr('nav_breach'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.history_rounded),
-                  activeIcon: const Icon(Icons.history_rounded),
-                  label: LocalizationService.tr('nav_history'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.school_outlined),
-                  activeIcon: const Icon(Icons.school_rounded),
-                  label: LocalizationService.tr('nav_learn'),
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.person_outline_rounded),
-                  activeIcon: const Icon(Icons.person_rounded),
-                  label: LocalizationService.tr('nav_profile'),
-                ),
+                for (final (icon, active, key) in items)
+                  BottomNavigationBarItem(
+                    icon: Icon(icon),
+                    activeIcon: Icon(active),
+                    label: LocalizationService.tr(key),
+                  ),
               ],
             ),
           ),
@@ -486,4 +479,13 @@ class _MainNavigationState extends State<MainNavigation>
       ),
     );
   }
+}
+
+/// iOS-style rubber-band scrolling everywhere, instead of Android's glow.
+class _BouncyScroll extends MaterialScrollBehavior {
+  const _BouncyScroll();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
 }

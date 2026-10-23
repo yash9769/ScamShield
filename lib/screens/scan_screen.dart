@@ -1232,14 +1232,7 @@ class _ScanScreenState extends State<ScanScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'More ways to check',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
-          ),
-        ),
+        Text('More ways to check', style: AppText.label),
         const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 2,
@@ -1313,15 +1306,7 @@ class _ScanScreenState extends State<ScanScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Try an example',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
-            letterSpacing: 0,
-          ),
-        ),
+        Text('Try an example', style: AppText.label),
         const SizedBox(height: 10),
         ...samples.asMap().entries.map(
           (entry) => Reveal(

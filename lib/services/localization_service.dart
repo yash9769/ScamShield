@@ -120,12 +120,12 @@ class LocalizationService {
   static const Map<String, Map<String, String>> _strings = {
     'en': {
       // Navigation
-      'nav_home': 'HOME',
-      'nav_scan': 'SCAN',
-      'nav_breach': 'BREACH',
-      'nav_history': 'HISTORY',
-      'nav_learn': 'LEARN',
-      'nav_profile': 'PROFILE',
+      'nav_home': 'Home',
+      'nav_scan': 'Scan',
+      'nav_breach': 'Breach',
+      'nav_history': 'History',
+      'nav_learn': 'Learn',
+      'nav_profile': 'Profile',
 
       // Verdicts — the safety-critical strings
       'verdict_safe': 'SAFE',
@@ -136,20 +136,20 @@ class LocalizationService {
       'verdict_scam_detail': 'Do not reply, click, or pay',
 
       // Scan screen
-      'scan_title': 'Threat Scanner',
+      'scan_title': 'Scan',
       'scan_tab_message': 'Message',
       'scan_tab_link': 'Link',
       'scan_hint': 'Paste a suspicious message or link here',
-      'scan_button': 'ANALYZE',
+      'scan_button': 'Check now',
       'scan_analyzing': 'Analyzing…',
-      'scan_clear': 'CLEAR',
+      'scan_clear': 'Clear',
       'scan_empty_input': 'Please enter some text or link to analyze.',
       'scan_risk_score': 'Risk Score',
-      'scan_summary': 'SECURITY SUMMARY',
-      'scan_factors': 'DETECTED RISK FACTORS',
+      'scan_summary': 'Summary',
+      'scan_factors': 'Why',
 
       // Feedback
-      'feedback_prompt': 'WAS THIS RIGHT?',
+      'feedback_prompt': 'Was this right?',
       'feedback_privacy':
           'Only the verdict and a fingerprint of the text are '
           'sent — never the message itself.',

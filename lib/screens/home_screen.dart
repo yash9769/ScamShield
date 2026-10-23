@@ -103,9 +103,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ValueListenableBuilder<String>(
                 valueListenable: UserProfileService.avatarNotifier,
                 builder: (ctx, avatar, _) => CircleAvatar(
-                  radius: 15,
+                  radius: 16,
                   backgroundColor: AppColors.surfaceLight,
-                  backgroundImage: NetworkImage(avatar),
+                  foregroundImage: NetworkImage(avatar),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ),

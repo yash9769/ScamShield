@@ -228,11 +228,7 @@ class _BreachScreenState extends State<BreachScreen>
                     color: AppColors.primary,
                   ),
                 )
-              : Switch(
-                  value: _isWatched,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: (_) => _toggleWatch(),
-                ),
+              : Switch(value: _isWatched, onChanged: (_) => _toggleWatch()),
         ],
       ),
     );
@@ -242,10 +238,7 @@ class _BreachScreenState extends State<BreachScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Data Breach Intelligence',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-        ),
+        title: const Text('Data breaches'),
         centerTitle: false,
         bottom: TabBar(
           controller: _tabController,
@@ -396,7 +389,7 @@ class _BreachScreenState extends State<BreachScreen>
 
   Widget _buildBreachCard(BreachInfo breach) {
     final isVerified = breach.isVerified;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -404,7 +397,7 @@ class _BreachScreenState extends State<BreachScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isVerified 
+          color: isVerified
               ? AppColors.surfaceLight.withValues(alpha: 0.5)
               : AppColors.warning.withValues(alpha: 0.3),
         ),
@@ -482,15 +475,21 @@ class _BreachScreenState extends State<BreachScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: (isVerified ? AppColors.danger : AppColors.warning).withValues(alpha: 0.12),
+                      color: (isVerified ? AppColors.danger : AppColors.warning)
+                          .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       isVerified ? 'Verified' : 'Unverified',
                       style: TextStyle(
-                        color: isVerified ? AppColors.danger : AppColors.warning,
+                        color: isVerified
+                            ? AppColors.danger
+                            : AppColors.warning,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
@@ -606,7 +605,7 @@ class _BreachScreenState extends State<BreachScreen>
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 54,
                     child: ElevatedButton.icon(
                       onPressed: _isCheckingEmail ? null : _checkEmail,
                       icon: _isCheckingEmail
@@ -620,16 +619,7 @@ class _BreachScreenState extends State<BreachScreen>
                             )
                           : const Icon(Icons.search, color: Colors.black),
                       label: Text(
-                        _isCheckingEmail
-                            ? 'CHECKING DATABASE...'
-                            : 'CHECK EMAIL BREACH STATUS',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        _isCheckingEmail ? 'Checking…' : 'Check email',
                       ),
                     ),
                   ),
@@ -652,114 +642,78 @@ class _BreachScreenState extends State<BreachScreen>
     );
   }
 
-  static const Color _purple = Color(0xFF8B5CF6);
-
+  /// The scale numbers, Apple-Health style: one neutral card, numbers doing
+  /// the talking. These were four tiles with red, blue, purple and green icon
+  /// discs under a gradient headline, which spent the verdict colours on
+  /// decoration.
   Widget _buildScaleHero() {
     final stats = _stats;
+    String v(int? n) => n == null ? '—' : BreachStats.format(n);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.surfaceLight.withValues(alpha: 0.6),
-        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [AppColors.primary, AppColors.accent],
-            ).createShader(bounds),
-            child: const Text(
-              'The Scale of the Problem',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+          Text('The scale of the problem', style: AppText.heading),
+          const SizedBox(height: 6),
+          Text(
+            'Real records exposed in real breaches. Are yours among them?',
+            style: AppText.secondary,
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Our data breach intelligence indexes real exposed records from real data breaches. Are you in them?',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.xl),
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
-                  Icons.shield_rounded,
-                  AppColors.danger,
+                  Icons.shield_outlined,
                   stats == null ? '—' : '${stats.totalBreaches}',
-                  'DATA BREACHES',
+                  'Data breaches',
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
                   Icons.storage_rounded,
-                  AppColors.accent,
-                  stats == null
-                      ? '—'
-                      : BreachStats.format(stats.exposedRecords),
-                  'EXPOSED RECORDS',
+                  v(stats?.exposedRecords),
+                  'Exposed records',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.xl),
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
-                  Icons.email_rounded,
-                  _purple,
-                  stats == null ? '—' : BreachStats.format(stats.exposedEmails),
-                  'EXPOSED EMAILS',
+                  Icons.alternate_email_rounded,
+                  v(stats?.exposedEmails),
+                  'Exposed emails',
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  Icons.key_rounded,
-                  AppColors.success,
-                  stats == null
-                      ? '—'
-                      : BreachStats.format(stats.exposedPasswords),
-                  'EXPOSED PASSWORDS',
+                  Icons.key_outlined,
+                  v(stats?.exposedPasswords),
+                  'Exposed passwords',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            "The question isn't if you've been breached — it's how many times.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-            ),
+          const SizedBox(height: AppSpacing.xl),
+          const Divider(),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            "The question isn't if you've been breached. It's how many times.",
+            style: AppText.secondary.copyWith(color: AppColors.textPrimary),
           ),
           if (stats != null && stats.latestBreachDate.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
-              'Latest breach added: ${stats.latestBreachDatePretty}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-              ),
+              'Latest breach added ${stats.latestBreachDatePretty}',
+              style: AppText.caption,
             ),
           ],
         ],
@@ -767,54 +721,20 @@ class _BreachScreenState extends State<BreachScreen>
     );
   }
 
-  Widget _buildStatCard(
-    IconData icon,
-    Color color,
-    String value,
-    String label,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.surfaceLight.withValues(alpha: 0.4),
+  Widget _buildStatCard(IconData icon, String value, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.textSecondary, size: 18),
+        const SizedBox(height: AppSpacing.sm),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value, style: AppText.display.copyWith(fontSize: 30)),
         ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(height: 12),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
+        const SizedBox(height: 2),
+        Text(label, style: AppText.secondary),
+      ],
     );
   }
 
@@ -835,7 +755,7 @@ class _BreachScreenState extends State<BreachScreen>
             width: 52,
             height: 52,
             decoration: const BoxDecoration(
-              color: AppColors.accent,
+              color: AppColors.surfaceLight,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -846,7 +766,7 @@ class _BreachScreenState extends State<BreachScreen>
           ),
           const SizedBox(height: 12),
           const Text(
-            'What Should You Do?',
+            'What should you do?',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1138,7 +1058,7 @@ class _BreachScreenState extends State<BreachScreen>
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'EXPOSED IN ${breaches.length} BREACH${breaches.length > 1 ? 'ES' : ''}',
+                      'Found in ${breaches.length} breach${breaches.length > 1 ? 'es' : ''}',
                       style: const TextStyle(
                         color: AppColors.danger,
                         fontWeight: FontWeight.bold,

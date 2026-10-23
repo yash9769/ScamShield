@@ -203,7 +203,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                   offsetY: 16,
                   child: _buildOption(
                     icon: Icons.image_outlined,
-                    color: AppColors.accent,
+                    color: AppColors.primary,
                     title: 'Scan Image',
                     subtitle: 'Pick a screenshot or photo from your gallery',
                     onTap: () =>
@@ -216,7 +216,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                   offsetY: 16,
                   child: _buildOption(
                     icon: Icons.content_paste_rounded,
-                    color: AppColors.success,
+                    color: AppColors.primary,
                     title: 'Scan Clipboard',
                     subtitle:
                         'Instantly scan whatever text is copied on your clipboard',
@@ -230,7 +230,7 @@ class _ScanNowBottomSheetState extends State<ScanNowBottomSheet> {
                   offsetY: 16,
                   child: _buildOption(
                     icon: Icons.android_rounded,
-                    color: AppColors.warning,
+                    color: AppColors.primary,
                     title: 'Scan APK / App',
                     subtitle:
                         'Deep static analysis of an Android .apk — permissions, secrets, YARA & OSINT',

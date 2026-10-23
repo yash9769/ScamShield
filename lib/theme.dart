@@ -41,48 +41,48 @@ import 'package:flutter/material.dart';
 
 /// Core palette.
 ///
-/// The background moved off navy to a true neutral charcoal: navy pushes
-/// everything drawn on it slightly blue, which is what made the old accent
-/// have to shout to be seen at all. On a neutral ground a much quieter accent
-/// reads perfectly well.
+/// Apple's dark system palette: a true black ground with two grey elevation
+/// steps (#1C1C1E, #2C2C2E), so depth comes from tone rather than from borders
+/// or glows. The primary action is white on black, the way Uber and Apple
+/// Wallet do it: the one thing to press is the brightest thing on screen, and
+/// colour stays free to mean safe, careful or scam.
 class AppColors {
   // ── Neutrals ──────────────────────────────────────────────────────────────
   /// App background. Not pure black — pure black against an OLED panel makes
   /// the elevation steps below invisible, and haloes light text.
-  static const Color background = Color(0xFF0C0E12);
+  static const Color background = Color(0xFF000000);
 
   /// Raised surfaces: cards, sheets, inputs.
-  static const Color surface = Color(0xFF15181F);
+  static const Color surface = Color(0xFF1C1C1E);
 
   /// Hairlines, borders, dividers, disabled fills. One step up from surface,
   /// deliberately close to it — a border should describe an edge, not draw a
   /// line across the screen.
-  static const Color surfaceLight = Color(0xFF262B35);
+  static const Color surfaceLight = Color(0xFF2C2C2E);
 
-  static const Color textPrimary = Color(0xFFF5F6F8);
+  static const Color textPrimary = Color(0xFFFFFFFF);
 
   /// Secondary text sits at ~4.9:1 on the background — comfortably readable,
   /// while still clearly receding from primary.
-  static const Color textSecondary = Color(0xFF9BA3B0);
+  static const Color textSecondary = Color(0xFF98989F);
 
   // ── Accent ────────────────────────────────────────────────────────────────
-  /// One accent, used only for things you can act on. The old neon cyan
-  /// (#06B6D4) matured into a calmer, deeper blue that still carries a hint of
-  /// the original hue but stops competing with the verdict colours.
-  static const Color primary = Color(0xFF5B9DFF);
+  /// What you can act on. White: on black it is the strongest signal there
+  /// is, and it never competes with the verdict colours.
+  static const Color primary = Color(0xFFFFFFFF);
 
   /// Used sparingly — a second interactive tone for stacked/secondary actions,
   /// not a gradient partner. (The old theme blended it into every button.)
-  static const Color accent = Color(0xFF7C8CFF);
+  static const Color accent = Color(0xFF0A84FF);
 
   // ── Verdict colours — reserved ────────────────────────────────────────────
   // These three are the app's most important information. They are never used
   // for decoration, section headers, icons-for-flavour or empty states.
   // Every place they appear is also labelled in words and paired with a
   // distinct icon, so the meaning survives colour blindness and greyscale.
-  static const Color success = Color(0xFF3DD68C); // safe
-  static const Color warning = Color(0xFFF5B849); // be careful
-  static const Color danger = Color(0xFFFF6B6B); // scam
+  static const Color success = Color(0xFF30D158); // safe
+  static const Color warning = Color(0xFFFF9F0A); // be careful
+  static const Color danger = Color(0xFFFF453A); // scam
 
   // `cardGlow` used to live here — the tint painted under every card to give
   // it a halo. It is gone rather than retuned: nothing referenced it outside
@@ -109,9 +109,9 @@ class AppSpacing {
 /// Corner radii. Three sizes plus a pill — more than that and nothing looks
 /// like it belongs to the same family.
 class AppRadius {
-  static const double sm = 10;
-  static const double md = 14;
-  static const double lg = 20;
+  static const double sm = 12;
+  static const double md = 16;
+  static const double lg = 22;
   static const double pill = 999;
 }
 
@@ -253,7 +253,8 @@ ThemeData appTheme = _baseDark.copyWith(
   // movement for an app people open mid-panic.
   pageTransitionsTheme: const PageTransitionsTheme(
     builders: {
-      TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+      // The iOS slide, with its parallax and edge-swipe back, on Android too.
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
       TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
     },
   ),
@@ -266,16 +267,16 @@ ThemeData appTheme = _baseDark.copyWith(
     elevation: 0,
     centerTitle: false,
     iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
-    titleTextStyle: _style(19, weight: FontWeight.w600),
+    titleTextStyle: _style(20, weight: FontWeight.w700),
   ),
   bottomNavigationBarTheme: BottomNavigationBarThemeData(
-    backgroundColor: AppColors.surface,
-    selectedItemColor: AppColors.primary,
-    unselectedItemColor: AppColors.textSecondary,
+    backgroundColor: AppColors.background,
+    selectedItemColor: AppColors.textPrimary,
+    unselectedItemColor: Color(0xFF6E6E73),
     type: BottomNavigationBarType.fixed,
     elevation: 0,
-    selectedLabelStyle: _style(11, weight: FontWeight.w600),
-    unselectedLabelStyle: _style(11, weight: FontWeight.w500),
+    selectedLabelStyle: _style(10.5, weight: FontWeight.w600),
+    unselectedLabelStyle: _style(10.5, weight: FontWeight.w500),
   ),
   cardTheme: CardThemeData(
     color: AppColors.surface,
@@ -295,17 +296,18 @@ ThemeData appTheme = _baseDark.copyWith(
     filled: true,
     fillColor: AppColors.surface,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    // Filled, no outline: the fill already says "type here".
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: AppColors.surfaceLight),
+      borderSide: BorderSide.none,
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: AppColors.surfaceLight),
+      borderSide: BorderSide.none,
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      borderSide: const BorderSide(color: Color(0xFF48484A), width: 1),
     ),
     labelStyle: _style(14, color: AppColors.textSecondary),
     hintStyle: _style(15, color: AppColors.textSecondary),
@@ -313,22 +315,24 @@ ThemeData appTheme = _baseDark.copyWith(
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: AppColors.primary,
-      foregroundColor: const Color(0xFF08121F),
+      foregroundColor: Colors.black,
+      disabledBackgroundColor: AppColors.surfaceLight,
+      disabledForegroundColor: AppColors.textSecondary,
       elevation: 0,
-      // 52pt: comfortably past the 48dp floor, because a mis-tap here costs
+      // 54pt: comfortably past the 48dp floor, because a mis-tap here costs
       // more than it does in most apps.
-      minimumSize: const Size.fromHeight(52),
+      minimumSize: const Size.fromHeight(54),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      textStyle: _style(16, weight: FontWeight.w600),
+      textStyle: _style(17, weight: FontWeight.w600),
     ),
   ),
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
       foregroundColor: AppColors.textPrimary,
-      minimumSize: const Size.fromHeight(52),
-      side: const BorderSide(color: AppColors.surfaceLight),
+      minimumSize: const Size.fromHeight(54),
+      side: const BorderSide(color: Color(0xFF3A3A3C)),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
@@ -342,8 +346,10 @@ ThemeData appTheme = _baseDark.copyWith(
     ),
   ),
   snackBarTheme: SnackBarThemeData(
-    backgroundColor: AppColors.surfaceLight,
-    contentTextStyle: _style(14),
+    backgroundColor: const Color(0xFF2C2C2E),
+    contentTextStyle: _style(14.5, weight: FontWeight.w500),
+    actionTextColor: AppColors.textPrimary,
+    elevation: 0,
     behavior: SnackBarBehavior.floating,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -365,10 +371,29 @@ ThemeData appTheme = _baseDark.copyWith(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
   ),
+  switchTheme: SwitchThemeData(
+    // Monochrome, like Uber: white track when on, so a toggle never borrows
+    // a verdict colour.
+    thumbColor: WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected)
+          ? Colors.black
+          : const Color(0xFF8E8E93),
+    ),
+    trackColor: WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected)
+          ? Colors.white
+          : AppColors.surfaceLight,
+    ),
+    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+  ),
+  progressIndicatorTheme: const ProgressIndicatorThemeData(
+    color: AppColors.textPrimary,
+    linearTrackColor: AppColors.surfaceLight,
+  ),
   chipTheme: ChipThemeData(
     backgroundColor: AppColors.surface,
     selectedColor: AppColors.primary,
-    side: const BorderSide(color: AppColors.surfaceLight),
+    side: BorderSide.none,
     labelStyle: _style(13, weight: FontWeight.w500),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppRadius.sm),

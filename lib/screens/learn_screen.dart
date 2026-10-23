@@ -255,7 +255,13 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
               valueListenable: UserProfileService.avatarNotifier,
               builder: (ctx, avatar, _) => CircleAvatar(
                 radius: 14,
-                backgroundImage: NetworkImage(avatar),
+                backgroundColor: AppColors.surfaceLight,
+                foregroundImage: NetworkImage(avatar),
+                child: const Icon(
+                  Icons.person_rounded,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ),
@@ -292,7 +298,7 @@ Scanning a QR code in payment apps (Zelle, Venmo, UPI) requests money FROM you. 
                 Icons.phonelink_lock,
                 'OTP defense',
                 'Never share One-Time Passwords (OTP) with anyone claiming to be from customer support.',
-                AppColors.success,
+                AppColors.primary,
               ),
             ),
             const SizedBox(height: 28),

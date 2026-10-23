@@ -134,12 +134,11 @@ class _CybercrimeScreenState extends State<CybercrimeScreen> {
           ),
           const SizedBox(height: 24),
           const Text(
-            'WHAT TO DO, IN ORDER',
+            'What to do, in order',
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
-              letterSpacing: 0.6,
             ),
           ),
           const SizedBox(height: 10),
@@ -165,12 +164,11 @@ class _CybercrimeScreenState extends State<CybercrimeScreen> {
           ),
           const SizedBox(height: 24),
           const Text(
-            'EVIDENCE PDF FROM A SCAN',
+            'Evidence PDF from a scan',
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
-              letterSpacing: 0.6,
             ),
           ),
           const SizedBox(height: 6),

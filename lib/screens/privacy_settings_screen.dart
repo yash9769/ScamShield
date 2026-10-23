@@ -471,7 +471,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                             children: [
                               const Text(
                                 'AI-Assisted Analysis',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               const Text(
@@ -486,11 +489,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
-                        Switch(
-                          value: _aiEnabled,
-                          activeThumbColor: AppColors.primary,
-                          onChanged: _setAiEnabled,
-                        ),
+                        Switch(value: _aiEnabled, onChanged: _setAiEnabled),
                       ],
                     ),
                   ),
@@ -691,13 +690,18 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: isDestructive ? AppColors.danger : AppColors.textPrimary,
+                        color: isDestructive
+                            ? AppColors.danger
+                            : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                      ),
                     ),
                   ],
                 ),

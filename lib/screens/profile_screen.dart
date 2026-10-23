@@ -371,18 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.shield, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text(
-              'ScamShield Profile',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
+      appBar: AppBar(title: const Text('Profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -550,35 +539,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               ValueListenableBuilder<String>(
                 valueListenable: UserProfileService.avatarNotifier,
-                builder: (ctx, avatar, _) => Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: NetworkImage(avatar),
+                builder: (ctx, avatar, _) => CircleAvatar(
+                  radius: 48,
+                  backgroundColor: AppColors.surfaceLight,
+                  // foregroundImage covers the icon once it loads, and the
+                  // icon stays if it can't (offline, blocked host).
+                  foregroundImage: NetworkImage(avatar),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    size: 44,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
               Positioned(
                 bottom: 0,
-                right: 4,
+                right: 0,
                 child: Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.background, width: 3),
                   ),
-                  child: const Icon(Icons.edit, color: Colors.black, size: 14),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: Colors.black,
+                    size: 13,
+                  ),
                 ),
               ),
             ],
@@ -587,10 +575,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 14),
         ValueListenableBuilder<String>(
           valueListenable: UserProfileService.nameNotifier,
-          builder: (ctx, name, _) => Text(
-            name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
+          builder: (ctx, name, _) => Text(name, style: AppText.title),
         ),
         const SizedBox(height: 4),
         ValueListenableBuilder<String>(
@@ -612,83 +597,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         Expanded(
-          child: _buildSecurityCard(
-            'TOTAL SCANS',
-            '$total Executed',
-            Icons.radar_rounded,
-            total > 0 ? '$total LOGS' : '0 LOGS',
-            AppColors.primary,
-          ),
+          child: _buildSecurityCard('Scans run', '$total', Icons.radar_rounded),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildSecurityCard(
-            'ENCRYPTION',
-            'AES-256 On-Device',
-            Icons.lock_outline,
-            'ACTIVE',
-            AppColors.success,
+            'Encryption',
+            'AES-256',
+            Icons.lock_outline_rounded,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSecurityCard(
-    String label,
-    String value,
-    IconData icon,
-    String badge,
-    Color badgeColor,
-  ) {
+  /// A quiet stat tile: one number, one label. The ALL-CAPS label and the
+  /// coloured "LOGS" / "ACTIVE" badge are gone; the value carries the card.
+  Widget _buildSecurityCard(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.surfaceLight.withValues(alpha: 0.5),
-        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: badgeColor, size: 22),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: badgeColor,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
+          Icon(icon, color: AppColors.textSecondary, size: 20),
+          const SizedBox(height: AppSpacing.md),
+          Text(value, style: AppText.title),
+          const SizedBox(height: 2),
+          Text(label, style: AppText.secondary),
         ],
       ),
     );
@@ -709,7 +648,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.surfaceLight),
       ),
       child: Column(
         children: [
@@ -813,25 +751,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
+                        // "Active" on every row was noise; only a state that
+                        // needs attention earns a badge.
+                        if (state != ProtectionState.active) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -841,11 +783,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (hasSwitch) ...[
                 const SizedBox(width: AppSpacing.sm),
-                Switch(
-                  value: switchValue,
-                  onChanged: onChanged,
-                  activeThumbColor: AppColors.primary,
-                ),
+                Switch(value: switchValue, onChanged: onChanged),
               ] else if (onTap != null)
                 const Icon(
                   Icons.chevron_right_rounded,
