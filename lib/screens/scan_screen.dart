@@ -20,7 +20,11 @@ import '../data/repositories/scan_repository.dart';
 import 'qr_scan_screen.dart';
 import 'qr_result_screen.dart';
 import 'upi_verify_screen.dart';
+import 'apk_scan_screen.dart';
+import 'breach_screen.dart';
 import 'cybercrime_screen.dart';
+import 'sim_lock_screen.dart';
+import '../widgets/scan_now_bottom_sheet.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -521,8 +525,11 @@ class _ScanScreenState extends State<ScanScreen>
               const SizedBox(height: 12),
               Reveal(child: _buildCommunitySection()),
             ],
-            if (_result == null && !_isAnalyzing)
-              Reveal(delay: Reveal.step(3), child: _buildSamplePrompts()),
+            if (_result == null && !_isAnalyzing) ...[
+              Reveal(delay: Reveal.step(3), child: _buildMoreScans()),
+              const SizedBox(height: 20),
+              Reveal(delay: Reveal.step(4), child: _buildSamplePrompts()),
+            ],
           ],
         ),
       ),
@@ -1174,6 +1181,125 @@ class _ScanScreenState extends State<ScanScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// Every other kind of check the app can do, one tap from the Scan tab.
+  /// They used to be spread over Home, a bottom sheet and the Breach tab, so
+  /// people on this screen never found the APK scanner or the email check.
+  Widget _buildMoreScans() {
+    void open(Widget screen) =>
+        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    final scans = <(IconData, String, String, VoidCallback)>[
+      (
+        Icons.android_rounded,
+        'App (APK)',
+        'Permissions, YARA, VirusTotal',
+        () => open(const ApkScanScreen()),
+      ),
+      (
+        Icons.qr_code_scanner,
+        'QR or UPI code',
+        'Where it leads, who gets paid',
+        _scanQrCode,
+      ),
+      (
+        Icons.folder_open_rounded,
+        'File or clipboard',
+        'Documents, screenshots, copied text',
+        () => ScanNowBottomSheet.show(context),
+      ),
+      (
+        Icons.alternate_email,
+        'Email leak',
+        'Was my email in a breach?',
+        () => open(const BreachScreen()),
+      ),
+      (
+        Icons.phonelink_lock_outlined,
+        'Device check',
+        'Root status and SIM safety',
+        () => open(const SimLockScreen()),
+      ),
+      (
+        Icons.local_police_outlined,
+        'Report a scam',
+        'Call 1930, evidence PDF',
+        () => open(const CybercrimeScreen()),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'More ways to check',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.3,
+          children: [
+            for (final (icon, title, subtitle, onTap) in scans)
+              Pressable(
+                onTap: onTap,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.surfaceLight.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(icon, color: AppColors.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: AppColors.textSecondary,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
