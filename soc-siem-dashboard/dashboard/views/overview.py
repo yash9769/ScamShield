@@ -42,6 +42,7 @@ def _generate_data_panel() -> None:
             st.rerun()
 
 
+def render() -> None:
     st.markdown(
         """
         <div style="margin-bottom: 22px;">
