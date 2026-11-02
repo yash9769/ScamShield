@@ -42,9 +42,25 @@ def _generate_data_panel() -> None:
             st.rerun()
 
 
-def render() -> None:
-    st.title("SOC Overview")
-    st.caption("A synthetic security-operations event stream, scored by Sigma-style rules and an Isolation Forest, correlated into incidents.")
+    st.markdown(
+        """
+        <div style="margin-bottom: 22px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                <span style="background: rgba(0, 210, 255, 0.12); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.3); font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; letter-spacing: 0.08em; text-transform: uppercase;">
+                    Operational Console
+                </span>
+                <span style="color: #64748b; font-size: 12px;">Automated Telemetry & Kill-Chain Correlation</span>
+            </div>
+            <h1 style="font-size: 2.1rem; font-weight: 800; color: #ffffff; margin: 0 0 6px 0; letter-spacing: -0.02em;">
+                SOC Overview & Real-Time Intelligence
+            </h1>
+            <p style="color: #94a3b8; font-size: 13.5px; margin: 0;">
+                Synthetic security-operations telemetry evaluated via Sigma rules, Isolation Forest anomaly scoring, and multi-stage campaign correlation.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     _generate_data_panel()
 
@@ -63,20 +79,25 @@ def render() -> None:
     span_days = max((events["ts"].max() - events["ts"].min()).days, 1)
 
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Events", f"{len(events):,}", help=f"Over {span_days} days")
-    c2.metric("Alerts", f"{len(alerts):,}")
-    c3.metric("Incidents", f"{len(incidents):,}",
-              help="Alerts grouped by the correlation engine — what an analyst actually works through.")
-    c4.metric("Open incidents", f"{len(open_incidents):,}")
-    c5.metric("Multi-stage attacks", f"{len(multi_stage):,}", help="Incidents spanning three or more ATT&CK tactics.")
+    c1.metric("Total Events", f"{len(events):,}", help=f"Across {span_days} days of recorded telemetry")
+    c2.metric("Triggered Alerts", f"{len(alerts):,}")
+    c3.metric("Correlated Incidents", f"{len(incidents):,}",
+              help="Alerts grouped by correlation engine into actionable investigations.")
+    c4.metric("Active Investigations", f"{len(open_incidents):,}")
+    c5.metric("Multi-Stage Campaigns", f"{len(multi_stage):,}", help="High-risk attacks spanning ≥ 3 ATT&CK tactics.")
 
-    st.subheader("Event volume over time")
+    st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
+    st.subheader("Event Telemetry Volume over Time")
     bucketed = events.assign(window=events["ts"].dt.floor("6h"))
     counts = bucketed.groupby(["window", "event_type"]).size().reset_index(name="count")
     fig = go.Figure()
     for event_type, color in EVENT_TYPE_COLOR.items():
         sub = counts[counts["event_type"] == event_type]
-        fig.add_trace(go.Scatter(x=sub["window"], y=sub["count"], mode="lines", name=event_type, line=dict(color=color, width=2)))
+        fig.add_trace(go.Scatter(
+            x=sub["window"], y=sub["count"], mode="lines", name=event_type.upper(),
+            line=dict(color=color, width=2.5, shape="spline"),
+            hovertemplate="%{x|%b %d, %H:%M}<br>" + event_type.upper() + ": <b>%{y}</b> events<extra></extra>",
+        ))
     fig.update_layout(height=320, yaxis_title="events / 6h", legend_title_text="")
     st.plotly_chart(styled(fig), use_container_width=True)
 

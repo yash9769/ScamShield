@@ -29,38 +29,38 @@ from socdash.storage import db  # noqa: E402
 DB_PATH = pipeline.DEFAULT_DB_PATH
 STATUS_OPTIONS = db.STATUS_OPTIONS
 
-# --- Palette (reference instance; see dataviz skill references/palette.md) ---
-INK_PRIMARY = "#0b0b0b"
-INK_SECONDARY = "#52514e"
-INK_MUTED = "#898781"
-GRIDLINE = "#e1e0d9"
-SURFACE = "#fcfcfb"
+# --- Palette (Cybersecurity Cyber-Dark Theme) ---
+INK_PRIMARY = "#f9fafb"
+INK_SECONDARY = "#9ca3af"
+INK_MUTED = "#6b7280"
+GRIDLINE = "rgba(255, 255, 255, 0.08)"
+SURFACE = "#0e1526"
 
 # Categorical, fixed order — never cycled, never reassigned per filter.
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
+SERIES = ["#00d2ff", "#f97316", "#10b981", "#fbbf24", "#ec4899", "#22c55e", "#8b5cf6", "#ef4444"]
 EVENT_TYPE_COLOR = {"auth": SERIES[0], "network": SERIES[1], "dns": SERIES[2], "process": SERIES[3]}
 CATEGORY_COLOR = {"DoS": SERIES[0], "Probe": SERIES[1], "R2L": SERIES[2], "U2R": SERIES[3], "Unknown": INK_MUTED}
 DETECTOR_COLOR = {"rule": SERIES[0], "anomaly": SERIES[1]}
 MODEL_COLOR = {"Isolation Forest": SERIES[0], "Random Forest": SERIES[1]}
 
 # Status — reserved for severity/state, never used for series identity.
-SEVERITY_COLOR = {"low": "#0ca30c", "medium": "#fab219", "high": "#ec835a", "critical": "#d03b3b"}
+SEVERITY_COLOR = {"low": "#10b981", "medium": "#f59e0b", "high": "#f97316", "critical": "#ef4444"}
 SEVERITY_ORDER = ["low", "medium", "high", "critical"]
 # Detection outcomes: the three "caught" states are identities (which
 # detector family), "missed" is a state — so it takes the status color.
 OUTCOME_COLOR = {"rules only": SERIES[0], "anomaly only": SERIES[1], "both": SERIES[2], "missed": SEVERITY_COLOR["critical"]}
 
-# Sequential (blue), light -> dark — for magnitude (heatmaps, intensity).
-SEQUENTIAL_BLUE = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
+# Sequential (cyan/blue), light -> dark — for magnitude (heatmaps, intensity).
+SEQUENTIAL_BLUE = ["#082f49", "#075985", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd"]
 
 PLOTLY_LAYOUT = dict(
-    paper_bgcolor=SURFACE,
-    plot_bgcolor=SURFACE,
-    font=dict(color=INK_PRIMARY, family="system-ui, -apple-system, 'Segoe UI', sans-serif", size=13),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(color=INK_PRIMARY, family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif", size=12),
     margin=dict(l=10, r=36, t=40, b=10),
     xaxis=dict(gridcolor=GRIDLINE, linecolor=GRIDLINE, zerolinecolor=GRIDLINE, color=INK_MUTED),
     yaxis=dict(gridcolor=GRIDLINE, linecolor=GRIDLINE, zerolinecolor=GRIDLINE, color=INK_MUTED),
-    legend=dict(bgcolor="rgba(0,0,0,0)"),
+    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=INK_SECONDARY)),
 )
 
 
@@ -237,7 +237,13 @@ def ip_malicious_lookup() -> dict[str, bool]:
 
 def severity_badge(severity: str) -> str:
     color = SEVERITY_COLOR.get(severity, INK_MUTED)
-    return f'<span style="color:{color}; font-weight:600;">● {html.escape(severity.upper())}</span>'
+    return (
+        f'<span style="background:{color}18; color:{color}; border:1px solid {color}44; '
+        f'padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; '
+        f'letter-spacing:0.06em; display:inline-flex; align-items:center; gap:6px;">'
+        f'<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:{color}; box-shadow:0 0 6px {color};"></span>'
+        f'{html.escape(severity.upper())}</span>'
+    )
 
 
 def technique_label(technique_id: str | None) -> str:

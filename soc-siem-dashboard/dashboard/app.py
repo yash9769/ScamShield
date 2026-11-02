@@ -25,7 +25,127 @@ from views import (  # noqa: E402
     tuning,
 )
 
-st.set_page_config(page_title="SOC Dashboard", page_icon="\U0001F6E1️", layout="wide")
+st.set_page_config(page_title="ScamShield SOC · SIEM", page_icon="🛡️", layout="wide")
+
+# --- Custom Global Cybersecurity Theme CSS ---
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    code, pre, [data-testid="stCodeBlock"] {
+        font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    /* Metric Cards Glassmorphism */
+    [data-testid="stMetric"] {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        padding: 14px 18px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(10px) !important;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0, 210, 255, 0.45) !important;
+        box-shadow: 0 8px 24px rgba(0, 210, 255, 0.12) !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-weight: 800 !important;
+        font-size: 1.85rem !important;
+        color: #ffffff !important;
+        letter-spacing: -0.02em !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-weight: 600 !important;
+        color: #94a3b8 !important;
+        text-transform: uppercase !important;
+        font-size: 0.72rem !important;
+        letter-spacing: 0.08em !important;
+    }
+
+    /* Primary Buttons & Interactive Elements */
+    button[kind="primary"] {
+        background: linear-gradient(135deg, #00d2ff 0%, #0070f3 100%) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 14px rgba(0, 210, 255, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    button[kind="primary"]:hover {
+        box-shadow: 0 6px 20px rgba(0, 210, 255, 0.5) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* Sleek Expanders */
+    [data-testid="stExpander"] {
+        background: rgba(17, 24, 39, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+    }
+
+    /* Pulsing status indicator */
+    @keyframes pulse-radar {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .radar-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: #10b981;
+        border-radius: 50%;
+        animation: pulse-radar 2s infinite;
+        margin-right: 6px;
+    }
+
+    /* Custom Modern Scrollbars */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #334155;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+with st.sidebar:
+    st.markdown(
+        """
+        <div style="padding: 10px 4px 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: #00d2ff; letter-spacing: 0.12em; text-transform: uppercase;">
+                ScamShield Cyber Defense
+            </div>
+            <div style="font-size: 16px; font-weight: 800; color: #ffffff; margin-top: 2px;">
+                SOC / SIEM Engine
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #10b981; display: flex; align-items: center; font-weight: 600;">
+                <span class="radar-dot"></span> DETECTION & CORRELATION ACTIVE
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 pages = {
     "Monitor": [

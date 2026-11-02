@@ -40,20 +40,20 @@ EDITOR = "incidents_editor"
 
 
 def _kill_chain_html(tactics: list[str]) -> str:
-    """The 14 Enterprise tactics as a fixed 7 × 2 grid — a fixed grid rather
-    than wrapping flex, which stretched the last row's cells to full width."""
+    """The 14 Enterprise tactics as a fixed 7 × 2 grid with glowing cyber badges."""
     cells = []
     for tactic, touched in kill_chain_stages(tactics):
         style = (
-            f"background:{SERIES[0]};color:#fff;border:1px solid {SERIES[0]};"
+            "background: linear-gradient(135deg, rgba(0, 210, 255, 0.2) 0%, rgba(0, 112, 243, 0.3) 100%);"
+            "color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.55); box-shadow: 0 0 10px rgba(0, 210, 255, 0.15); font-weight: 700;"
             if touched else
-            f"background:transparent;color:{INK_MUTED};border:1px dashed {GRIDLINE};"
+            f"background: rgba(255, 255, 255, 0.02); color: {INK_MUTED}; border: 1px dashed {GRIDLINE};"
         )
         cells.append(
-            f'<div style="{style}padding:7px 6px;border-radius:6px;font-size:12px;line-height:1.25;'
-            f'text-align:center;display:flex;align-items:center;justify-content:center;">{html.escape(tactic)}</div>'
+            f'<div style="{style}padding:8px 6px;border-radius:6px;font-size:11.5px;line-height:1.25;'
+            f'text-align:center;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">{html.escape(tactic)}</div>'
         )
-    return ('<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:2px 0 8px;">'
+    return ('<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:4px 0 12px;">'
             + "".join(cells) + "</div>")
 
 
