@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScamShield: model results</title>
+<style>
+  :root {
+    --bg: #000; --card: #1c1c1e; --raise: #2c2c2e; --text: #fff; --muted: #98989f;
+    --green: #30d158; --amber: #ff9f0a; --red: #ff453a; --line: #2c2c2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, "Inter", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 56px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+  h1 { font-size: 34px; letter-spacing: -0.03em; line-height: 1.1; }
+  .sub { color: var(--muted); margin-top: 6px; max-width: 640px; }
+  .tabs { display: inline-flex; background: var(--card); border-radius: 12px; padding: 4px; }
+  .tabs button { background: none; border: 0; color: var(--muted); font: inherit; font-weight: 600; font-size: 14px; padding: 9px 16px; border-radius: 9px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: var(--raise); color: var(--text); }
+  .grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 16px; }
+  .card { background: var(--card); border-radius: 20px; padding: 24px; }
+  .label { color: var(--muted); font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+  .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px 18px; }
+  .m .v { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .m .n { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .m .h { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .good { color: var(--green); } .warn { color: var(--amber); }
+  .cm { display: grid; grid-template-columns: 74px 1fr 1fr; grid-template-rows: auto 1fr 1fr; gap: 8px; }
+  .cm .hd { color: var(--muted); font-size: 12.5px; font-weight: 600; text-align: center; align-self: end; padding-bottom: 2px; }
+  .cm .rl { color: var(--muted); font-size: 12.5px; font-weight: 600; align-self: center; line-height: 1.25; }
+  .cell { border-radius: 14px; padding: 18px 14px; min-height: 112px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .cell .big { font-size: 38px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .cell .cap { font-size: 12.5px; margin-top: 6px; opacity: .85; }
+  .tp { background: rgba(48,209,88,.16); } .tp .big { color: var(--green); }
+  .tn { background: rgba(48,209,88,.10); } .tn .big { color: var(--green); }
+  .fn { background: rgba(255,69,58,.18); } .fn .big { color: var(--red); }
+  .fp { background: rgba(255,159,10,.14); } .fp .big { color: var(--amber); }
+  .read { margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .read .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .read p { color: var(--muted); font-size: 14.5px; }
+  .foot { margin-top: 16px; color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
+  .foot b { color: var(--text); font-weight: 600; }
+  @media (max-width: 880px) { .grid, .read { grid-template-columns: 1fr; } .m .v { font-size: 38px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>How well does ScamShield read a message?</h1>
+      <p class="sub">Measured on 200 labelled messages: 100 scams and 100 legitimate. Re-run from the code, not copied from a report.</p>
+    </div>
+    <div class="tabs" role="group" aria-label="Detection engine">
+      <button id="b-server" aria-pressed="true" onclick="show('server')">Server engine (online)</button>
+      <button id="b-device" aria-pressed="false" onclick="show('device')">On-device engine (offline)</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card" aria-label="Metrics">
+      <div class="label">Scores</div>
+      <div class="metrics">
+        <div class="m"><div class="v" id="acc"></div><div class="n">Accuracy</div><div class="h">Right answers overall</div></div>
+        <div class="m"><div class="v good" id="prec"></div><div class="n">Precision</div><div class="h">Of messages flagged, how many were scams</div></div>
+        <div class="m"><div class="v warn" id="rec"></div><div class="n">Recall</div><div class="h">Of all scams, how many were caught</div></div>
+        <div class="m"><div class="v" id="f1"></div><div class="n">F1 score</div><div class="h">Precision and recall combined</div></div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Confusion matrix">
+      <div class="label">Confusion matrix</div>
+      <div class="cm">
+        <div></div><div class="hd">Flagged as threat</div><div class="hd">Called safe</div>
+        <div class="rl">Actually<br>a scam</div>
+        <div class="cell tp"><div class="big" id="tp"></div><div class="cap">Caught</div></div>
+        <div class="cell fn"><div class="big" id="fn"></div><div class="cap">Missed</div></div>
+        <div class="rl">Actually<br>safe</div>
+        <div class="cell fp"><div class="big" id="fp"></div><div class="cap">False alarm</div></div>
+        <div class="cell tn"><div class="big" id="tn"></div><div class="cap">Correctly safe</div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="read">
+    <div class="card"><h3>Almost no false alarms</h3><p>Out of 100 legitimate messages, at most one was wrongly flagged. People keep trusting an app that rarely cries wolf.</p></div>
+    <div class="card"><h3>It misses scams without clues</h3><p>Scams with no link or obvious keyword slip through: fake job offers, "officer" calls, prize emails, fake tech support, crypto schemes.</p></div>
+    <div class="card"><h3>Links and apps are checked separately</h3><p>This page covers message wording only. Links and apps also go to VirusTotal and Google Safe Browsing, and APKs to Androguard and YARA.</p></div>
+  </div>
+
+  <div class="foot">
+    <div><b>Method.</b> A message counts as a threat if the engine says "scam" or "suspicious". Counting only "scam" the recall falls to 6 of 100 (server) and 4 of 100 (on-device), because most scams are labelled "suspicious".</div>
+    <div><b>Data.</b> <a style="color:inherit" href="https://github.com/yash9769/ScamShield/tree/V2-Final/dataset">dataset/</a> in the repo: 200 messages written by the team from documented Indian scam patterns. It is small and self-made, so treat these as a baseline, not a guarantee. No independent test set yet.</div>
+  </div>
+</div>
+
+<script>
+  var D = {
+    server: { acc: "82.5%", prec: "98.5%", rec: "66.0%", f1: "79.0%", tp: 66, fn: 34, fp: 1, tn: 99 },
+    device: { acc: "79.0%", prec: "100%",  rec: "58.0%", f1: "73.4%", tp: 58, fn: 42, fp: 0, tn: 100 }
+  };
+  function show(k) {
+    var d = D[k];
+    ["acc","prec","rec","f1","tp","fn","fp","tn"].forEach(function (id) { document.getElementById(id).textContent = d[id]; });
+    document.getElementById("b-server").setAttribute("aria-pressed", k === "server");
+    document.getElementById("b-device").setAttribute("aria-pressed", k === "device");
+  }
+  show("server");
+</script>
+</body>
+</html>
